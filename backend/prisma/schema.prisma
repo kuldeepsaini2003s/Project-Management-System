@@ -7,22 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  posts     Post[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum AuthProvider {
+  EMAIL
+  GOOGLE
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model User {
+  id        String       @id @default(cuid())
+  email     String       @unique
+  name      String
+  password  String? // null for OAuth-only accounts
+  avatarUrl String?
+  provider  AuthProvider @default(EMAIL)
+  googleId  String?      @unique
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }

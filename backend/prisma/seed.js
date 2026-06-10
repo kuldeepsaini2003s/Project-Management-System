@@ -1,37 +1,23 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import bcrypt from "bcryptjs";
+import prisma from "../src/config/db.js";
 
 async function main() {
   console.log("Seeding database...");
 
-  await prisma.post.deleteMany();
-  await prisma.user.deleteMany();
+  const password = await bcrypt.hash("password123", 10);
 
-  const alice = await prisma.user.create({
-    data: {
-      email: "alice@example.com",
-      name: "Alice",
-      posts: {
-        create: [
-          { title: "Hello World", content: "First post!", published: true },
-          { title: "Draft post", content: "Work in progress", published: false },
-        ],
-      },
+  await prisma.user.upsert({
+    where: { email: "demo@linear.app" },
+    update: {},
+    create: {
+      email: "demo@linear.app",
+      name: "Demo User",
+      password,
+      provider: "EMAIL",
     },
   });
 
-  const bob = await prisma.user.create({
-    data: {
-      email: "bob@example.com",
-      name: "Bob",
-      posts: {
-        create: [{ title: "Bob's thoughts", content: "Some content", published: true }],
-      },
-    },
-  });
-
-  console.log("Seeded users:", alice.email, bob.email);
+  console.log("Seeded demo@linear.app / password123");
 }
 
 main()

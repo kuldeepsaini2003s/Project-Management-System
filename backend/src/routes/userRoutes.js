@@ -2,14 +2,19 @@ import { Router } from "express";
 import {
   getUsers,
   getUser,
-  createUser,
   updateUser,
   deleteUser,
 } from "../controllers/userController.js";
+import { protect } from "../middlewares/auth.js";
 
 const router = Router();
 
-router.route("/").get(getUsers).post(createUser);
-router.route("/:id").get(getUser).put(updateUser).delete(deleteUser);
+// All user routes require authentication.
+router.use(protect);
+
+router.get("/", getUsers);
+router.get("/:id", getUser);
+router.put("/:id", updateUser);
+router.delete("/:id", deleteUser);
 
 export default router;

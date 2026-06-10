@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode: `dark:` utilities apply when an ancestor has .dark */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* All colors, fonts and radii live here. Components consume them      */
+/* through Tailwind utilities (bg-bg, text-fg, ...) which are mapped   */
+/* to these CSS variables in the @theme inline block below.            */
+/* ------------------------------------------------------------------ */
+
+:root {
+  /* Light theme (default values) */
+  --bg: #ffffff;
+  --bg-subtle: #f9f9fb;
+  --surface: #ffffff;
+  --surface-hover: #f4f4f6;
+  --sidebar: #fbfbfc;
+
+  --fg: #0d0e10;
+  --fg-muted: #6b6f76;
+  --fg-subtle: #8a8f98;
+
+  --border: #e6e7eb;
+  --border-strong: #d4d6dc;
+
+  --input: #ffffff;
+  --input-border: #d4d6dc;
+
+  --brand: #5e6ad2;
+  --brand-hover: #525dc7;
+  --brand-fg: #ffffff;
+
+  --danger: #eb5757;
+  --ring: #5e6ad2;
+
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-lg: 12px;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.dark {
+  /* Dark theme (Linear-like) — this is the default app theme */
+  --bg: #08090a;
+  --bg-subtle: #0c0d0e;
+  --surface: #101113;
+  --surface-hover: #1a1b1e;
+  --sidebar: #0c0d0e;
+
+  --fg: #f7f8f8;
+  --fg-muted: #9ca0a8;
+  --fg-subtle: #6f747c;
+
+  --border: #1f2023;
+  --border-strong: #2b2d31;
+
+  --input: #141517;
+  --input-border: #2b2d31;
+
+  --brand: #5e6ad2;
+  --brand-hover: #6872e5;
+  --brand-fg: #ffffff;
+
+  --danger: #f06b6b;
+  --ring: #6872e5;
+}
+
+/* Map semantic tokens to Tailwind theme so utilities like bg-bg,
+   text-fg, border-border become available. `inline` keeps the
+   var() references live, so theme switching works at runtime. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-sidebar: var(--sidebar);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-input: var(--input);
+  --color-input-border: var(--input-border);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-fg);
+
+  --color-danger: var(--danger);
+  --color-ring: var(--ring);
+
+  --radius-DEFAULT: var(--radius);
+  --radius-sm: var(--radius-sm);
+  --radius-lg: var(--radius-lg);
+
+  --font-sans: var(--font-sans);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
