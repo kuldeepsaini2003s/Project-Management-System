@@ -3,6 +3,7 @@ import { UserPlus, Check, X } from "lucide-react";
 import Avatar from "../../components/ui/Avatar.jsx";
 import Button from "../../components/ui/Button.jsx";
 import Popover from "../../components/ui/Popover.jsx";
+import usePolling from "../../hooks/usePolling.js";
 import { teamService } from "../../services/teamService.js";
 import { workspaceService } from "../../services/workspaceService.js";
 
@@ -12,18 +13,28 @@ export default function TeamMembersPanel({ team, members, isAdmin, onMembersChan
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState("");
 
-  const loadRequests = useCallback(async () => {
-    if (!isAdmin) return;
-    try {
-      setRequests(await teamService.listRequests(team.id));
-    } catch {
-      /* non-admins simply have none */
+  // Refresh pending requests (admins) and the member list. Runs on mount
+  // and on an interval so changes from other people appear without a reload.
+  const refresh = useCallback(async () => {
+    if (isAdmin) {
+      try {
+        setRequests(await teamService.listRequests(team.id));
+      } catch {
+        /* ignore */
+      }
     }
-  }, [isAdmin, team.id]);
+    try {
+      onMembersChange(await teamService.listMembers(team.id));
+    } catch {
+      /* ignore */
+    }
+  }, [isAdmin, team.id, onMembersChange]);
 
   useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
+    refresh();
+  }, [refresh]);
+
+  usePolling(refresh, 7000);
 
   const respond = async (id, accept) => {
     try {

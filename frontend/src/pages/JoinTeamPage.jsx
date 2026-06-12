@@ -4,6 +4,7 @@ import Background from "../components/layout/Background.jsx";
 import Button from "../components/ui/Button.jsx";
 import FormError from "../components/ui/FormError.jsx";
 import ThemeToggle from "../components/ui/ThemeToggle.jsx";
+import usePolling from "../hooks/usePolling.js";
 import { teamService } from "../services/teamService.js";
 import { useTeams } from "../context/TeamContext.jsx";
 
@@ -32,6 +33,17 @@ export default function JoinTeamPage() {
       }
     })();
   }, [teamId]);
+
+  // While a request is pending, poll for the admin's decision.
+  usePolling(async () => {
+    try {
+      const mine = await teamService.myRequest(teamId);
+      setState(mine.state);
+      if (mine.state === "MEMBER") refresh();
+    } catch {
+      /* ignore */
+    }
+  }, 6000, state === "PENDING");
 
   const request = async () => {
     setBusy(true);

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { teamService } from "../services/teamService.js";
 import { useWorkspace } from "./WorkspaceContext.jsx";
+import usePolling from "../hooks/usePolling.js";
 
 const TeamContext = createContext(null);
 
@@ -34,6 +35,13 @@ export function TeamProvider({ children }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Silently keep the sidebar teams fresh (e.g. after a join is accepted)
+  // without toggling the loading state.
+  usePolling(() => {
+    if (!workspaceId) return;
+    teamService.listForWorkspace(workspaceId).then(setTeams).catch(() => {});
+  }, 30000, !!workspaceId);
 
   const createTeam = useCallback(
     async (payload) => {
