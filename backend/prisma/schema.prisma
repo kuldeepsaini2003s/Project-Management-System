@@ -12,6 +12,19 @@ enum AuthProvider {
   GOOGLE
 }
 
+enum Role {
+  OWNER
+  MEMBER
+}
+
+enum ProjectStatus {
+  BACKLOG
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id        String       @id @default(cuid())
   email     String       @unique
@@ -20,6 +33,55 @@ model User {
   avatarUrl String?
   provider  AuthProvider @default(EMAIL)
   googleId  String?      @unique
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+
+  memberships Membership[]
+  ledProjects Project[]    @relation("ProjectLead")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Workspace {
+  id   String @id @default(cuid())
+  name String
+
+  memberships Membership[]
+  projects    Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Membership {
+  id   String @id @default(cuid())
+  role Role   @default(MEMBER)
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, workspaceId])
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  icon        String? // emoji or icon key
+  color       String? // hex accent
+  status      ProjectStatus @default(BACKLOG)
+  targetDate  DateTime?
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  lead        User?     @relation("ProjectLead", fields: [leadId], references: [id])
+  leadId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
 }

@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { WorkspaceProvider } from "./context/WorkspaceContext.jsx";
 import App from "./App.jsx";
 import "./index.css";
 
@@ -14,9 +15,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <GoogleOAuthProvider clientId={googleClientId}>
       <ThemeProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <WorkspaceProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </WorkspaceProvider>
         </AuthProvider>
       </ThemeProvider>
     </GoogleOAuthProvider>

@@ -14,6 +14,17 @@ const issue = (user) => ({
   token: signToken({ sub: user.id }),
 });
 
+// Every new account gets a starter workspace they own.
+const createDefaultWorkspace = (user) => {
+  const first = user.name?.split(" ")[0] || "My";
+  return prisma.workspace.create({
+    data: {
+      name: `${first}'s Workspace`,
+      memberships: { create: { userId: user.id, role: "OWNER" } },
+    },
+  });
+};
+
 export const register = async ({ name, email, password }) => {
   if (!name || !email || !password) {
     throw new ApiError(400, "Name, email and password are required");
@@ -30,6 +41,7 @@ export const register = async ({ name, email, password }) => {
   const user = await prisma.user.create({
     data: { name, email, password: hashed, provider: "EMAIL" },
   });
+  await createDefaultWorkspace(user);
 
   return issue(user);
 };
@@ -72,6 +84,7 @@ export const googleAuth = async ({ accessToken }) => {
         provider: "GOOGLE",
       },
     });
+    await createDefaultWorkspace(user);
   } else if (!user.googleId) {
     user = await prisma.user.update({
       where: { id: user.id },

@@ -5,35 +5,48 @@
 
 /* ------------------------------------------------------------------ */
 /* Design tokens                                                       */
-/* All colors, fonts and radii live here. Components consume them      */
-/* through Tailwind utilities (bg-bg, text-fg, ...) which are mapped   */
-/* to these CSS variables in the @theme inline block below.            */
+/* All colors, fonts, radii and glass settings live here. Components   */
+/* consume them through Tailwind utilities (bg-bg, text-fg, ...) and    */
+/* the .glass helpers below.                                            */
 /* ------------------------------------------------------------------ */
 
 :root {
-  /* Light theme (default values) */
-  --bg: #ffffff;
-  --bg-subtle: #f9f9fb;
+  /* Light theme */
+  --bg: #f4f5f8;
+  --bg-subtle: #eceef3;
   --surface: #ffffff;
-  --surface-hover: #f4f4f6;
+  --surface-hover: #f1f2f5;
   --sidebar: #fbfbfc;
 
   --fg: #0d0e10;
-  --fg-muted: #6b6f76;
-  --fg-subtle: #8a8f98;
+  --fg-muted: #5c6069;
+  --fg-subtle: #868b94;
 
-  --border: #e6e7eb;
-  --border-strong: #d4d6dc;
+  --border: #e2e4ea;
+  --border-strong: #d2d5dd;
 
   --input: #ffffff;
-  --input-border: #d4d6dc;
+  --input-border: #d2d5dd;
 
   --brand: #5e6ad2;
   --brand-hover: #525dc7;
   --brand-fg: #ffffff;
 
-  --danger: #eb5757;
+  --danger: #d64545;
+  --warning: #d9920a;
+  --success: #2a9d63;
   --ring: #5e6ad2;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: 18px;
+
+  /* Backdrop blob colors */
+  --blob-1: rgba(94, 106, 210, 0.45);
+  --blob-2: rgba(190, 95, 220, 0.35);
+  --blob-3: rgba(80, 170, 220, 0.35);
 
   --radius: 8px;
   --radius-sm: 6px;
@@ -43,9 +56,9 @@
 }
 
 .dark {
-  /* Dark theme (Linear-like) — this is the default app theme */
-  --bg: #08090a;
-  --bg-subtle: #0c0d0e;
+  /* Dark theme (Linear-like, default app theme) */
+  --bg: #06070a;
+  --bg-subtle: #0a0b0f;
   --surface: #101113;
   --surface-hover: #1a1b1e;
   --sidebar: #0c0d0e;
@@ -54,23 +67,35 @@
   --fg-muted: #9ca0a8;
   --fg-subtle: #6f747c;
 
-  --border: #1f2023;
-  --border-strong: #2b2d31;
+  --border: #232427;
+  --border-strong: #2f3135;
 
   --input: #141517;
-  --input-border: #2b2d31;
+  --input-border: #2f3135;
 
   --brand: #5e6ad2;
   --brand-hover: #6872e5;
   --brand-fg: #ffffff;
 
   --danger: #f06b6b;
+  --warning: #e0a52a;
+  --success: #3fb27f;
   --ring: #6872e5;
+
+  /* Glass */
+  --glass-bg: rgba(18, 19, 23, 0.55);
+  --glass-bg-strong: rgba(20, 21, 26, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 20px;
+
+  /* Backdrop blob colors */
+  --blob-1: rgba(94, 106, 210, 0.4);
+  --blob-2: rgba(150, 70, 200, 0.32);
+  --blob-3: rgba(40, 130, 190, 0.3);
 }
 
-/* Map semantic tokens to Tailwind theme so utilities like bg-bg,
-   text-fg, border-border become available. `inline` keeps the
-   var() references live, so theme switching works at runtime. */
+/* Map semantic tokens to Tailwind theme. `inline` keeps the var()
+   references live, so theme switching works at runtime. */
 @theme inline {
   --color-bg: var(--bg);
   --color-bg-subtle: var(--bg-subtle);
@@ -93,7 +118,11 @@
   --color-brand-fg: var(--brand-fg);
 
   --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
   --color-ring: var(--ring);
+
+  --color-glass-border: var(--glass-border);
 
   --radius-DEFAULT: var(--radius);
   --radius-sm: var(--radius-sm);
@@ -119,4 +148,113 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* ------------------------------------------------------------------ */
+/* Glass helpers                                                       */
+/* ------------------------------------------------------------------ */
+
+.glass {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-strong {
+  background-color: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Animated colorful backdrop (shows through the glass surfaces)       */
+/* ------------------------------------------------------------------ */
+
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.app-backdrop::before,
+.app-backdrop::after {
+  content: "";
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.9;
+}
+
+.app-backdrop::before {
+  top: -15vw;
+  left: -10vw;
+  background: radial-gradient(circle at center, var(--blob-1), transparent 60%);
+  animation: float-a 22s ease-in-out infinite;
+}
+
+.app-backdrop::after {
+  bottom: -20vw;
+  right: -10vw;
+  background: radial-gradient(circle at center, var(--blob-2), transparent 60%);
+  animation: float-b 26s ease-in-out infinite;
+}
+
+.app-backdrop > .blob {
+  position: absolute;
+  top: 30%;
+  left: 40%;
+  width: 45vw;
+  height: 45vw;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.8;
+  background: radial-gradient(circle at center, var(--blob-3), transparent 60%);
+  animation: float-c 30s ease-in-out infinite;
+}
+
+@keyframes float-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8vw, 6vh) scale(1.1); }
+}
+
+@keyframes float-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-6vw, -8vh) scale(1.15); }
+}
+
+@keyframes float-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-10vw, 5vh) scale(1.1); }
+  66% { transform: translate(6vw, -6vh) scale(0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-backdrop::before,
+  .app-backdrop::after,
+  .app-backdrop > .blob {
+    animation: none;
+  }
+}
+
+/* Thin, unobtrusive scrollbars for the glass UI */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
