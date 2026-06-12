@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { ChevronRight, CircleDot, Box, Plus } from "lucide-react";
+import { ChevronRight, CircleDot, Box } from "lucide-react";
 import { teamService } from "../../services/teamService.js";
 
 function TeamGlyph({ team }) {
@@ -89,16 +89,6 @@ export default function TeamNavItem({ team, onNavigate }) {
             </NavLink>
           ))}
 
-          {projects && projects.length === 0 && (
-            <NavLink
-              to={`/teams/${team.id}/projects`}
-              className="flex items-center gap-2 rounded-md py-1.5 pl-[3.25rem] pr-2 text-xs text-fg-subtle hover:text-fg-muted"
-              onClick={onNavigate}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add project
-            </NavLink>
-          )}
         </div>
       )}
     </div>

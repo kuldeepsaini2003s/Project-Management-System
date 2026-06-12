@@ -10,6 +10,7 @@ import teamRoutes from "./routes/teamRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import issueRoutes from "./routes/issueRoutes.js";
 import labelRoutes from "./routes/labelRoutes.js";
+import commentRoutes from "./routes/commentRoutes.js";
 import joinRequestRoutes from "./routes/joinRequestRoutes.js";
 import { notFound } from "./middlewares/notFound.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -31,6 +32,7 @@ app.use("/api/teams", teamRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/issues", issueRoutes);
 app.use("/api/labels", labelRoutes);
+app.use("/api/comments", commentRoutes);
 app.use("/api/join-requests", joinRequestRoutes);
 
 app.use(notFound);

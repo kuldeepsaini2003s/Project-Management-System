@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useOutletContext } from "react-router-dom";
+import { useParams, useOutletContext, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import Button from "../../components/ui/Button.jsx";
@@ -12,6 +12,7 @@ import { issueService } from "../../services/issueService.js";
 export default function TeamIssuesPage() {
   const { teamId } = useParams();
   const { onMenu } = useOutletContext() || {};
+  const navigate = useNavigate();
 
   const [team, setTeam] = useState(null);
   const [issues, setIssues] = useState([]);
@@ -94,7 +95,7 @@ export default function TeamIssuesPage() {
             issues={issues}
             onCreate={(status) => setModal({ open: true, initial: null, status })}
             onMoveStatus={moveStatus}
-            onOpen={(issue) => setModal({ open: true, initial: issue, status: issue.status })}
+            onOpen={(issue) => navigate(`/issues/${issue.id}`)}
           />
         )}
       </div>

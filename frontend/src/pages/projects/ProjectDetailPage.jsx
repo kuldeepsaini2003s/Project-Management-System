@@ -218,7 +218,7 @@ export default function ProjectDetailPage() {
                       showProject={false}
                       onCreate={(status) => setIssueModal({ open: true, initial: null, status })}
                       onMoveStatus={moveStatus}
-                      onOpen={(issue) => setIssueModal({ open: true, initial: issue, status: issue.status })}
+                      onOpen={(issue) => navigate(`/issues/${issue.id}`)}
                     />
                   </div>
                 </div>

@@ -11,6 +11,7 @@ import TeamProjectsPage from "./pages/teams/TeamProjectsPage.jsx";
 import TeamIssuesPage from "./pages/teams/TeamIssuesPage.jsx";
 import JoinTeamPage from "./pages/JoinTeamPage.jsx";
 import ProjectDetailPage from "./pages/projects/ProjectDetailPage.jsx";
+import IssueDetailPage from "./pages/issues/IssueDetailPage.jsx";
 import ComingSoon from "./pages/ComingSoon.jsx";
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/teams/:teamId/projects" element={<TeamProjectsPage />} />
           <Route path="/teams/:teamId/issues" element={<TeamIssuesPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+          <Route path="/issues/:issueId" element={<IssueDetailPage />} />
           <Route path="/inbox" element={<ComingSoon title="Inbox" icon={Inbox} />} />
           <Route path="/my-issues" element={<ComingSoon title="My Issues" icon={CircleDot} />} />
           <Route path="/views" element={<ComingSoon title="Views" icon={LayoutGrid} />} />

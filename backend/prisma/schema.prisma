@@ -68,6 +68,8 @@ model User {
   ledProjects     Project[]         @relation("ProjectLead")
   projectMembers  ProjectMember[]
   assignedIssues  Issue[]           @relation("IssueAssignee")
+  createdIssues   Issue[]           @relation("IssueCreator")
+  comments        Comment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -239,12 +241,35 @@ model Issue {
   projectId  String?
   assignee   User?    @relation("IssueAssignee", fields: [assigneeId], references: [id])
   assigneeId String?
+  createdBy   User?   @relation("IssueCreator", fields: [createdById], references: [id])
+  createdById String?
 
-  labels Label[] @relation("IssueLabels")
+  parent   Issue?  @relation("IssueChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  parentId String?
+  children Issue[] @relation("IssueChildren")
+
+  labels   Label[]   @relation("IssueLabels")
+  comments Comment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([teamId, number])
   @@index([projectId])
+  @@index([parentId])
+}
+
+model Comment {
+  id   String @id @default(cuid())
+  body String
+
+  issue    Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId  String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([issueId])
 }
