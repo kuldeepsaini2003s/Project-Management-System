@@ -13,7 +13,12 @@ import {
 } from "../pickers/Pickers.jsx";
 import { PROJECT_STATUSES, STATUS_ORDER } from "../../constants/projectStatus.js";
 import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
-import { teamService } from "../../services/teamService.js";
+import {
+  useGetTeamMembersQuery,
+  useGetTeamLabelsQuery,
+  useGetTeamProjectsQuery,
+  useCreateLabelMutation,
+} from "../../store/apiSlice.js";
 
 const EMPTY = {
   name: "",
@@ -44,11 +49,17 @@ export default function ProjectFormModal({
   workspaceId,
 }) {
   const [form, setForm] = useState(EMPTY);
-  const [members, setMembers] = useState([]);
-  const [labels, setLabels] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Cached picker data (shared across the app, fetched once per team).
+  const skip = { skip: !open || !teamId };
+  const { data: members = [] } = useGetTeamMembersQuery(teamId, skip);
+  const { data: labels = [] } = useGetTeamLabelsQuery(teamId, skip);
+  const { data: allProjects = [] } = useGetTeamProjectsQuery(teamId, skip);
+  const [createLabelMut] = useCreateLabelMutation();
+
+  const projects = allProjects.filter((p) => p.id !== initial?.id);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -74,23 +85,9 @@ export default function ProjectFormModal({
           }
         : EMPTY
     );
+  }, [open, initial]);
 
-    // Load pickers' data.
-    if (teamId) {
-      teamService.listMembers(teamId).then(setMembers).catch(() => {});
-      teamService.listLabels(teamId).then(setLabels).catch(() => {});
-      teamService
-        .listProjects(teamId)
-        .then((ps) => setProjects(ps.filter((p) => p.id !== initial?.id)))
-        .catch(() => {});
-    }
-  }, [open, initial, workspaceId, teamId]);
-
-  const createLabel = async (name) => {
-    const label = await teamService.createLabel(teamId, { name });
-    setLabels((prev) => (prev.some((l) => l.id === label.id) ? prev : [...prev, label]));
-    return label;
-  };
+  const createLabel = (name) => createLabelMut({ teamId, name }).unwrap();
 
   const addMilestone = () =>
     set("milestones", [...form.milestones, { name: "", targetDate: null }]);

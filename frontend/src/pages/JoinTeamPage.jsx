@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Background from "../components/layout/Background.jsx";
 import Button from "../components/ui/Button.jsx";
 import FormError from "../components/ui/FormError.jsx";
 import ThemeToggle from "../components/ui/ThemeToggle.jsx";
-import usePolling from "../hooks/usePolling.js";
-import { teamService } from "../services/teamService.js";
+import {
+  useGetTeamPublicQuery,
+  useGetMyRequestQuery,
+  useRequestJoinMutation,
+  errMsg,
+} from "../store/apiSlice.js";
 import { useTeams } from "../context/TeamContext.jsx";
 
 export default function JoinTeamPage() {
@@ -13,55 +17,24 @@ export default function JoinTeamPage() {
   const navigate = useNavigate();
   const { refresh } = useTeams();
 
-  const [team, setTeam] = useState(null);
-  const [state, setState] = useState("LOADING"); // LOADING|NONE|PENDING|REJECTED|MEMBER|ERROR
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { data: team, error: teamErr } = useGetTeamPublicQuery(teamId);
+  const { data: mine } = useGetMyRequestQuery(teamId, {
+    // Poll while the request is pending so acceptance reflects automatically.
+    pollingInterval: 6000,
+  });
+  const [requestJoin, { isLoading: busy, error: reqErr }] = useRequestJoinMutation();
 
+  const state = mine?.state || "LOADING";
+
+  // When accepted, refresh the sidebar team list so it appears.
   useEffect(() => {
-    (async () => {
-      try {
-        const [pub, mine] = await Promise.all([
-          teamService.getPublic(teamId),
-          teamService.myRequest(teamId),
-        ]);
-        setTeam(pub);
-        setState(mine.state);
-      } catch (err) {
-        setError(err.message);
-        setState("ERROR");
-      }
-    })();
-  }, [teamId]);
+    if (state === "MEMBER") refresh();
+  }, [state, refresh]);
 
-  // While a request is pending, poll for the admin's decision.
-  usePolling(async () => {
-    try {
-      const mine = await teamService.myRequest(teamId);
-      setState(mine.state);
-      if (mine.state === "MEMBER") refresh();
-    } catch {
-      /* ignore */
-    }
-  }, 6000, state === "PENDING");
+  const request = () => requestJoin(teamId);
+  const openTeam = () => navigate(`/teams/${teamId}`);
 
-  const request = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      const res = await teamService.requestJoin(teamId);
-      setState(res.status); // PENDING
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const openTeam = async () => {
-    await refresh();
-    navigate(`/teams/${teamId}`);
-  };
+  const error = (teamErr && errMsg(teamErr)) || (reqErr && errMsg(reqErr)) || "";
 
   return (
     <>
@@ -83,9 +56,9 @@ export default function JoinTeamPage() {
               </span>
             )}
 
-            {state === "LOADING" && <p className="text-sm text-fg-muted">Loading…</p>}
+            {!team && !teamErr && <p className="text-sm text-fg-muted">Loading…</p>}
 
-            {team && state !== "LOADING" && state !== "ERROR" && (
+            {team && (
               <>
                 <h1 className="text-xl font-semibold text-fg">{team.name}</h1>
                 <p className="mt-1 text-sm text-fg-muted">
@@ -94,9 +67,7 @@ export default function JoinTeamPage() {
                 </p>
 
                 <div className="mt-6">
-                  {state === "MEMBER" && (
-                    <Button onClick={openTeam}>Open team</Button>
-                  )}
+                  {state === "MEMBER" && <Button onClick={openTeam}>Open team</Button>}
                   {state === "PENDING" && (
                     <p className="rounded-md border border-glass-border px-4 py-3 text-sm text-fg-muted">
                       Your request is pending approval from a team admin.

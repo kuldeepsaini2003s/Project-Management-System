@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { ChevronRight, CircleDot, Box } from "lucide-react";
-import { teamService } from "../../services/teamService.js";
+import { useGetTeamProjectsQuery } from "../../store/apiSlice.js";
 
 function TeamGlyph({ team }) {
   return (
@@ -21,19 +21,11 @@ const subClass = ({ isActive }) =>
 
 export default function TeamNavItem({ team, onNavigate }) {
   const [open, setOpen] = useState(false);
-  const [projects, setProjects] = useState(null);
 
-  const toggle = async () => {
-    const next = !open;
-    setOpen(next);
-    if (next && projects === null) {
-      try {
-        setProjects(await teamService.listProjects(team.id));
-      } catch {
-        setProjects([]);
-      }
-    }
-  };
+  // Cached: fetched only once the team is expanded.
+  const { data: projects } = useGetTeamProjectsQuery(team.id, { skip: !open });
+
+  const toggle = () => setOpen((o) => !o);
 
   return (
     <div>

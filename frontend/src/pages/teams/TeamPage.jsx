@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useOutletContext, Link } from "react-router-dom";
 import { CircleDot, Box, LayoutGrid, Link2, Check } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
@@ -6,7 +6,12 @@ import FormError from "../../components/ui/FormError.jsx";
 import Button from "../../components/ui/Button.jsx";
 import Avatar from "../../components/ui/Avatar.jsx";
 import TeamMembersPanel from "./TeamMembersPanel.jsx";
-import { teamService } from "../../services/teamService.js";
+import {
+  useGetTeamQuery,
+  useGetTeamMembersQuery,
+  useUpdateTeamMutation,
+  errMsg,
+} from "../../store/apiSlice.js";
 
 function ShareButton({ teamId }) {
   const [copied, setCopied] = useState(false);
@@ -31,42 +36,22 @@ function ShareButton({ teamId }) {
 export default function TeamPage() {
   const { teamId } = useParams();
   const { onMenu } = useOutletContext() || {};
-  const [team, setTeam] = useState(null);
-  const [members, setMembers] = useState([]);
   const [tab, setTab] = useState("overview");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [desc, setDesc] = useState("");
+
+  const { data: team, isLoading, error } = useGetTeamQuery(teamId);
+  const { data: members = [] } = useGetTeamMembersQuery(teamId);
+  const [updateTeam] = useUpdateTeamMutation();
 
   const isAdmin = team?.role === "OWNER" || team?.role === "ADMIN";
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const t = await teamService.get(teamId);
-      setTeam(t);
-      setDesc(t.description || "");
-      setMembers(await teamService.listMembers(teamId));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [teamId]);
-
   useEffect(() => {
-    load();
-  }, [load]);
+    if (team) setDesc(team.description || "");
+  }, [team]);
 
-  const saveDescription = async () => {
-    if (desc === (team.description || "")) return;
-    try {
-      const updated = await teamService.update(teamId, { description: desc });
-      setTeam(updated);
-    } catch (err) {
-      setError(err.message);
-    }
+  const saveDescription = () => {
+    if (!team || desc === (team.description || "")) return;
+    updateTeam({ id: teamId, description: desc });
   };
 
   return (
@@ -78,12 +63,11 @@ export default function TeamPage() {
       />
 
       <div className="glass min-h-0 flex-1 overflow-y-auto rounded-lg">
-        <FormError message={error} />
-        {loading ? (
+        <FormError message={error ? errMsg(error) : ""} />
+        {isLoading ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
         ) : team ? (
           <div className="flex flex-col">
-            {/* Tabs */}
             <div className="flex gap-1 border-b border-glass-border px-5 py-3">
               {["overview", "members"].map((t) => (
                 <button
@@ -125,7 +109,6 @@ export default function TeamPage() {
                   />
                 </div>
 
-                {/* Right column */}
                 <div className="flex flex-col gap-6">
                   <div>
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
@@ -157,12 +140,7 @@ export default function TeamPage() {
                 </div>
               </div>
             ) : (
-              <TeamMembersPanel
-                team={team}
-                members={members}
-                isAdmin={isAdmin}
-                onMembersChange={setMembers}
-              />
+              <TeamMembersPanel team={team} members={members} isAdmin={isAdmin} />
             )}
           </div>
         ) : null}

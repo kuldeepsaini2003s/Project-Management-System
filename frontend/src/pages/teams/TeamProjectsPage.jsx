@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 import { Plus, Box } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
@@ -6,43 +6,23 @@ import Button from "../../components/ui/Button.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import ProjectCard from "../../components/projects/ProjectCard.jsx";
 import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
-import { teamService } from "../../services/teamService.js";
+import {
+  useGetTeamQuery,
+  useGetTeamProjectsQuery,
+  useCreateProjectMutation,
+  errMsg,
+} from "../../store/apiSlice.js";
 
 export default function TeamProjectsPage() {
   const { teamId } = useParams();
   const { onMenu } = useOutletContext() || {};
-
-  const [team, setTeam] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [t, ps] = await Promise.all([
-        teamService.get(teamId),
-        teamService.listProjects(teamId),
-      ]);
-      setTeam(t);
-      setProjects(ps);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [teamId]);
+  const { data: team } = useGetTeamQuery(teamId);
+  const { data: projects = [], isLoading, error } = useGetTeamProjectsQuery(teamId);
+  const [createProject] = useCreateProjectMutation();
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const handleCreate = async (data) => {
-    const project = await teamService.createProject(teamId, data);
-    setProjects((prev) => [project, ...prev]);
-  };
+  const handleCreate = (data) => createProject({ teamId, ...data }).unwrap();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -58,9 +38,9 @@ export default function TeamProjectsPage() {
       />
 
       <div className="glass min-h-0 flex-1 overflow-y-auto rounded-lg p-4 sm:p-6">
-        <FormError message={error} />
+        <FormError message={error ? errMsg(error) : ""} />
 
-        {loading ? (
+        {isLoading ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading projects…</p>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">

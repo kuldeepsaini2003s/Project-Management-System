@@ -1,65 +1,46 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { UserPlus, Check, X } from "lucide-react";
 import Avatar from "../../components/ui/Avatar.jsx";
 import Button from "../../components/ui/Button.jsx";
 import Popover from "../../components/ui/Popover.jsx";
-import usePolling from "../../hooks/usePolling.js";
-import { teamService } from "../../services/teamService.js";
-import { workspaceService } from "../../services/workspaceService.js";
+import {
+  useGetTeamRequestsQuery,
+  useGetWorkspaceMembersQuery,
+  useAddTeamMemberMutation,
+  useRemoveTeamMemberMutation,
+  useRespondRequestMutation,
+  errMsg,
+} from "../../store/apiSlice.js";
 
 const ROLE_LABEL = { OWNER: "Owner", ADMIN: "Admin", MEMBER: "Member" };
 
-export default function TeamMembersPanel({ team, members, isAdmin, onMembersChange }) {
-  const [requests, setRequests] = useState([]);
+export default function TeamMembersPanel({ team, members, isAdmin }) {
   const [error, setError] = useState("");
 
-  // Refresh pending requests (admins) and the member list. Runs on mount
-  // and on an interval so changes from other people appear without a reload.
-  const refresh = useCallback(async () => {
-    if (isAdmin) {
-      try {
-        setRequests(await teamService.listRequests(team.id));
-      } catch {
-        /* ignore */
-      }
-    }
+  // Pending requests refresh on a slow interval so admins see new ones.
+  const { data: requests = [] } = useGetTeamRequestsQuery(team.id, {
+    skip: !isAdmin,
+    pollingInterval: 15000,
+  });
+
+  const [respond] = useRespondRequestMutation();
+  const [addMember] = useAddTeamMemberMutation();
+  const [removeMember] = useRemoveTeamMemberMutation();
+
+  const onRespond = async (id, accept) => {
     try {
-      onMembersChange(await teamService.listMembers(team.id));
-    } catch {
-      /* ignore */
-    }
-  }, [isAdmin, team.id, onMembersChange]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  usePolling(refresh, 7000);
-
-  const respond = async (id, accept) => {
-    try {
-      await teamService.respondRequest(id, accept);
-      setRequests((prev) => prev.filter((r) => r.id !== id));
-      if (accept) onMembersChange(await teamService.listMembers(team.id));
+      await respond({ requestId: id, accept, teamId: team.id }).unwrap();
     } catch (err) {
-      setError(err.message);
+      setError(errMsg(err));
     }
   };
 
-  const addMember = async (userId) => {
-    try {
-      onMembersChange(await teamService.addMember(team.id, userId));
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const removeMember = async (userId) => {
+  const onRemove = async (userId) => {
     if (!window.confirm("Remove this member from the team?")) return;
     try {
-      onMembersChange(await teamService.removeMember(team.id, userId));
+      await removeMember({ teamId: team.id, userId }).unwrap();
     } catch (err) {
-      setError(err.message);
+      setError(errMsg(err));
     }
   };
 
@@ -70,11 +51,10 @@ export default function TeamMembersPanel({ team, members, isAdmin, onMembersChan
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg">Team members</h2>
         {isAdmin && (
-          <AddMemberButton team={team} members={members} onAdd={addMember} />
+          <AddMemberButton team={team} members={members} onAdd={addMember} onError={setError} />
         )}
       </div>
 
-      {/* Pending requests */}
       {isAdmin && requests.length > 0 && (
         <div className="mb-5">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
@@ -92,13 +72,13 @@ export default function TeamMembersPanel({ team, members, isAdmin, onMembersChan
                   <p className="truncate text-xs text-fg-subtle">{r.user.email}</p>
                 </div>
                 <button
-                  onClick={() => respond(r.id, true)}
+                  onClick={() => onRespond(r.id, true)}
                   className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-brand-fg hover:bg-brand-hover"
                 >
                   <Check className="h-3.5 w-3.5" /> Accept
                 </button>
                 <button
-                  onClick={() => respond(r.id, false)}
+                  onClick={() => onRespond(r.id, false)}
                   className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-fg-muted hover:bg-surface-hover hover:text-fg"
                 >
                   <X className="h-3.5 w-3.5" /> Reject
@@ -109,7 +89,6 @@ export default function TeamMembersPanel({ team, members, isAdmin, onMembersChan
         </div>
       )}
 
-      {/* Members table */}
       <div className="overflow-hidden rounded-lg border border-glass-border">
         <div className="grid grid-cols-[1fr_1fr_auto] gap-4 border-b border-glass-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
           <span>Name</span>
@@ -131,10 +110,7 @@ export default function TeamMembersPanel({ team, members, isAdmin, onMembersChan
                 {ROLE_LABEL[m.role] || m.role}
               </span>
               {isAdmin && m.role !== "OWNER" && (
-                <button
-                  onClick={() => removeMember(m.id)}
-                  className="text-xs text-fg-subtle hover:text-danger"
-                >
+                <button onClick={() => onRemove(m.id)} className="text-xs text-fg-subtle hover:text-danger">
                   Remove
                 </button>
               )}
@@ -146,16 +122,17 @@ export default function TeamMembersPanel({ team, members, isAdmin, onMembersChan
   );
 }
 
-function AddMemberButton({ team, members, onAdd }) {
-  const [candidates, setCandidates] = useState([]);
+function AddMemberButton({ team, members, onAdd, onError }) {
+  const { data: wsMembers = [] } = useGetWorkspaceMembersQuery(team.workspaceId);
+  const ids = new Set(members.map((m) => m.id));
+  const candidates = wsMembers.filter((u) => !ids.has(u.id));
 
-  const open = async () => {
+  const add = async (userId, close) => {
     try {
-      const ws = await workspaceService.members(team.workspaceId);
-      const ids = new Set(members.map((m) => m.id));
-      setCandidates(ws.filter((u) => !ids.has(u.id)));
-    } catch {
-      setCandidates([]);
+      await onAdd({ teamId: team.id, userId }).unwrap();
+      close();
+    } catch (err) {
+      onError(errMsg(err));
     }
   };
 
@@ -163,14 +140,7 @@ function AddMemberButton({ team, members, onAdd }) {
     <Popover
       align="right"
       trigger={({ toggle }) => (
-        <Button
-          variant="secondary"
-          className="!w-auto px-3"
-          onClick={() => {
-            open();
-            toggle();
-          }}
-        >
+        <Button variant="secondary" className="!w-auto px-3" onClick={toggle}>
           <UserPlus className="h-4 w-4" />
           Add a member
         </Button>
@@ -186,10 +156,7 @@ function AddMemberButton({ team, members, onAdd }) {
             candidates.map((u) => (
               <button
                 key={u.id}
-                onClick={() => {
-                  onAdd(u.id);
-                  close();
-                }}
+                onClick={() => add(u.id, close)}
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
               >
                 <Avatar name={u.name} src={u.avatarUrl} size="sm" />

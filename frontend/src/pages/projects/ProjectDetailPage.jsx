@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom";
 import { Pencil, Trash2, Plus, Calendar } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
@@ -10,9 +10,18 @@ import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
 import IssueBoard from "../../components/issues/IssueBoard.jsx";
 import IssueFormModal from "../../components/issues/IssueFormModal.jsx";
 import { PRIORITIES } from "../../constants/priority.js";
-import { projectService } from "../../services/projectService.js";
-import { teamService } from "../../services/teamService.js";
-import { issueService } from "../../services/issueService.js";
+import {
+  useGetProjectQuery,
+  useGetProjectIssuesQuery,
+  useGetTeamQuery,
+  useGetTeamLabelsQuery,
+  useGetTeamMembersQuery,
+  useUpdateProjectMutation,
+  useDeleteProjectMutation,
+  useCreateIssueMutation,
+  useUpdateIssueMutation,
+  errMsg,
+} from "../../store/apiSlice.js";
 
 const fmt = (v) =>
   v ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
@@ -22,83 +31,43 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate();
   const { onMenu } = useOutletContext() || {};
 
-  const [project, setProject] = useState(null);
-  const [team, setTeam] = useState(null);
-  const [issues, setIssues] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [labels, setLabels] = useState([]);
   const [tab, setTab] = useState("issues");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [issueModal, setIssueModal] = useState({ open: false, initial: null, status: "TODO" });
+  const [issueModal, setIssueModal] = useState({ open: false, status: "TODO" });
+  const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const p = await projectService.get(projectId);
-      setProject(p);
-      const [t, iss] = await Promise.all([
-        teamService.get(p.teamId),
-        projectService.listIssues(projectId),
-      ]);
-      setTeam(t);
-      setIssues(iss.issues);
-      const [lbl, mem] = await Promise.all([
-        teamService.listLabels(t.id),
-        teamService.listMembers(t.id),
-      ]);
-      setLabels(lbl);
-      setMembers(mem);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
+  const { data: project, isLoading, error: projErr } = useGetProjectQuery(projectId);
+  const teamId = project?.teamId;
+  const { data: team } = useGetTeamQuery(teamId, { skip: !teamId });
+  const { data: issueData } = useGetProjectIssuesQuery(projectId);
+  const { data: labels = [] } = useGetTeamLabelsQuery(teamId, { skip: !teamId });
+  const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const [updateProject] = useUpdateProjectMutation();
+  const [deleteProject, { isLoading: deleting }] = useDeleteProjectMutation();
+  const [createIssue] = useCreateIssueMutation();
+  const [updateIssue] = useUpdateIssueMutation();
 
-  const handleUpdate = async (data) => {
-    setProject(await projectService.update(projectId, data));
-  };
+  const issues = issueData?.issues || [];
+  const priority = project && (PRIORITIES[project.priority] || PRIORITIES.NONE);
+
+  const handleUpdate = (data) => updateProject({ id: projectId, teamId, ...data }).unwrap();
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this project? This cannot be undone.")) return;
-    setDeleting(true);
     try {
-      await projectService.remove(projectId);
-      navigate(`/teams/${project.teamId}/projects`, { replace: true });
+      await deleteProject({ id: projectId, teamId }).unwrap();
+      navigate(`/teams/${teamId}/projects`, { replace: true });
     } catch (err) {
-      setError(err.message);
-      setDeleting(false);
+      setError(errMsg(err));
     }
   };
 
-  const submitIssue = async (data) => {
-    if (issueModal.initial) {
-      const updated = await issueService.update(issueModal.initial.id, data);
-      setIssues((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-    } else {
-      const created = await teamService.createIssue(team.id, { ...data, projectId });
-      setIssues((prev) => [created, ...prev]);
-    }
-  };
+  const submitIssue = (data) =>
+    createIssue({ teamId, ...data, projectId }).unwrap();
 
-  const moveStatus = async (id, status) => {
-    setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
-    try {
-      await issueService.update(id, { status });
-    } catch {
-      load();
-    }
-  };
-
-  const priority = project && (PRIORITIES[project.priority] || PRIORITIES.NONE);
+  const moveStatus = (id, status) =>
+    updateIssue({ id, teamId, projectId, status }).unwrap().catch(() => {});
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -112,12 +81,7 @@ export default function ProjectDetailPage() {
                 <Pencil className="h-4 w-4" />
                 Edit
               </Button>
-              <Button
-                variant="secondary"
-                className="!w-auto px-2.5"
-                onClick={handleDelete}
-                isLoading={deleting}
-              >
+              <Button variant="secondary" className="!w-auto px-2.5" onClick={handleDelete} isLoading={deleting}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </>
@@ -126,12 +90,11 @@ export default function ProjectDetailPage() {
       />
 
       <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg">
-        <FormError message={error} />
-        {loading ? (
+        <FormError message={error || (projErr ? errMsg(projErr) : "")} />
+        {isLoading ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
         ) : project ? (
           <div className="flex h-full flex-col">
-            {/* Header */}
             <div className="border-b border-glass-border p-5">
               <div className="flex items-start gap-3">
                 <span
@@ -142,9 +105,7 @@ export default function ProjectDetailPage() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <h1 className="text-xl font-semibold tracking-tight text-fg">{project.name}</h1>
-                  {project.summary && (
-                    <p className="mt-0.5 text-sm text-fg-muted">{project.summary}</p>
-                  )}
+                  {project.summary && <p className="mt-0.5 text-sm text-fg-muted">{project.summary}</p>}
                 </div>
               </div>
 
@@ -183,7 +144,6 @@ export default function ProjectDetailPage() {
                 ))}
               </div>
 
-              {/* Tabs */}
               <div className="mt-4 flex gap-1">
                 {["issues", "overview"].map((t) => (
                   <button
@@ -199,15 +159,11 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            {/* Body */}
             <div className="min-h-0 flex-1 overflow-hidden p-3">
               {tab === "issues" ? (
                 <div className="flex h-full flex-col gap-2">
                   <div className="flex justify-end">
-                    <Button
-                      className="!w-auto px-3"
-                      onClick={() => setIssueModal({ open: true, initial: null, status: "TODO" })}
-                    >
+                    <Button className="!w-auto px-3" onClick={() => setIssueModal({ open: true, status: "TODO" })}>
                       <Plus className="h-4 w-4" />
                       New issue
                     </Button>
@@ -216,7 +172,7 @@ export default function ProjectDetailPage() {
                     <IssueBoard
                       issues={issues}
                       showProject={false}
-                      onCreate={(status) => setIssueModal({ open: true, initial: null, status })}
+                      onCreate={(status) => setIssueModal({ open: true, status })}
                       onMoveStatus={moveStatus}
                       onOpen={(issue) => navigate(`/issues/${issue.id}`)}
                     />
@@ -241,9 +197,7 @@ export default function ProjectDetailPage() {
                             className="flex items-center justify-between rounded-md border border-glass-border px-3 py-2 text-sm"
                           >
                             <span className="text-fg">{m.name}</span>
-                            {m.targetDate && (
-                              <span className="text-xs text-fg-subtle">{fmt(m.targetDate)}</span>
-                            )}
+                            {m.targetDate && <span className="text-xs text-fg-subtle">{fmt(m.targetDate)}</span>}
                           </li>
                         ))}
                       </ul>
@@ -272,8 +226,7 @@ export default function ProjectDetailPage() {
             open={issueModal.open}
             onClose={() => setIssueModal((m) => ({ ...m, open: false }))}
             onSubmit={submitIssue}
-            initial={issueModal.initial}
-            mode={issueModal.initial ? "edit" : "create"}
+            mode="create"
             teamId={team.id}
             teamKey={team.key}
             members={members}

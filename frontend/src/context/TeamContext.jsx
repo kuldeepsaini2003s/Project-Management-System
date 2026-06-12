@@ -1,59 +1,34 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
-import { teamService } from "../services/teamService.js";
+import { createContext, useContext, useCallback } from "react";
 import { useWorkspace } from "./WorkspaceContext.jsx";
-import usePolling from "../hooks/usePolling.js";
+import {
+  useGetWorkspaceTeamsQuery,
+  useCreateTeamMutation,
+} from "../store/apiSlice.js";
 
 const TeamContext = createContext(null);
 
 export function TeamProvider({ children }) {
   const { currentId: workspaceId } = useWorkspace();
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    if (!workspaceId) {
-      setTeams([]);
-      setLoading(false);
-      return [];
-    }
-    setLoading(true);
-    try {
-      const data = await teamService.listForWorkspace(workspaceId);
-      setTeams(data);
-      return data;
-    } finally {
-      setLoading(false);
-    }
-  }, [workspaceId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  // Silently keep the sidebar teams fresh (e.g. after a join is accepted)
-  // without toggling the loading state.
-  usePolling(() => {
-    if (!workspaceId) return;
-    teamService.listForWorkspace(workspaceId).then(setTeams).catch(() => {});
-  }, 30000, !!workspaceId);
+  const { data: teams = [], isLoading, refetch } = useGetWorkspaceTeamsQuery(workspaceId, {
+    skip: !workspaceId,
+  });
+  const [createTeamMut] = useCreateTeamMutation();
 
   const createTeam = useCallback(
     async (payload) => {
       if (!workspaceId) throw new Error("No workspace selected yet — try reloading.");
-      const team = await teamService.create(workspaceId, payload);
-      setTeams((prev) => [...prev, team]);
-      return team;
+      return createTeamMut({ workspaceId, ...payload }).unwrap();
     },
-    [workspaceId]
+    [createTeamMut, workspaceId]
   );
 
-  const value = { teams, loading, createTeam, refresh: load };
+  const value = {
+    teams,
+    loading: !!workspaceId && isLoading,
+    createTeam,
+    refresh: refetch,
+  };
 
   return <TeamContext.Provider value={value}>{children}</TeamContext.Provider>;
 }

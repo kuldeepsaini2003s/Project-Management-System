@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, useOutletContext, Link } from "react-router-dom";
 import { Trash2, Plus, Send, CornerDownRight } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
@@ -10,8 +10,19 @@ import PillButton from "../../components/ui/PillButton.jsx";
 import { EnumPicker, UserPicker, LabelPicker } from "../../components/pickers/Pickers.jsx";
 import { ISSUE_STATUSES, ISSUE_STATUS_ORDER } from "../../constants/issueStatus.js";
 import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
-import { issueService } from "../../services/issueService.js";
-import { teamService } from "../../services/teamService.js";
+import {
+  useGetIssueQuery,
+  useGetTeamMembersQuery,
+  useGetTeamLabelsQuery,
+  useGetTeamProjectsQuery,
+  useUpdateIssueMutation,
+  useAddCommentMutation,
+  useDeleteCommentMutation,
+  useCreateSubIssueMutation,
+  useCreateLabelMutation,
+  useDeleteIssueMutation,
+  errMsg,
+} from "../../store/apiSlice.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const timeAgo = (date) => {
@@ -30,102 +41,71 @@ export default function IssueDetailPage() {
   const { onMenu } = useOutletContext() || {};
   const { user } = useAuth();
 
-  const [issue, setIssue] = useState(null);
-  const [members, setMembers] = useState([]);
-  const [labels, setLabels] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data: issue, isLoading, error } = useGetIssueQuery(issueId);
+  const teamId = issue?.teamId;
+  const projectId = issue?.project?.id || null;
+
+  const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
+  const { data: labels = [] } = useGetTeamLabelsQuery(teamId, { skip: !teamId });
+  const { data: projects = [] } = useGetTeamProjectsQuery(teamId, { skip: !teamId });
+
+  const [updateIssue] = useUpdateIssueMutation();
+  const [addCommentMut] = useAddCommentMutation();
+  const [deleteCommentMut] = useDeleteCommentMutation();
+  const [createSubIssueMut] = useCreateSubIssueMutation();
+  const [createLabelMut] = useCreateLabelMutation();
+  const [deleteIssueMut] = useDeleteIssueMutation();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [comment, setComment] = useState("");
   const [subTitle, setSubTitle] = useState("");
   const [addingSub, setAddingSub] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await issueService.get(issueId);
-      setIssue(data);
-      setTitle(data.title);
-      setDescription(data.description || "");
-      const [mem, lbl, prj] = await Promise.all([
-        teamService.listMembers(data.teamId),
-        teamService.listLabels(data.teamId),
-        teamService.listProjects(data.teamId),
-      ]);
-      setMembers(mem);
-      setLabels(lbl);
-      setProjects(prj);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [issueId]);
+  const [localError, setLocalError] = useState("");
 
   useEffect(() => {
-    load();
-  }, [load]);
-
-  // Patch a field and update local state from the response.
-  const patch = async (data) => {
-    try {
-      setIssue(await issueService.update(issueId, data));
-    } catch (err) {
-      setError(err.message);
+    if (issue) {
+      setTitle(issue.title);
+      setDescription(issue.description || "");
     }
-  };
+  }, [issue]);
 
-  const createLabel = async (name) => {
-    const label = await teamService.createLabel(issue.teamId, { name });
-    setLabels((p) => (p.some((l) => l.id === label.id) ? p : [...p, label]));
-    return label;
-  };
+  const patch = (data) =>
+    updateIssue({ id: issueId, teamId, projectId, ...data }).unwrap().catch((e) => setLocalError(errMsg(e)));
+
+  const createLabel = (name) => createLabelMut({ teamId, name }).unwrap();
 
   const addComment = async () => {
     if (!comment.trim()) return;
     try {
-      const c = await issueService.addComment(issueId, comment.trim());
-      setIssue((prev) => ({ ...prev, comments: [...prev.comments, c] }));
+      await addCommentMut({ issueId, body: comment.trim() }).unwrap();
       setComment("");
-    } catch (err) {
-      setError(err.message);
+    } catch (e) {
+      setLocalError(errMsg(e));
     }
-  };
-
-  const deleteComment = async (commentId) => {
-    await issueService.deleteComment(commentId);
-    setIssue((prev) => ({ ...prev, comments: prev.comments.filter((c) => c.id !== commentId) }));
   };
 
   const addSubIssue = async () => {
     if (!subTitle.trim()) return;
     try {
-      const child = await issueService.createSubIssue(issueId, { title: subTitle.trim() });
-      setIssue((prev) => ({ ...prev, children: [...prev.children, child] }));
+      await createSubIssueMut({ parentId: issueId, teamId, title: subTitle.trim() }).unwrap();
       setSubTitle("");
       setAddingSub(false);
-    } catch (err) {
-      setError(err.message);
+    } catch (e) {
+      setLocalError(errMsg(e));
     }
   };
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this issue?")) return;
-    await issueService.remove(issueId);
-    navigate(`/teams/${issue.teamId}/issues`, { replace: true });
+    await deleteIssueMut({ id: issueId, teamId, projectId }).unwrap();
+    navigate(`/teams/${teamId}/issues`, { replace: true });
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
-        breadcrumb={[
-          issue?.project?.name || issue?.teamName || "Issue",
-          issue ? `${issue.identifier}` : "…",
-        ]}
+        breadcrumb={[issue?.project?.name || issue?.teamName || "Issue", issue ? issue.identifier : "…"]}
         onMenu={onMenu}
         actions={
           issue && (
@@ -137,12 +117,11 @@ export default function IssueDetailPage() {
       />
 
       <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg">
-        <FormError message={error} />
-        {loading ? (
+        <FormError message={localError || (error ? errMsg(error) : "")} />
+        {isLoading ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
         ) : issue ? (
           <div className="flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-            {/* Main */}
             <div className="min-w-0 flex-1 overflow-y-auto px-6 py-6 lg:px-10">
               <div className="mx-auto max-w-3xl">
                 {issue.parent && (
@@ -172,7 +151,6 @@ export default function IssueDetailPage() {
                   className="mt-4 w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
                 />
 
-                {/* Sub-issues */}
                 <div className="mt-8">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium text-fg">Sub-issues</h3>
@@ -185,22 +163,22 @@ export default function IssueDetailPage() {
                   </div>
 
                   <div className="mt-2 flex flex-col gap-1">
-                    {issue.children.map((c) => (
-                      <Link
-                        key={c.id}
-                        to={`/issues/${c.id}`}
-                        className="flex items-center gap-2 rounded-md border border-glass-border px-3 py-2 text-sm transition-colors hover:bg-surface-hover"
-                      >
-                        {(() => {
-                          const meta = ISSUE_STATUSES[c.status] || ISSUE_STATUSES.TODO;
-                          const I = meta.icon;
-                          return <I className="h-3.5 w-3.5" style={{ color: meta.color }} />;
-                        })()}
-                        <span className="text-xs text-fg-subtle">{c.identifier}</span>
-                        <span className="flex-1 truncate text-fg">{c.title}</span>
-                        {c.assignee && <Avatar name={c.assignee.name} src={c.assignee.avatarUrl} size="sm" />}
-                      </Link>
-                    ))}
+                    {issue.children.map((c) => {
+                      const meta = ISSUE_STATUSES[c.status] || ISSUE_STATUSES.TODO;
+                      const I = meta.icon;
+                      return (
+                        <Link
+                          key={c.id}
+                          to={`/issues/${c.id}`}
+                          className="flex items-center gap-2 rounded-md border border-glass-border px-3 py-2 text-sm transition-colors hover:bg-surface-hover"
+                        >
+                          <I className="h-3.5 w-3.5" style={{ color: meta.color }} />
+                          <span className="text-xs text-fg-subtle">{c.identifier}</span>
+                          <span className="flex-1 truncate text-fg">{c.title}</span>
+                          {c.assignee && <Avatar name={c.assignee.name} src={c.assignee.avatarUrl} size="sm" />}
+                        </Link>
+                      );
+                    })}
                     {addingSub && (
                       <div className="flex gap-2">
                         <input
@@ -217,7 +195,6 @@ export default function IssueDetailPage() {
                   </div>
                 </div>
 
-                {/* Activity */}
                 <div className="mt-10">
                   <h3 className="mb-3 text-sm font-medium text-fg">Activity</h3>
                   <div className="flex items-center gap-2 text-sm text-fg-muted">
@@ -236,7 +213,7 @@ export default function IssueDetailPage() {
                             <span className="text-xs text-fg-subtle">{timeAgo(c.createdAt)}</span>
                             {c.author.id === user?.id && (
                               <button
-                                onClick={() => deleteComment(c.id)}
+                                onClick={() => deleteCommentMut({ commentId: c.id, issueId })}
                                 className="ml-auto text-xs text-fg-subtle hover:text-danger"
                               >
                                 Delete
@@ -249,7 +226,6 @@ export default function IssueDetailPage() {
                     ))}
                   </div>
 
-                  {/* Comment box */}
                   <div className="mt-4 flex items-end gap-2 rounded-lg border border-glass-border p-2">
                     <textarea
                       value={comment}
@@ -274,7 +250,6 @@ export default function IssueDetailPage() {
               </div>
             </div>
 
-            {/* Properties panel */}
             <aside className="w-full shrink-0 border-t border-glass-border p-5 lg:w-72 lg:overflow-y-auto lg:border-l lg:border-t-0">
               <Section title="Properties">
                 <div className="flex flex-col items-start gap-2">
