@@ -1,0 +1,53 @@
+import { Router } from "express";
+import {
+  getTeam,
+  updateTeam,
+  deleteTeam,
+  getTeamProjects,
+  createTeamProject,
+  getTeamIssues,
+  createTeamIssue,
+  getTeamLabels,
+  createTeamLabel,
+} from "../controllers/teamController.js";
+import {
+  getMembers,
+  addMember,
+  removeMember,
+  updateMemberRole,
+  getTeamPublic,
+  getMyRequest,
+  requestToJoin,
+  getRequests,
+} from "../controllers/teamMemberController.js";
+import { protect } from "../middlewares/auth.js";
+
+const router = Router();
+router.use(protect);
+
+router.get("/:id", getTeam);
+router.patch("/:id", updateTeam);
+router.delete("/:id", deleteTeam);
+
+router.get("/:id/projects", getTeamProjects);
+router.post("/:id/projects", createTeamProject);
+
+router.get("/:id/issues", getTeamIssues);
+router.post("/:id/issues", createTeamIssue);
+
+router.get("/:id/labels", getTeamLabels);
+router.post("/:id/labels", createTeamLabel);
+
+// Members
+router.get("/:id/members", getMembers);
+router.post("/:id/members", addMember);
+router.patch("/:id/members/:userId", updateMemberRole);
+router.delete("/:id/members/:userId", removeMember);
+
+// Join flow
+router.get("/:id/public", getTeamPublic);
+router.get("/:id/my-request", getMyRequest);
+router.post("/:id/join", requestToJoin);
+router.get("/:id/requests", getRequests);
+
+export default router;

@@ -1,20 +1,37 @@
 import { useEffect, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import Modal from "../ui/Modal.jsx";
 import Button from "../ui/Button.jsx";
-import Input from "../ui/Input.jsx";
 import FormError from "../ui/FormError.jsx";
-import { STATUS_ORDER, PROJECT_STATUSES } from "../../constants/projectStatus.js";
+import {
+  EnumPicker,
+  UserPicker,
+  MembersPicker,
+  DatePicker,
+  LabelPicker,
+  DependencyPicker,
+} from "../pickers/Pickers.jsx";
+import { PROJECT_STATUSES, STATUS_ORDER } from "../../constants/projectStatus.js";
+import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
+import { teamService } from "../../services/teamService.js";
 
 const EMPTY = {
   name: "",
+  summary: "",
   description: "",
   icon: "",
-  color: "#5e6ad2",
   status: "BACKLOG",
-  targetDate: "",
+  priority: "NONE",
+  leadId: null,
+  memberIds: [],
+  labelIds: [],
+  dependsOnIds: [],
+  startDate: null,
+  targetDate: null,
+  milestones: [],
 };
 
-const toInputDate = (value) => (value ? new Date(value).toISOString().slice(0, 10) : "");
+const toInputDate = (v) => (v ? new Date(v).toISOString().slice(0, 10) : null);
 
 export default function ProjectFormModal({
   open,
@@ -22,40 +39,77 @@ export default function ProjectFormModal({
   onSubmit,
   initial,
   mode = "create",
+  teamId,
+  teamKey = "TEAM",
+  workspaceId,
 }) {
   const [form, setForm] = useState(EMPTY);
+  const [members, setMembers] = useState([]);
+  const [labels, setLabels] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setForm(
-        initial
-          ? {
-              name: initial.name || "",
-              description: initial.description || "",
-              icon: initial.icon || "",
-              color: initial.color || "#5e6ad2",
-              status: initial.status || "BACKLOG",
-              targetDate: toInputDate(initial.targetDate),
-            }
-          : EMPTY
-      );
-      setError("");
-      setLoading(false);
-    }
-  }, [open, initial]);
+  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  useEffect(() => {
+    if (!open) return;
+    setError("");
+    setLoading(false);
+    setForm(
+      initial
+        ? {
+            ...EMPTY,
+            ...initial,
+            leadId: initial.lead?.id || initial.leadId || null,
+            memberIds: (initial.members || []).map((m) => m.id),
+            labelIds: (initial.labels || []).map((l) => l.id),
+            dependsOnIds: (initial.dependsOn || []).map((d) => d.id),
+            startDate: toInputDate(initial.startDate),
+            targetDate: toInputDate(initial.targetDate),
+            milestones: (initial.milestones || []).map((m) => ({
+              name: m.name,
+              targetDate: toInputDate(m.targetDate),
+            })),
+          }
+        : EMPTY
+    );
+
+    // Load pickers' data.
+    if (teamId) {
+      teamService.listMembers(teamId).then(setMembers).catch(() => {});
+      teamService.listLabels(teamId).then(setLabels).catch(() => {});
+      teamService
+        .listProjects(teamId)
+        .then((ps) => setProjects(ps.filter((p) => p.id !== initial?.id)))
+        .catch(() => {});
+    }
+  }, [open, initial, workspaceId, teamId]);
+
+  const createLabel = async (name) => {
+    const label = await teamService.createLabel(teamId, { name });
+    setLabels((prev) => (prev.some((l) => l.id === label.id) ? prev : [...prev, label]));
+    return label;
+  };
+
+  const addMilestone = () =>
+    set("milestones", [...form.milestones, { name: "", targetDate: null }]);
+  const updateMilestone = (i, patch) =>
+    set(
+      "milestones",
+      form.milestones.map((m, idx) => (idx === i ? { ...m, ...patch } : m))
+    );
+  const removeMilestone = (i) =>
+    set("milestones", form.milestones.filter((_, idx) => idx !== i));
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setError("");
     setLoading(true);
     try {
       await onSubmit({
         ...form,
-        targetDate: form.targetDate || null,
+        milestones: form.milestones.filter((m) => m.name.trim()),
       });
       onClose?.();
     } catch (err) {
@@ -68,7 +122,16 @@ export default function ProjectFormModal({
     <Modal
       open={open}
       onClose={loading ? undefined : onClose}
-      title={mode === "create" ? "New project" : "Edit project"}
+      size="xl"
+      title={
+        <span className="flex items-center gap-1.5 text-sm">
+          <span className="rounded bg-brand/15 px-1.5 py-0.5 text-xs font-semibold text-brand">
+            {teamKey}
+          </span>
+          <span className="text-fg-subtle">›</span>
+          <span className="text-fg">{mode === "create" ? "New project" : "Edit project"}</span>
+        </span>
+      }
       footer={
         <>
           <Button variant="secondary" className="!w-auto px-3" onClick={onClose} disabled={loading}>
@@ -88,71 +151,115 @@ export default function ProjectFormModal({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <FormError message={error} />
 
-        <div className="flex gap-3">
-          <div className="w-16">
-            <Input
-              id="project-icon"
-              label="Icon"
-              placeholder="📦"
-              maxLength={2}
-              value={form.icon}
-              onChange={set("icon")}
-              className="text-center text-lg"
-            />
-          </div>
+        {/* Icon + name + summary */}
+        <div className="flex items-start gap-3">
+          <input
+            value={form.icon}
+            onChange={(e) => set("icon", e.target.value)}
+            maxLength={2}
+            placeholder="📦"
+            className="h-9 w-9 shrink-0 rounded-md border border-border bg-surface text-center text-lg focus:border-brand focus:outline-none"
+          />
           <div className="flex-1">
-            <Input
-              id="project-name"
-              label="Name"
-              placeholder="Mobile App"
+            <input
               value={form.name}
-              onChange={set("name")}
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="Project name"
               autoFocus
-              required
+              className="w-full bg-transparent text-xl font-semibold text-fg placeholder:text-fg-subtle focus:outline-none"
+            />
+            <input
+              value={form.summary}
+              onChange={(e) => set("summary", e.target.value)}
+              placeholder="Add a short summary…"
+              className="mt-1 w-full bg-transparent text-sm text-fg-muted placeholder:text-fg-subtle focus:outline-none"
             />
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="project-desc" className="text-sm font-medium text-fg-muted">
-            Description
-          </label>
-          <textarea
-            id="project-desc"
-            rows={3}
-            placeholder="What is this project about?"
-            value={form.description}
-            onChange={set("description")}
-            className="w-full resize-none rounded-md border border-input-border bg-input px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:border-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        {/* Property pills */}
+        <div className="flex flex-wrap gap-1.5">
+          <EnumPicker
+            value={form.status}
+            onChange={(v) => set("status", v)}
+            map={PROJECT_STATUSES}
+            order={STATUS_ORDER}
+            fallback="BACKLOG"
+          />
+          <EnumPicker
+            value={form.priority}
+            onChange={(v) => set("priority", v)}
+            map={PRIORITIES}
+            order={PRIORITY_ORDER}
+            fallback="NONE"
+          />
+          <UserPicker value={form.leadId} onChange={(v) => set("leadId", v)} users={members} label="Lead" />
+          <MembersPicker value={form.memberIds} onChange={(v) => set("memberIds", v)} users={members} />
+          <DatePicker value={form.startDate} onChange={(v) => set("startDate", v)} label="Start" />
+          <DatePicker value={form.targetDate} onChange={(v) => set("targetDate", v)} label="Target" />
+          <LabelPicker
+            value={form.labelIds}
+            onChange={(v) => set("labelIds", v)}
+            labels={labels}
+            onCreateLabel={createLabel}
+          />
+          <DependencyPicker
+            value={form.dependsOnIds}
+            onChange={(v) => set("dependsOnIds", v)}
+            projects={projects}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="project-status" className="text-sm font-medium text-fg-muted">
-              Status
-            </label>
-            <select
-              id="project-status"
-              value={form.status}
-              onChange={set("status")}
-              className="h-10 rounded-md border border-input-border bg-input px-2.5 text-sm text-fg focus:border-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              {STATUS_ORDER.map((s) => (
-                <option key={s} value={s}>
-                  {PROJECT_STATUSES[s].label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="h-px bg-glass-border" />
 
-          <Input
-            id="project-date"
-            type="date"
-            label="Target date"
-            value={form.targetDate}
-            onChange={set("targetDate")}
-          />
+        {/* Description */}
+        <textarea
+          value={form.description}
+          onChange={(e) => set("description", e.target.value)}
+          rows={5}
+          placeholder="Write a description, a project brief, or collect ideas…"
+          className="w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
+        />
+
+        {/* Milestones */}
+        <div className="rounded-lg border border-glass-border p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-fg">Milestones</span>
+            <button
+              type="button"
+              onClick={addMilestone}
+              className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+          {form.milestones.length > 0 && (
+            <div className="mt-2 flex flex-col gap-2">
+              {form.milestones.map((m, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={m.name}
+                    onChange={(e) => updateMilestone(i, { name: e.target.value })}
+                    placeholder="Milestone name"
+                    className="h-8 flex-1 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:border-brand focus:outline-none"
+                  />
+                  <input
+                    type="date"
+                    value={m.targetDate || ""}
+                    onChange={(e) => updateMilestone(i, { targetDate: e.target.value || null })}
+                    className="h-8 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:border-brand focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeMilestone(i)}
+                    className="rounded p-1.5 text-fg-subtle hover:text-danger"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </form>
     </Modal>

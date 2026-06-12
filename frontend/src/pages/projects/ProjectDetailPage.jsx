@@ -1,41 +1,57 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom";
-import { Pencil, Trash2, Calendar } from "lucide-react";
+import { Pencil, Trash2, Plus, Calendar } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import Button from "../../components/ui/Button.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import Avatar from "../../components/ui/Avatar.jsx";
 import ProjectStatusBadge from "../../components/projects/ProjectStatusBadge.jsx";
 import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
+import IssueBoard from "../../components/issues/IssueBoard.jsx";
+import IssueFormModal from "../../components/issues/IssueFormModal.jsx";
+import { PRIORITIES } from "../../constants/priority.js";
 import { projectService } from "../../services/projectService.js";
-import { useWorkspace } from "../../context/WorkspaceContext.jsx";
+import { teamService } from "../../services/teamService.js";
+import { issueService } from "../../services/issueService.js";
 
-const formatDate = (value) =>
-  value
-    ? new Date(value).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : null;
+const fmt = (v) =>
+  v ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { onMenu } = useOutletContext() || {};
-  const { current } = useWorkspace();
 
   const [project, setProject] = useState(null);
+  const [team, setTeam] = useState(null);
+  const [issues, setIssues] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [labels, setLabels] = useState([]);
+  const [tab, setTab] = useState("issues");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [issueModal, setIssueModal] = useState({ open: false, initial: null, status: "TODO" });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setProject(await projectService.get(projectId));
+      const p = await projectService.get(projectId);
+      setProject(p);
+      const [t, iss] = await Promise.all([
+        teamService.get(p.teamId),
+        projectService.listIssues(projectId),
+      ]);
+      setTeam(t);
+      setIssues(iss.issues);
+      const [lbl, mem] = await Promise.all([
+        teamService.listLabels(t.id),
+        teamService.listMembers(t.id),
+      ]);
+      setLabels(lbl);
+      setMembers(mem);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,26 +72,43 @@ export default function ProjectDetailPage() {
     setDeleting(true);
     try {
       await projectService.remove(projectId);
-      navigate("/projects", { replace: true });
+      navigate(`/teams/${project.teamId}/projects`, { replace: true });
     } catch (err) {
       setError(err.message);
       setDeleting(false);
     }
   };
 
+  const submitIssue = async (data) => {
+    if (issueModal.initial) {
+      const updated = await issueService.update(issueModal.initial.id, data);
+      setIssues((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    } else {
+      const created = await teamService.createIssue(team.id, { ...data, projectId });
+      setIssues((prev) => [created, ...prev]);
+    }
+  };
+
+  const moveStatus = async (id, status) => {
+    setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
+    try {
+      await issueService.update(id, { status });
+    } catch {
+      load();
+    }
+  };
+
+  const priority = project && (PRIORITIES[project.priority] || PRIORITIES.NONE);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
-        breadcrumb={[current?.name || "Workspace", "Projects", project?.name || "…"]}
+        breadcrumb={[team?.name || "Team", "Projects", project?.name || "…"]}
         onMenu={onMenu}
         actions={
           project && (
             <>
-              <Button
-                variant="secondary"
-                className="!w-auto px-2.5"
-                onClick={() => setEditOpen(true)}
-              >
+              <Button variant="secondary" className="!w-auto px-2.5" onClick={() => setEditOpen(true)}>
                 <Pencil className="h-4 w-4" />
                 Edit
               </Button>
@@ -92,88 +125,164 @@ export default function ProjectDetailPage() {
         }
       />
 
-      <div className="glass min-h-0 flex-1 overflow-y-auto rounded-lg p-6">
+      <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg">
         <FormError message={error} />
-
         {loading ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
         ) : project ? (
-          <div className="mx-auto max-w-2xl">
-            <div className="flex items-start gap-4">
-              <span
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-3xl"
-                style={{ backgroundColor: (project.color || "#5e6ad2") + "22" }}
-              >
-                {project.icon || "📦"}
-              </span>
-              <div className="min-w-0">
-                <h1 className="text-2xl font-semibold tracking-tight text-fg">
-                  {project.name}
-                </h1>
-                <div className="mt-2">
-                  <ProjectStatusBadge status={project.status} />
+          <div className="flex h-full flex-col">
+            {/* Header */}
+            <div className="border-b border-glass-border p-5">
+              <div className="flex items-start gap-3">
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl"
+                  style={{ backgroundColor: (project.color || "#5e6ad2") + "22" }}
+                >
+                  {project.icon || "📦"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-xl font-semibold tracking-tight text-fg">{project.name}</h1>
+                  {project.summary && (
+                    <p className="mt-0.5 text-sm text-fg-muted">{project.summary}</p>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {project.description && (
-              <p className="mt-6 whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">
-                {project.description}
-              </p>
-            )}
-
-            <div className="mt-8 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-glass-border sm:grid-cols-2">
-              <Detail label="Status">
+              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-fg-muted">
                 <ProjectStatusBadge status={project.status} />
-              </Detail>
-              <Detail label="Target date">
-                {project.targetDate ? (
-                  <span className="inline-flex items-center gap-1.5 text-sm text-fg">
-                    <Calendar className="h-3.5 w-3.5 text-fg-subtle" />
-                    {formatDate(project.targetDate)}
+                {priority && priority.label !== "No priority" && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <priority.icon className="h-3.5 w-3.5" style={{ color: priority.color }} />
+                    {priority.label}
                   </span>
-                ) : (
-                  <span className="text-sm text-fg-subtle">No target date</span>
                 )}
-              </Detail>
-              <Detail label="Lead">
-                {project.lead ? (
-                  <span className="inline-flex items-center gap-2 text-sm text-fg">
+                {project.lead && (
+                  <span className="inline-flex items-center gap-1.5">
                     <Avatar name={project.lead.name} src={project.lead.avatarUrl} size="sm" />
                     {project.lead.name}
                   </span>
-                ) : (
-                  <span className="text-sm text-fg-subtle">Unassigned</span>
                 )}
-              </Detail>
-              <Detail label="Created">
-                <span className="text-sm text-fg">{formatDate(project.createdAt)}</span>
-              </Detail>
+                {project.targetDate && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {fmt(project.targetDate)}
+                  </span>
+                )}
+                {project.members?.length > 0 && (
+                  <span className="flex -space-x-1.5">
+                    {project.members.slice(0, 5).map((m) => (
+                      <Avatar key={m.id} name={m.name} src={m.avatarUrl} size="sm" className="ring-1 ring-bg" />
+                    ))}
+                  </span>
+                )}
+                {project.labels?.map((l) => (
+                  <span key={l.id} className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+                    {l.name}
+                  </span>
+                ))}
+              </div>
+
+              {/* Tabs */}
+              <div className="mt-4 flex gap-1">
+                {["issues", "overview"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`rounded-md px-3 py-1.5 text-sm capitalize transition-colors ${
+                      tab === t ? "bg-surface-hover font-medium text-fg" : "text-fg-muted hover:text-fg"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="min-h-0 flex-1 overflow-hidden p-3">
+              {tab === "issues" ? (
+                <div className="flex h-full flex-col gap-2">
+                  <div className="flex justify-end">
+                    <Button
+                      className="!w-auto px-3"
+                      onClick={() => setIssueModal({ open: true, initial: null, status: "TODO" })}
+                    >
+                      <Plus className="h-4 w-4" />
+                      New issue
+                    </Button>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-hidden">
+                    <IssueBoard
+                      issues={issues}
+                      showProject={false}
+                      onCreate={(status) => setIssueModal({ open: true, initial: null, status })}
+                      onMoveStatus={moveStatus}
+                      onOpen={(issue) => setIssueModal({ open: true, initial: issue, status: issue.status })}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="mx-auto max-w-2xl overflow-y-auto p-3">
+                  {project.description ? (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">
+                      {project.description}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-fg-subtle">No description yet.</p>
+                  )}
+                  {project.milestones?.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="mb-2 text-sm font-semibold text-fg">Milestones</h3>
+                      <ul className="flex flex-col gap-1.5">
+                        {project.milestones.map((m) => (
+                          <li
+                            key={m.id}
+                            className="flex items-center justify-between rounded-md border border-glass-border px-3 py-2 text-sm"
+                          >
+                            <span className="text-fg">{m.name}</span>
+                            {m.targetDate && (
+                              <span className="text-xs text-fg-subtle">{fmt(m.targetDate)}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : null}
       </div>
 
-      {project && (
-        <ProjectFormModal
-          open={editOpen}
-          onClose={() => setEditOpen(false)}
-          onSubmit={handleUpdate}
-          initial={project}
-          mode="edit"
-        />
+      {project && team && (
+        <>
+          <ProjectFormModal
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            onSubmit={handleUpdate}
+            initial={project}
+            mode="edit"
+            teamId={team.id}
+            teamKey={team.key}
+            workspaceId={team.workspaceId}
+          />
+          <IssueFormModal
+            open={issueModal.open}
+            onClose={() => setIssueModal((m) => ({ ...m, open: false }))}
+            onSubmit={submitIssue}
+            initial={issueModal.initial}
+            mode={issueModal.initial ? "edit" : "create"}
+            teamId={team.id}
+            teamKey={team.key}
+            members={members}
+            labels={labels}
+            lockedProjectId={projectId}
+            defaultStatus={issueModal.status}
+          />
+        </>
       )}
-    </div>
-  );
-}
-
-function Detail({ label, children }) {
-  return (
-    <div className="bg-surface/40 p-4">
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-fg-subtle">
-        {label}
-      </p>
-      {children}
     </div>
   );
 }

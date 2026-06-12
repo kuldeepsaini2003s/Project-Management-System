@@ -14,13 +14,22 @@ const issue = (user) => ({
   token: signToken({ sub: user.id }),
 });
 
-// Every new account gets a starter workspace they own.
+// Every new account gets a starter workspace (with a default team) they own.
 const createDefaultWorkspace = (user) => {
   const first = user.name?.split(" ")[0] || "My";
+  const key = (first.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 3) || "TEAM").padEnd(2, "X");
   return prisma.workspace.create({
     data: {
       name: `${first}'s Workspace`,
       memberships: { create: { userId: user.id, role: "OWNER" } },
+      teams: {
+        create: {
+          name: `${first}'s Team`,
+          key,
+          color: "#5e6ad2",
+          memberships: { create: { userId: user.id, role: "OWNER" } },
+        },
+      },
     },
   });
 };
@@ -101,5 +110,26 @@ export const googleAuth = async ({ accessToken }) => {
 export const getProfile = async (userId) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new ApiError(404, "User not found");
+
+  // Self-heal: accounts created before workspaces existed get one now.
+  const count = await prisma.membership.count({ where: { userId } });
+  if (count === 0) await createDefaultWorkspace(user);
+
+  // Backfill: legacy teams (created before team membership existed) in the
+  // user's workspaces and lacking any members get this user as OWNER.
+  const orphanTeams = await prisma.team.findMany({
+    where: {
+      workspace: { memberships: { some: { userId } } },
+      memberships: { none: {} },
+    },
+    select: { id: true },
+  });
+  if (orphanTeams.length) {
+    await prisma.teamMembership.createMany({
+      data: orphanTeams.map((t) => ({ teamId: t.id, userId, role: "OWNER" })),
+      skipDuplicates: true,
+    });
+  }
+
   return sanitize(user);
 };

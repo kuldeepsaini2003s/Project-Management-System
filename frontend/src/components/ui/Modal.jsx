@@ -1,7 +1,13 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 
-export default function Modal({ open, onClose, title, children, footer }) {
+const sizes = {
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+  xl: "max-w-3xl",
+};
+
+export default function Modal({ open, onClose, title, children, footer, size = "md" }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
@@ -17,7 +23,7 @@ export default function Modal({ open, onClose, title, children, footer }) {
       onMouseDown={onClose}
     >
       <div
-        className="glass-strong w-full max-w-lg rounded-lg shadow-2xl"
+        className={`glass-strong w-full ${sizes[size]} rounded-lg shadow-2xl`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-glass-border px-5 py-3.5">

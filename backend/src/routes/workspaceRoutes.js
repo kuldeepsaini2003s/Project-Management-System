@@ -5,15 +5,13 @@ import {
   getWorkspace,
   updateWorkspace,
   deleteWorkspace,
+  getMembers,
+  getWorkspaceTeams,
+  createWorkspaceTeam,
 } from "../controllers/workspaceController.js";
-import {
-  getProjects,
-  createProject,
-} from "../controllers/projectController.js";
 import { protect } from "../middlewares/auth.js";
 
 const router = Router();
-
 router.use(protect);
 
 router.get("/", getWorkspaces);
@@ -22,8 +20,8 @@ router.get("/:id", getWorkspace);
 router.patch("/:id", updateWorkspace);
 router.delete("/:id", deleteWorkspace);
 
-// Workspace-scoped projects
-router.get("/:workspaceId/projects", getProjects);
-router.post("/:workspaceId/projects", createProject);
+router.get("/:id/members", getMembers);
+router.get("/:id/teams", getWorkspaceTeams);
+router.post("/:id/teams", createWorkspaceTeam);
 
 export default router;

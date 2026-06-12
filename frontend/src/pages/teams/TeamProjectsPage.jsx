@@ -1,52 +1,56 @@
 import { useCallback, useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import { Plus, Box } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import Button from "../../components/ui/Button.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import ProjectCard from "../../components/projects/ProjectCard.jsx";
 import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
-import { useWorkspace } from "../../context/WorkspaceContext.jsx";
-import { projectService } from "../../services/projectService.js";
+import { teamService } from "../../services/teamService.js";
 
-export default function ProjectsPage() {
+export default function TeamProjectsPage() {
+  const { teamId } = useParams();
   const { onMenu } = useOutletContext() || {};
-  const { current, currentId } = useWorkspace();
 
+  const [team, setTeam] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
   const load = useCallback(async () => {
-    if (!currentId) return;
     setLoading(true);
     setError("");
     try {
-      setProjects(await projectService.listForWorkspace(currentId));
+      const [t, ps] = await Promise.all([
+        teamService.get(teamId),
+        teamService.listProjects(teamId),
+      ]);
+      setTeam(t);
+      setProjects(ps);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [currentId]);
+  }, [teamId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const handleCreate = async (data) => {
-    const project = await projectService.create(currentId, data);
+    const project = await teamService.createProject(teamId, data);
     setProjects((prev) => [project, ...prev]);
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
-        breadcrumb={[current?.name || "Workspace", "Projects"]}
+        breadcrumb={[team?.name || "Team", "Projects"]}
         onMenu={onMenu}
         actions={
-          <Button className="!w-auto px-3" size="md" onClick={() => setCreateOpen(true)}>
+          <Button className="!w-auto px-3" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" />
             New project
           </Button>
@@ -65,7 +69,7 @@ export default function ProjectsPage() {
             </div>
             <h2 className="text-base font-semibold text-fg">No projects yet</h2>
             <p className="mt-1 max-w-xs text-sm text-fg-muted">
-              Projects group related issues and a shared goal. Create your first one.
+              Projects group related issues toward a shared goal.
             </p>
             <div className="mt-4">
               <Button className="!w-auto px-4" onClick={() => setCreateOpen(true)}>
@@ -83,12 +87,17 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      <ProjectFormModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSubmit={handleCreate}
-        mode="create"
-      />
+      {team && (
+        <ProjectFormModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onSubmit={handleCreate}
+          mode="create"
+          teamId={team.id}
+          teamKey={team.key}
+          workspaceId={team.workspaceId}
+        />
+      )}
     </div>
   );
 }

@@ -25,17 +25,49 @@ enum ProjectStatus {
   CANCELLED
 }
 
+enum Priority {
+  NONE
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IssueStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum JoinStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model User {
   id        String       @id @default(cuid())
   email     String       @unique
   name      String
-  password  String? // null for OAuth-only accounts
+  password  String?
   avatarUrl String?
   provider  AuthProvider @default(EMAIL)
   googleId  String?      @unique
 
-  memberships Membership[]
-  ledProjects Project[]    @relation("ProjectLead")
+  memberships     Membership[]
+  teamMemberships TeamMembership[]
+  joinRequests    TeamJoinRequest[]
+  ledProjects     Project[]         @relation("ProjectLead")
+  projectMembers  ProjectMember[]
+  assignedIssues  Issue[]           @relation("IssueAssignee")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -46,7 +78,7 @@ model Workspace {
   name String
 
   memberships Membership[]
-  projects    Project[]
+  teams       Team[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -66,22 +98,153 @@ model Membership {
   @@unique([userId, workspaceId])
 }
 
-model Project {
-  id          String        @id @default(cuid())
+model Team {
+  id          String  @id @default(cuid())
   name        String
+  key         String // short prefix, e.g. ALG
+  icon        String?
+  color       String?
   description String?
-  icon        String? // emoji or icon key
-  color       String? // hex accent
-  status      ProjectStatus @default(BACKLOG)
-  targetDate  DateTime?
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   workspaceId String
-  lead        User?     @relation("ProjectLead", fields: [leadId], references: [id])
-  leadId      String?
+
+  memberships  TeamMembership[]
+  joinRequests TeamJoinRequest[]
+  projects     Project[]
+  issues       Issue[]
+  labels       Label[]
+  issueCounter Int               @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([workspaceId])
+  @@unique([workspaceId, key])
+}
+
+model TeamMembership {
+  id   String   @id @default(cuid())
+  role TeamRole @default(MEMBER)
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+}
+
+model TeamJoinRequest {
+  id     String     @id @default(cuid())
+  status JoinStatus @default(PENDING)
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, userId])
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  summary     String?
+  description String?
+  icon        String?
+  color       String?
+  status      ProjectStatus @default(BACKLOG)
+  priority    Priority      @default(NONE)
+  startDate   DateTime?
+  targetDate  DateTime?
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId String
+  lead   User?  @relation("ProjectLead", fields: [leadId], references: [id])
+  leadId String?
+
+  members    ProjectMember[]
+  labels     Label[]         @relation("ProjectLabels")
+  milestones Milestone[]
+  issues     Issue[]
+
+  dependsOn  Project[] @relation("ProjectDeps")
+  dependents Project[] @relation("ProjectDeps")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+}
+
+model ProjectMember {
+  id        String @id @default(cuid())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+}
+
+model Label {
+  id    String @id @default(cuid())
+  name  String
+  color String @default("#5e6ad2")
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId String
+
+  projects Project[] @relation("ProjectLabels")
+  issues   Issue[]   @relation("IssueLabels")
+
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, name])
+}
+
+model Milestone {
+  id         String    @id @default(cuid())
+  name       String
+  targetDate DateTime?
+  sortOrder  Int       @default(0)
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model Issue {
+  id          String      @id @default(cuid())
+  number      Int
+  title       String
+  description String?
+  status      IssueStatus @default(TODO)
+  priority    Priority    @default(NONE)
+  sortOrder   Int         @default(0)
+
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId     String
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId  String?
+  assignee   User?    @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  assigneeId String?
+
+  labels Label[] @relation("IssueLabels")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, number])
+  @@index([projectId])
 }

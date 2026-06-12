@@ -12,29 +12,55 @@ async function main() {
     create: { email: "demo@linear.app", name: "Demo User", password, provider: "EMAIL" },
   });
 
-  // Give the demo user a workspace with a couple of projects.
-  const existing = await prisma.membership.findFirst({
-    where: { userId: user.id },
-    include: { workspace: true },
-  });
-
-  if (!existing) {
-    const workspace = await prisma.workspace.create({
-      data: {
-        name: "Algofolks",
-        memberships: { create: { userId: user.id, role: "OWNER" } },
-        projects: {
-          create: [
-            { name: "Mobile App", icon: "📱", color: "#5e6ad2", status: "IN_PROGRESS" },
-            { name: "Website Redesign", icon: "🎨", color: "#26a269", status: "PLANNED" },
-          ],
-        },
-      },
-    });
-    console.log("Created workspace:", workspace.name);
+  const existing = await prisma.membership.findFirst({ where: { userId: user.id } });
+  if (existing) {
+    console.log("Demo data already present.");
+    return;
   }
 
-  console.log("Seeded demo@linear.app / password123");
+  const workspace = await prisma.workspace.create({
+    data: {
+      name: "Algofolks",
+      memberships: { create: { userId: user.id, role: "OWNER" } },
+      teams: {
+        create: {
+          name: "Algofolks",
+          key: "ALG",
+          icon: "⚡",
+          color: "#5e6ad2",
+        },
+      },
+    },
+    include: { teams: true },
+  });
+
+  const team = workspace.teams[0];
+
+  await prisma.project.create({
+    data: {
+      teamId: team.id,
+      name: "Mobile App",
+      icon: "📱",
+      color: "#5e6ad2",
+      status: "IN_PROGRESS",
+      priority: "HIGH",
+      leadId: user.id,
+    },
+  });
+
+  await prisma.issue.create({
+    data: {
+      teamId: team.id,
+      number: 1,
+      title: "Set up CI pipeline",
+      status: "TODO",
+      priority: "MEDIUM",
+      assigneeId: user.id,
+    },
+  });
+  await prisma.team.update({ where: { id: team.id }, data: { issueCounter: 1 } });
+
+  console.log("Seeded demo@linear.app / password123 with workspace + team.");
 }
 
 main()
