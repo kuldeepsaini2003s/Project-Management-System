@@ -1,61 +1,32 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { authService } from "../services/authService.js";
-import { TOKEN_KEY } from "../lib/api.js";
+import { createContext, useContext, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  loadCurrentUser,
+  loginWithEmail,
+  registerWithEmail,
+  loginWithGoogle as loginWithGoogleThunk,
+  logout as logoutThunk,
+} from "../redux/actions/authActions.js";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { user, loading } = useSelector((state) => state.auth);
 
-  // Hydrate session from a stored token on first load.
+  // Hydrate the session once on app load.
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    authService
-      .me()
-      .then(setUser)
-      .catch(() => localStorage.removeItem(TOKEN_KEY))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const persist = (data) => {
-    localStorage.setItem(TOKEN_KEY, data.token);
-    setUser(data.user);
-    return data.user;
-  };
-
-  const login = useCallback(
-    (email, password) => authService.login({ email, password }).then(persist),
-    []
-  );
-
-  const register = useCallback(
-    (payload) => authService.register(payload).then(persist),
-    []
-  );
-
-  const loginWithGoogle = useCallback(
-    (accessToken) => authService.google(accessToken).then(persist),
-    []
-  );
-
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    setUser(null);
-  }, []);
+    dispatch(loadCurrentUser());
+  }, [dispatch]);
 
   const value = {
     user,
     loading,
     isAuthenticated: !!user,
-    login,
-    register,
-    loginWithGoogle,
-    logout,
+    login: (email, password) => dispatch(loginWithEmail(email, password)),
+    register: (payload) => dispatch(registerWithEmail(payload)),
+    loginWithGoogle: (accessToken) => dispatch(loginWithGoogleThunk(accessToken)),
+    logout: () => dispatch(logoutThunk()),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

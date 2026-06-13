@@ -21,7 +21,7 @@ import {
   useCreateIssueMutation,
   useUpdateIssueMutation,
   errMsg,
-} from "../../store/apiSlice.js";
+} from "../../redux/apiSlice.js";
 
 const fmt = (v) =>
   v ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;

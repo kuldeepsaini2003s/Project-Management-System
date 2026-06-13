@@ -9,7 +9,7 @@ import {
   useGetMyRequestQuery,
   useRequestJoinMutation,
   errMsg,
-} from "../store/apiSlice.js";
+} from "../redux/apiSlice.js";
 import { useTeams } from "../context/TeamContext.jsx";
 
 export default function JoinTeamPage() {

@@ -3,9 +3,10 @@ import Modal from "../ui/Modal.jsx";
 import Button from "../ui/Button.jsx";
 import FormError from "../ui/FormError.jsx";
 import { EnumPicker, UserPicker, LabelPicker, DependencyPicker } from "../pickers/Pickers.jsx";
+import { useDispatch } from "react-redux";
 import { ISSUE_STATUSES, ISSUE_STATUS_ORDER } from "../../constants/issueStatus.js";
 import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
-import { useCreateLabelMutation } from "../../store/apiSlice.js";
+import { createTeamLabel } from "../../redux/actions/teamActions.js";
 
 const EMPTY = {
   title: "",
@@ -34,7 +35,7 @@ export default function IssueFormModal({
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [createLabelMut] = useCreateLabelMutation();
+  const dispatch = useDispatch();
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function IssueFormModal({
     );
   }, [open, initial, lockedProjectId, defaultStatus]);
 
-  const createLabel = (name) => createLabelMut({ teamId, name }).unwrap();
+  const createLabel = (name) => dispatch(createTeamLabel(teamId, name));
 
   const handleSubmit = async (e) => {
     e?.preventDefault();

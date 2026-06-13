@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BACKEND_URL, TOKEN_KEY } from "../utils/constants.js";
+import { BACKEND_URL, TOKEN_KEY } from "./constants.js";
 
 const api = axios.create({
   baseURL: BACKEND_URL,
@@ -25,4 +25,6 @@ api.interceptors.response.use(
   }
 );
 
+// Re-exported for convenience so callers can import everything from utils/api.
+export { TOKEN_KEY };
 export default api;

@@ -15,7 +15,7 @@ import {
   useCreateIssueMutation,
   useUpdateIssueMutation,
   errMsg,
-} from "../../store/apiSlice.js";
+} from "../../redux/apiSlice.js";
 
 export default function TeamIssuesPage() {
   const { teamId } = useParams();

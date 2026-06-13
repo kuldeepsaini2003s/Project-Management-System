@@ -18,7 +18,7 @@ import {
   useGetTeamLabelsQuery,
   useGetTeamProjectsQuery,
   useCreateLabelMutation,
-} from "../../store/apiSlice.js";
+} from "../../redux/apiSlice.js";
 
 const EMPTY = {
   name: "",

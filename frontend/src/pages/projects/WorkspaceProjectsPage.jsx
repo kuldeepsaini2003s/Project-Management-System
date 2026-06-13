@@ -13,7 +13,7 @@ import {
   useCreateProjectMutation,
   useUpdateProjectMutation,
   errMsg,
-} from "../../store/apiSlice.js";
+} from "../../redux/apiSlice.js";
 
 export default function WorkspaceProjectsPage() {
   const { onMenu } = useOutletContext() || {};

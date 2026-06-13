@@ -1,56 +1,42 @@
-import { createContext, useContext, useEffect, useCallback } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "./AuthContext.jsx";
-import {
-  useGetWorkspacesQuery,
-  useCreateWorkspaceMutation,
-} from "../store/apiSlice.js";
-import { setCurrentWorkspace } from "../store/uiSlice.js";
+import { fetchWorkspaces, createWorkspace as createWorkspaceThunk } from "../redux/actions/workspaceActions.js";
+import { setCurrentWorkspace } from "../redux/uiSlice.js";
 
 const WorkspaceContext = createContext(null);
 
 export function WorkspaceProvider({ children }) {
-  const { isAuthenticated } = useAuth();
   const dispatch = useDispatch();
-  const currentId = useSelector((s) => s.ui.currentWorkspaceId);
+  const { isAuthenticated } = useAuth();
 
-  const { data: workspaces = [], isLoading, refetch } = useGetWorkspacesQuery(undefined, {
-    skip: !isAuthenticated,
-  });
-  const [createWorkspaceMut] = useCreateWorkspaceMutation();
+  const items = useSelector((state) => state.workspace.items);
+  const loading = useSelector((state) => state.workspace.loading);
+  const currentId = useSelector((state) => state.ui.currentWorkspaceId);
 
-  // Default to the first workspace when none is selected (or the saved one vanished).
+  // Load the user's workspaces once authenticated.
   useEffect(() => {
-    if (!workspaces.length) return;
-    if (!currentId || !workspaces.some((w) => w.id === currentId)) {
-      dispatch(setCurrentWorkspace(workspaces[0].id));
+    if (isAuthenticated) dispatch(fetchWorkspaces());
+  }, [isAuthenticated, dispatch]);
+
+  // Default to the first workspace when none is selected.
+  useEffect(() => {
+    if (!items.length) return;
+    if (!currentId || !items.some((w) => w.id === currentId)) {
+      dispatch(setCurrentWorkspace(items[0].id));
     }
-  }, [workspaces, currentId, dispatch]);
+  }, [items, currentId, dispatch]);
 
-  const switchWorkspace = useCallback(
-    (id) => dispatch(setCurrentWorkspace(id)),
-    [dispatch]
-  );
-
-  const createWorkspace = useCallback(
-    async (name) => {
-      const ws = await createWorkspaceMut({ name }).unwrap();
-      dispatch(setCurrentWorkspace(ws.id));
-      return ws;
-    },
-    [createWorkspaceMut, dispatch]
-  );
-
-  const current = workspaces.find((w) => w.id === currentId) || null;
+  const current = items.find((w) => w.id === currentId) || null;
 
   const value = {
-    workspaces,
+    workspaces: items,
     current,
     currentId,
-    loading: isAuthenticated && isLoading,
-    switchWorkspace,
-    createWorkspace,
-    refresh: refetch,
+    loading: isAuthenticated && loading,
+    switchWorkspace: (id) => dispatch(setCurrentWorkspace(id)),
+    createWorkspace: (name) => dispatch(createWorkspaceThunk(name)),
+    refresh: () => dispatch(fetchWorkspaces()),
   };
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

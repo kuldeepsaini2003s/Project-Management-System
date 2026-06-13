@@ -1,12 +1,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { THEME_KEY } from "../utils/constants.js";
 
 const ThemeContext = createContext({ theme: "dark", toggleTheme: () => {} });
 
-const STORAGE_KEY = "linear-theme";
-
 const getInitialTheme = () => {
   if (typeof window === "undefined") return "dark";
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = window.localStorage.getItem(THEME_KEY);
   if (stored === "light" || stored === "dark") return stored;
   return "dark"; // default theme is dark
 };
@@ -17,7 +16,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
-    window.localStorage.setItem(STORAGE_KEY, theme);
+    window.localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () =>

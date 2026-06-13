@@ -22,7 +22,7 @@ import {
   useCreateLabelMutation,
   useDeleteIssueMutation,
   errMsg,
-} from "../../store/apiSlice.js";
+} from "../../redux/apiSlice.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const timeAgo = (date) => {

@@ -11,7 +11,7 @@ import {
   useGetTeamMembersQuery,
   useUpdateTeamMutation,
   errMsg,
-} from "../../store/apiSlice.js";
+} from "../../redux/apiSlice.js";
 
 function ShareButton({ teamId }) {
   const [copied, setCopied] = useState(false);

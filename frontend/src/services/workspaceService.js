@@ -7,4 +7,5 @@ export const workspaceService = {
   update: (id, payload) => api.patch(`/workspaces/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/workspaces/${id}`).then((r) => r.data),
   members: (id) => api.get(`/workspaces/${id}/members`).then((r) => r.data),
+  projects: (id) => api.get(`/workspaces/${id}/projects`).then((r) => r.data),
 };

@@ -10,7 +10,7 @@ import {
   useRemoveTeamMemberMutation,
   useRespondRequestMutation,
   errMsg,
-} from "../../store/apiSlice.js";
+} from "../../redux/apiSlice.js";
 
 const ROLE_LABEL = { OWNER: "Owner", ADMIN: "Admin", MEMBER: "Member" };
 
