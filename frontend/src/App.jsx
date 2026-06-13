@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Inbox, CircleDot, LayoutGrid } from "lucide-react";
+import { Inbox } from "lucide-react";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import PublicOnlyRoute from "./components/auth/PublicOnlyRoute.jsx";
 import AppLayout from "./components/layout/AppLayout.jsx";
@@ -11,7 +11,9 @@ import TeamProjectsPage from "./pages/teams/TeamProjectsPage.jsx";
 import TeamIssuesPage from "./pages/teams/TeamIssuesPage.jsx";
 import JoinTeamPage from "./pages/JoinTeamPage.jsx";
 import ProjectDetailPage from "./pages/projects/ProjectDetailPage.jsx";
+import WorkspaceProjectsPage from "./pages/projects/WorkspaceProjectsPage.jsx";
 import IssueDetailPage from "./pages/issues/IssueDetailPage.jsx";
+import MyIssuesPage from "./pages/issues/MyIssuesPage.jsx";
 import ComingSoon from "./pages/ComingSoon.jsx";
 
 export default function App() {
@@ -31,11 +33,11 @@ export default function App() {
           <Route path="/teams/:teamId" element={<TeamPage />} />
           <Route path="/teams/:teamId/projects" element={<TeamProjectsPage />} />
           <Route path="/teams/:teamId/issues" element={<TeamIssuesPage />} />
+          <Route path="/projects" element={<WorkspaceProjectsPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/issues/:issueId" element={<IssueDetailPage />} />
+          <Route path="/my-issues" element={<MyIssuesPage />} />
           <Route path="/inbox" element={<ComingSoon title="Inbox" icon={Inbox} />} />
-          <Route path="/my-issues" element={<ComingSoon title="My Issues" icon={CircleDot} />} />
-          <Route path="/views" element={<ComingSoon title="Views" icon={LayoutGrid} />} />
         </Route>
       </Route>
 

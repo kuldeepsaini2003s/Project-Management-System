@@ -47,19 +47,25 @@ export default function ProjectFormModal({
   teamId,
   teamKey = "TEAM",
   workspaceId,
+  teams = [], // when no fixed teamId, let the user pick a team
+  defaultStatus,
 }) {
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeTeamId, setActiveTeamId] = useState(teamId || null);
 
   // Cached picker data (shared across the app, fetched once per team).
-  const skip = { skip: !open || !teamId };
-  const { data: members = [] } = useGetTeamMembersQuery(teamId, skip);
-  const { data: labels = [] } = useGetTeamLabelsQuery(teamId, skip);
-  const { data: allProjects = [] } = useGetTeamProjectsQuery(teamId, skip);
+  const skip = { skip: !open || !activeTeamId };
+  const { data: members = [] } = useGetTeamMembersQuery(activeTeamId, skip);
+  const { data: labels = [] } = useGetTeamLabelsQuery(activeTeamId, skip);
+  const { data: allProjects = [] } = useGetTeamProjectsQuery(activeTeamId, skip);
   const [createLabelMut] = useCreateLabelMutation();
 
   const projects = allProjects.filter((p) => p.id !== initial?.id);
+  const activeKey =
+    teams.find((t) => t.id === activeTeamId)?.key || (teamId ? teamKey : "TEAM");
+  const needTeamPick = !teamId && teams.length > 0;
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -67,6 +73,7 @@ export default function ProjectFormModal({
     if (!open) return;
     setError("");
     setLoading(false);
+    setActiveTeamId(teamId || initial?.teamId || teams[0]?.id || null);
     setForm(
       initial
         ? {
@@ -83,11 +90,11 @@ export default function ProjectFormModal({
               targetDate: toInputDate(m.targetDate),
             })),
           }
-        : EMPTY
+        : { ...EMPTY, status: defaultStatus || "BACKLOG" }
     );
-  }, [open, initial]);
+  }, [open, initial, teamId, defaultStatus]);
 
-  const createLabel = (name) => createLabelMut({ teamId, name }).unwrap();
+  const createLabel = (name) => createLabelMut({ teamId: activeTeamId, name }).unwrap();
 
   const addMilestone = () =>
     set("milestones", [...form.milestones, { name: "", targetDate: null }]);
@@ -106,6 +113,7 @@ export default function ProjectFormModal({
     try {
       await onSubmit({
         ...form,
+        teamId: activeTeamId,
         milestones: form.milestones.filter((m) => m.name.trim()),
       });
       onClose?.();
@@ -123,7 +131,7 @@ export default function ProjectFormModal({
       title={
         <span className="flex items-center gap-1.5 text-sm">
           <span className="rounded bg-brand/15 px-1.5 py-0.5 text-xs font-semibold text-brand">
-            {teamKey}
+            {activeKey}
           </span>
           <span className="text-fg-subtle">›</span>
           <span className="text-fg">{mode === "create" ? "New project" : "Edit project"}</span>
@@ -138,7 +146,7 @@ export default function ProjectFormModal({
             className="!w-auto px-4"
             onClick={handleSubmit}
             isLoading={loading}
-            disabled={!form.name.trim()}
+            disabled={!form.name.trim() || !activeTeamId}
           >
             {mode === "create" ? "Create project" : "Save changes"}
           </Button>
@@ -147,6 +155,23 @@ export default function ProjectFormModal({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <FormError message={error} />
+
+        {needTeamPick && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-fg-muted">Team</span>
+            <select
+              value={activeTeamId || ""}
+              onChange={(e) => setActiveTeamId(e.target.value)}
+              className="h-9 rounded-md border border-input-border bg-input px-2.5 text-sm text-fg focus:border-brand focus:outline-none"
+            >
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Icon + name + summary */}
         <div className="flex items-start gap-3">

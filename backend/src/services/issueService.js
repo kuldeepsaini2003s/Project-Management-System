@@ -69,6 +69,16 @@ export const listForTeam = async (userId, teamId) => {
   return issues.map(shape);
 };
 
+// Issues created by the current user, across all their teams.
+export const listCreatedByUser = async (userId) => {
+  const issues = await prisma.issue.findMany({
+    where: { createdById: userId },
+    orderBy: [{ status: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+    include,
+  });
+  return issues.map(shape);
+};
+
 export const listForProject = async (userId, projectId) => {
   const project = await getProjectOrThrow(userId, projectId);
   const issues = await prisma.issue.findMany({

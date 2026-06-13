@@ -1,6 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import * as issueService from "../services/issueService.js";
 
+export const getMyIssues = asyncHandler(async (req, res) => {
+  res.json(await issueService.listCreatedByUser(req.userId));
+});
+
 export const getIssue = asyncHandler(async (req, res) => {
   res.json(await issueService.getById(req.userId, req.params.id));
 });

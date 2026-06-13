@@ -1,6 +1,7 @@
 import prisma from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { getTeamOrThrow, getProjectOrThrow } from "../utils/access.js";
+import { assertMembership } from "../utils/membership.js";
 
 const STATUSES = ["BACKLOG", "PLANNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 const PRIORITIES = ["NONE", "URGENT", "HIGH", "MEDIUM", "LOW"];
@@ -38,6 +39,17 @@ export const listForTeam = async (userId, teamId) => {
     where: { teamId },
     orderBy: { createdAt: "desc" },
     include,
+  });
+  return projects.map(shape);
+};
+
+// All projects across the teams the user belongs to in a workspace.
+export const listForWorkspace = async (userId, workspaceId) => {
+  await assertMembership(userId, workspaceId);
+  const projects = await prisma.project.findMany({
+    where: { team: { workspaceId, memberships: { some: { userId } } } },
+    orderBy: { createdAt: "desc" },
+    include: { ...include, team: { select: { id: true, key: true, name: true } } },
   });
   return projects.map(shape);
 };

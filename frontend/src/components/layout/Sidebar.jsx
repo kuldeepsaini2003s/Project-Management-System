@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import {
   Inbox,
   CircleDot,
-  LayoutGrid,
+  Box,
   MoreHorizontal,
   Search,
   PenSquare,
@@ -70,9 +70,9 @@ export default function Sidebar({ onClose }) {
           </NavLink>
 
           <SectionLabel>Workspace</SectionLabel>
-          <NavLink to="/views" className={navItemClass} onClick={onClose}>
-            <LayoutGrid className="h-4 w-4" />
-            <span className="flex-1">Views</span>
+          <NavLink to="/projects" className={navItemClass} onClick={onClose}>
+            <Box className="h-4 w-4" />
+            <span className="flex-1">Projects</span>
           </NavLink>
           <button className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg">
             <MoreHorizontal className="h-4 w-4" />

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { ISSUE_STATUSES, ISSUE_STATUS_ORDER } from "../../constants/issueStatus.js";
-import IssueCard from "./IssueCard.jsx";
+import { PROJECT_STATUSES, STATUS_ORDER } from "../../constants/projectStatus.js";
+import ProjectBoardCard from "./ProjectBoardCard.jsx";
 
-export default function IssueBoard({ issues, onCreate, onMoveStatus, onOpen, showProject = true }) {
+export default function ProjectBoard({ projects, onCreate, onMoveStatus }) {
   const [dragId, setDragId] = useState(null);
   const [overCol, setOverCol] = useState(null);
 
-  const onDragStart = (e, issue) => {
-    setDragId(issue.id);
+  const onDragStart = (e, project) => {
+    setDragId(project.id);
     e.dataTransfer.effectAllowed = "move";
   };
 
@@ -18,14 +18,12 @@ export default function IssueBoard({ issues, onCreate, onMoveStatus, onOpen, sho
     setOverCol(null);
   };
 
-  const grouped = (status) => issues.filter((i) => i.status === status);
-
   return (
-    <div className="flex h-full gap-3 overflow-x-auto pb-1">
-      {ISSUE_STATUS_ORDER.map((status) => {
-        const meta = ISSUE_STATUSES[status];
+    <div className="flex h-full gap-4 overflow-x-auto pb-1">
+      {STATUS_ORDER.map((status) => {
+        const meta = PROJECT_STATUSES[status];
         const Icon = meta.icon;
-        const items = grouped(status);
+        const items = projects.filter((p) => p.status === status);
         return (
           <div
             key={status}
@@ -47,7 +45,7 @@ export default function IssueBoard({ issues, onCreate, onMoveStatus, onOpen, sho
                 <button
                   onClick={() => onCreate(status)}
                   className="ml-auto rounded p-1 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-                  title="Add issue"
+                  title="Add project"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -55,21 +53,15 @@ export default function IssueBoard({ issues, onCreate, onMoveStatus, onOpen, sho
             </div>
 
             <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-1 pb-2">
-              {items.map((issue) => (
-                <IssueCard
-                  key={issue.id}
-                  issue={issue}
-                  onDragStart={onDragStart}
-                  onClick={onOpen}
-                  showProject={showProject}
-                />
+              {items.map((p) => (
+                <ProjectBoardCard key={p.id} project={p} onDragStart={onDragStart} />
               ))}
               {items.length === 0 && onCreate && (
                 <button
                   onClick={() => onCreate(status)}
                   className="rounded-lg border border-dashed border-border py-3 text-xs text-fg-subtle transition-colors hover:border-border-strong hover:text-fg-muted"
                 >
-                  + New issue
+                  + New project
                 </button>
               )}
             </div>

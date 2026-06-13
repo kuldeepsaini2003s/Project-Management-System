@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { ChevronRight, CircleDot, Box } from "lucide-react";
-import { useGetTeamProjectsQuery } from "../../store/apiSlice.js";
 
 function TeamGlyph({ team }) {
   return (
@@ -21,10 +20,6 @@ const subClass = ({ isActive }) =>
 
 export default function TeamNavItem({ team, onNavigate }) {
   const [open, setOpen] = useState(false);
-
-  // Cached: fetched only once the team is expanded.
-  const { data: projects } = useGetTeamProjectsQuery(team.id, { skip: !open });
-
   const toggle = () => setOpen((o) => !o);
 
   return (
@@ -41,7 +36,10 @@ export default function TeamNavItem({ team, onNavigate }) {
         </button>
         <NavLink
           to={`/teams/${team.id}`}
-          onClick={onNavigate}
+          onClick={() => {
+            setOpen(true);
+            onNavigate?.();
+          }}
           end
           className={({ isActive }) =>
             `flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 ${
@@ -64,23 +62,6 @@ export default function TeamNavItem({ team, onNavigate }) {
             <Box className="h-3.5 w-3.5" />
             Projects
           </NavLink>
-
-          {projects?.map((p) => (
-            <NavLink
-              key={p.id}
-              to={`/projects/${p.id}`}
-              className={({ isActive }) =>
-                `flex items-center gap-2 rounded-md py-1.5 pl-[3.25rem] pr-2 text-sm transition-colors ${
-                  isActive ? "bg-surface-hover font-medium text-fg" : "text-fg-muted hover:bg-surface-hover hover:text-fg"
-                }`
-              }
-              onClick={onNavigate}
-            >
-              <span className="text-sm leading-none">{p.icon || "📦"}</span>
-              <span className="truncate">{p.name}</span>
-            </NavLink>
-          ))}
-
         </div>
       )}
     </div>

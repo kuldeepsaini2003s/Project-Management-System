@@ -1,6 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import * as workspaceService from "../services/workspaceService.js";
 import * as teamService from "../services/teamService.js";
+import * as projectService from "../services/projectService.js";
 
 export const getWorkspaces = asyncHandler(async (req, res) => {
   res.json(await workspaceService.listForUser(req.userId));
@@ -33,4 +34,8 @@ export const getWorkspaceTeams = asyncHandler(async (req, res) => {
 
 export const createWorkspaceTeam = asyncHandler(async (req, res) => {
   res.status(201).json(await teamService.create(req.userId, req.params.id, req.body));
+});
+
+export const getWorkspaceProjects = asyncHandler(async (req, res) => {
+  res.json(await projectService.listForWorkspace(req.userId, req.params.id));
 });

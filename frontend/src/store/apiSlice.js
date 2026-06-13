@@ -26,9 +26,11 @@ export const api = createApi({
     "Members",
     "Labels",
     "Projects",
+    "WsProjects",
     "Project",
     "TeamIssues",
     "ProjectIssues",
+    "MyIssues",
     "Issue",
     "Requests",
     "MyRequest",
@@ -135,6 +137,10 @@ export const api = createApi({
       query: (teamId) => `/teams/${teamId}/projects`,
       providesTags: (r, e, teamId) => [{ type: "Projects", id: teamId }],
     }),
+    getWorkspaceProjects: b.query({
+      query: (workspaceId) => `/workspaces/${workspaceId}/projects`,
+      providesTags: ["WsProjects"],
+    }),
     getProject: b.query({
       query: (id) => `/projects/${id}`,
       providesTags: (r, e, id) => [{ type: "Project", id }],
@@ -145,18 +151,19 @@ export const api = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: (r, e, { teamId }) => [{ type: "Projects", id: teamId }],
+      invalidatesTags: (r, e, { teamId }) => [{ type: "Projects", id: teamId }, "WsProjects"],
     }),
     updateProject: b.mutation({
       query: ({ id, ...body }) => ({ url: `/projects/${id}`, method: "PATCH", body }),
       invalidatesTags: (r, e, { id, teamId }) => [
         { type: "Project", id },
         { type: "Projects", id: teamId },
+        "WsProjects",
       ],
     }),
     deleteProject: b.mutation({
       query: ({ id }) => ({ url: `/projects/${id}`, method: "DELETE" }),
-      invalidatesTags: (r, e, { teamId }) => [{ type: "Projects", id: teamId }],
+      invalidatesTags: (r, e, { teamId }) => [{ type: "Projects", id: teamId }, "WsProjects"],
     }),
 
     /* ---- issues ---- */
@@ -168,6 +175,7 @@ export const api = createApi({
       query: (projectId) => `/projects/${projectId}/issues`,
       providesTags: (r, e, projectId) => [{ type: "ProjectIssues", id: projectId }],
     }),
+    getMyIssues: b.query({ query: () => "/issues/mine", providesTags: ["MyIssues"] }),
     getIssue: b.query({
       query: (id) => `/issues/${id}`,
       providesTags: (r, e, id) => [{ type: "Issue", id }],
@@ -182,6 +190,7 @@ export const api = createApi({
         [
           { type: "TeamIssues", id: teamId },
           projectId && { type: "ProjectIssues", id: projectId },
+          "MyIssues",
         ].filter(Boolean),
     }),
     updateIssue: b.mutation({
@@ -191,6 +200,7 @@ export const api = createApi({
           { type: "Issue", id },
           teamId && { type: "TeamIssues", id: teamId },
           projectId && { type: "ProjectIssues", id: projectId },
+          "MyIssues",
         ].filter(Boolean),
     }),
     deleteIssue: b.mutation({
@@ -199,6 +209,7 @@ export const api = createApi({
         [
           teamId && { type: "TeamIssues", id: teamId },
           projectId && { type: "ProjectIssues", id: projectId },
+          "MyIssues",
         ].filter(Boolean),
     }),
     createSubIssue: b.mutation({
@@ -247,12 +258,14 @@ export const {
   useGetTeamLabelsQuery,
   useCreateLabelMutation,
   useGetTeamProjectsQuery,
+  useGetWorkspaceProjectsQuery,
   useGetProjectQuery,
   useCreateProjectMutation,
   useUpdateProjectMutation,
   useDeleteProjectMutation,
   useGetTeamIssuesQuery,
   useGetProjectIssuesQuery,
+  useGetMyIssuesQuery,
   useGetIssueQuery,
   useCreateIssueMutation,
   useUpdateIssueMutation,
