@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import * as workspaceService from "../services/WorkspaceService.js";
 import * as teamService from "../services/TeamService.js";
 import * as projectService from "../services/ProjectService.js";
+import * as labelService from "../services/LabelService.js";
 
 export const getWorkspaces = asyncHandler(async (req, res) => {
   res.json(await workspaceService.getUserWorkspaces(req.userId));
@@ -38,4 +39,12 @@ export const createWorkspaceTeam = asyncHandler(async (req, res) => {
 
 export const getWorkspaceProjects = asyncHandler(async (req, res) => {
   res.json(await projectService.getWorkspaceProjects(req.userId, req.params.id));
+});
+
+export const getWorkspaceLabels = asyncHandler(async (req, res) => {
+  res.json(await labelService.getWorkspaceLabels(req.userId, req.params.id));
+});
+
+export const createWorkspaceLabel = asyncHandler(async (req, res) => {
+  res.status(201).json(await labelService.createLabel(req.userId, req.params.id, req.body));
 });

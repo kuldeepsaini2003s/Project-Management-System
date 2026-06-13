@@ -4,8 +4,6 @@ import {
   addTeam,
   setCurrentTeam,
   setTeamMembers,
-  setTeamLabels,
-  addTeamLabel,
   setTeamRequests,
   setTeamLoading,
 } from "../teamSlice.js";
@@ -55,18 +53,6 @@ export const removeTeamMember = (id, userId) => async (dispatch) => {
   const members = await teamService.removeMember(id, userId);
   dispatch(setTeamMembers(members));
   return members;
-};
-
-export const fetchTeamLabels = (id) => async (dispatch) => {
-  const data = await teamService.listLabels(id);
-  dispatch(setTeamLabels(data));
-  return data;
-};
-
-export const createTeamLabel = (id, name) => async (dispatch) => {
-  const label = await teamService.createLabel(id, { name });
-  dispatch(addTeamLabel(label));
-  return label;
 };
 
 export const fetchTeamRequests = (id) => async (dispatch) => {

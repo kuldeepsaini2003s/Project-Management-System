@@ -9,6 +9,8 @@ import {
   getWorkspaceTeams,
   createWorkspaceTeam,
   getWorkspaceProjects,
+  getWorkspaceLabels,
+  createWorkspaceLabel,
 } from "../controllers/WorkspaceController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -25,5 +27,7 @@ router.get("/:id/members", getMembers);
 router.get("/:id/teams", getWorkspaceTeams);
 router.post("/:id/teams", createWorkspaceTeam);
 router.get("/:id/projects", getWorkspaceProjects);
+router.get("/:id/labels", getWorkspaceLabels);
+router.post("/:id/labels", createWorkspaceLabel);
 
 export default router;

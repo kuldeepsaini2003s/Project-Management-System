@@ -21,7 +21,7 @@ const detailInclude = {
   createdBy: userSel,
   labels: true,
   project: { select: { id: true, name: true, icon: true } },
-  team: { select: { id: true, key: true, name: true } },
+  team: { select: { id: true, key: true, name: true, workspaceId: true } },
   parent: { select: { id: true, number: true, title: true, team: { select: { key: true } } } },
   children: {
     include: { assignee: userSel, team: { select: { key: true } } },
@@ -47,6 +47,7 @@ const shapeIssueDetail = (issue) => ({
   teamId: issue.team.id,
   teamKey: issue.team.key,
   teamName: issue.team.name,
+  workspaceId: issue.team.workspaceId,
   team: undefined,
   parent: issue.parent
     ? {
@@ -190,4 +191,19 @@ export const deleteComment = async (userId, commentId) => {
     throw new ApiError(403, "You can only delete your own comments");
   }
   await prisma.comment.delete({ where: { id: commentId } });
+};
+
+/* ----- image attachments ----- */
+export const addIssueImages = async (userId, issueId, urls) => {
+  await getIssueOrThrow(userId, issueId);
+  if (!urls?.length) throw new ApiError(400, "No image was uploaded");
+  await prisma.issue.update({ where: { id: issueId }, data: { images: { push: urls } } });
+  return getIssueById(userId, issueId);
+};
+
+export const removeIssueImage = async (userId, issueId, url) => {
+  const issue = await getIssueOrThrow(userId, issueId);
+  const images = (issue.images || []).filter((u) => u !== url);
+  await prisma.issue.update({ where: { id: issueId }, data: { images: { set: images } } });
+  return getIssueById(userId, issueId);
 };

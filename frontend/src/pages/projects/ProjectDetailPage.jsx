@@ -11,7 +11,8 @@ import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
 import IssueBoard from "../../components/issues/IssueBoard.jsx";
 import IssueFormModal from "../../components/issues/IssueFormModal.jsx";
 import { PRIORITIES } from "../../constants/priority.js";
-import { fetchTeam, fetchTeamLabels, fetchTeamMembers } from "../../redux/actions/teamActions.js";
+import { fetchTeam, fetchTeamMembers } from "../../redux/actions/teamActions.js";
+import { fetchWorkspaceLabels } from "../../redux/actions/workspaceActions.js";
 import { fetchProject, updateProject, deleteProject } from "../../redux/actions/projectActions.js";
 import {
   fetchProjectIssues,
@@ -36,8 +37,9 @@ export default function ProjectDetailPage() {
 
   const project = useSelector((state) => state.project.current);
   const team = useSelector((state) => state.team.current);
+  const workspaceId = useSelector((state) => state.ui.currentWorkspaceId);
   const issues = useSelector((state) => state.issue.projectIssues);
-  const labels = useSelector((state) => state.team.labels);
+  const labels = useSelector((state) => state.workspace.labels);
   const members = useSelector((state) => state.team.members);
   const loading = useSelector((state) => state.project.loading);
 
@@ -47,13 +49,16 @@ export default function ProjectDetailPage() {
       .then((p) => {
         if (p?.teamId) {
           dispatch(fetchTeam(p.teamId)).catch(() => {});
-          dispatch(fetchTeamLabels(p.teamId)).catch(() => {});
           dispatch(fetchTeamMembers(p.teamId)).catch(() => {});
         }
       })
       .catch((e) => setError(e.message));
     dispatch(fetchProjectIssues(projectId)).catch(() => {});
   }, [dispatch, projectId]);
+
+  useEffect(() => {
+    if (workspaceId) dispatch(fetchWorkspaceLabels(workspaceId)).catch(() => {});
+  }, [dispatch, workspaceId]);
 
   const teamId = project?.teamId;
   const priority = project && (PRIORITIES[project.priority] || PRIORITIES.NONE);
@@ -236,6 +241,7 @@ export default function ProjectDetailPage() {
             mode="create"
             teamId={team.id}
             teamKey={team.key}
+            workspaceId={team.workspaceId}
             members={members}
             labels={labels}
             lockedProjectId={projectId}

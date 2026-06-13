@@ -15,7 +15,7 @@ import { PROJECT_STATUSES, STATUS_ORDER } from "../../constants/projectStatus.js
 import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
 import {
   useGetTeamMembersQuery,
-  useGetTeamLabelsQuery,
+  useGetWorkspaceLabelsQuery,
   useGetTeamProjectsQuery,
   useCreateLabelMutation,
 } from "../../redux/apiSlice.js";
@@ -55,10 +55,16 @@ export default function ProjectFormModal({
   const [loading, setLoading] = useState(false);
   const [activeTeamId, setActiveTeamId] = useState(teamId || null);
 
-  // Cached picker data (shared across the app, fetched once per team).
+  // The workspace owning the selected team (labels are workspace-scoped).
+  const activeWorkspaceId =
+    workspaceId || teams.find((t) => t.id === activeTeamId)?.workspaceId;
+
+  // Cached picker data.
   const skip = { skip: !open || !activeTeamId };
   const { data: members = [] } = useGetTeamMembersQuery(activeTeamId, skip);
-  const { data: labels = [] } = useGetTeamLabelsQuery(activeTeamId, skip);
+  const { data: labels = [] } = useGetWorkspaceLabelsQuery(activeWorkspaceId, {
+    skip: !open || !activeWorkspaceId,
+  });
   const { data: allProjects = [] } = useGetTeamProjectsQuery(activeTeamId, skip);
   const [createLabelMut] = useCreateLabelMutation();
 
@@ -94,7 +100,7 @@ export default function ProjectFormModal({
     );
   }, [open, initial, teamId, defaultStatus]);
 
-  const createLabel = (name) => createLabelMut({ teamId: activeTeamId, name }).unwrap();
+  const createLabel = (name) => createLabelMut({ workspaceId: activeWorkspaceId, name }).unwrap();
 
   const addMilestone = () =>
     set("milestones", [...form.milestones, { name: "", targetDate: null }]);

@@ -3,6 +3,8 @@ import {
   setWorkspaces,
   addWorkspace,
   setWorkspaceMembers,
+  setWorkspaceLabels,
+  addWorkspaceLabel,
   setWorkspaceLoading,
 } from "../workspaceSlice.js";
 import { setCurrentWorkspace } from "../uiSlice.js";
@@ -29,4 +31,16 @@ export const fetchWorkspaceMembers = (workspaceId) => async (dispatch) => {
   const data = await workspaceService.members(workspaceId);
   dispatch(setWorkspaceMembers(data));
   return data;
+};
+
+export const fetchWorkspaceLabels = (workspaceId) => async (dispatch) => {
+  const data = await workspaceService.labels(workspaceId);
+  dispatch(setWorkspaceLabels(data));
+  return data;
+};
+
+export const createWorkspaceLabel = (workspaceId, name) => async (dispatch) => {
+  const label = await workspaceService.createLabel(workspaceId, { name });
+  dispatch(addWorkspaceLabel(label));
+  return label;
 };

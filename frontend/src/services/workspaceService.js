@@ -8,4 +8,6 @@ export const workspaceService = {
   remove: (id) => api.delete(`/workspaces/${id}`).then((r) => r.data),
   members: (id) => api.get(`/workspaces/${id}/members`).then((r) => r.data),
   projects: (id) => api.get(`/workspaces/${id}/projects`).then((r) => r.data),
+  labels: (id) => api.get(`/workspaces/${id}/labels`).then((r) => r.data),
+  createLabel: (id, payload) => api.post(`/workspaces/${id}/labels`, payload).then((r) => r.data),
 };

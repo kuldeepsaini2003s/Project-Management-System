@@ -6,7 +6,7 @@ import { EnumPicker, UserPicker, LabelPicker, DependencyPicker } from "../picker
 import { useDispatch } from "react-redux";
 import { ISSUE_STATUSES, ISSUE_STATUS_ORDER } from "../../constants/issueStatus.js";
 import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
-import { createTeamLabel } from "../../redux/actions/teamActions.js";
+import { createWorkspaceLabel } from "../../redux/actions/workspaceActions.js";
 
 const EMPTY = {
   title: "",
@@ -26,6 +26,7 @@ export default function IssueFormModal({
   mode = "create",
   teamId,
   teamKey = "TEAM",
+  workspaceId,
   members = [],
   labels = [],
   projects = [],
@@ -57,7 +58,7 @@ export default function IssueFormModal({
     );
   }, [open, initial, lockedProjectId, defaultStatus]);
 
-  const createLabel = (name) => dispatch(createTeamLabel(teamId, name));
+  const createLabel = (name) => dispatch(createWorkspaceLabel(workspaceId, name));
 
   const handleSubmit = async (e) => {
     e?.preventDefault();

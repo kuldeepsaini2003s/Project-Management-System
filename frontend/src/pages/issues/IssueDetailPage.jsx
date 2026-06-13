@@ -10,10 +10,12 @@ import PillButton from "../../components/ui/PillButton.jsx";
 import { EnumPicker, UserPicker, LabelPicker } from "../../components/pickers/Pickers.jsx";
 import { ISSUE_STATUSES, ISSUE_STATUS_ORDER } from "../../constants/issueStatus.js";
 import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
+import { ImagePlus, X, Loader2 } from "lucide-react";
+import ImageLightbox from "../../components/ui/ImageLightbox.jsx";
 import {
   useGetIssueQuery,
   useGetTeamMembersQuery,
-  useGetTeamLabelsQuery,
+  useGetWorkspaceLabelsQuery,
   useGetTeamProjectsQuery,
   useUpdateIssueMutation,
   useAddCommentMutation,
@@ -23,6 +25,7 @@ import {
   useDeleteIssueMutation,
   errMsg,
 } from "../../redux/apiSlice.js";
+import { issueService } from "../../services/issueService.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const timeAgo = (date) => {
@@ -41,12 +44,13 @@ export default function IssueDetailPage() {
   const { onMenu } = useOutletContext() || {};
   const { user } = useAuth();
 
-  const { data: issue, isLoading, error } = useGetIssueQuery(issueId);
+  const { data: issue, isLoading, error, refetch } = useGetIssueQuery(issueId);
   const teamId = issue?.teamId;
+  const workspaceId = issue?.workspaceId;
   const projectId = issue?.project?.id || null;
 
   const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
-  const { data: labels = [] } = useGetTeamLabelsQuery(teamId, { skip: !teamId });
+  const { data: labels = [] } = useGetWorkspaceLabelsQuery(workspaceId, { skip: !workspaceId });
   const { data: projects = [] } = useGetTeamProjectsQuery(teamId, { skip: !teamId });
 
   const [updateIssue] = useUpdateIssueMutation();
@@ -61,6 +65,8 @@ export default function IssueDetailPage() {
   const [comment, setComment] = useState("");
   const [subTitle, setSubTitle] = useState("");
   const [addingSub, setAddingSub] = useState(false);
+  const [pendingImages, setPendingImages] = useState([]); // optimistic previews
+  const [lightbox, setLightbox] = useState(null);
   const [localError, setLocalError] = useState("");
 
   useEffect(() => {
@@ -73,7 +79,39 @@ export default function IssueDetailPage() {
   const patch = (data) =>
     updateIssue({ id: issueId, teamId, projectId, ...data }).unwrap().catch((e) => setLocalError(errMsg(e)));
 
-  const createLabel = (name) => createLabelMut({ teamId, name }).unwrap();
+  const createLabel = (name) => createLabelMut({ workspaceId, name }).unwrap();
+
+  const onPickImages = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+
+    // Optimistic: show local previews immediately while the upload runs.
+    const batch = files.map((file) => ({
+      id: `${Date.now()}-${Math.random()}`,
+      url: URL.createObjectURL(file),
+    }));
+    setPendingImages((prev) => [...prev, ...batch]);
+
+    try {
+      await issueService.uploadImages(issueId, files);
+      await refetch(); // real Cloudinary URLs now arrive on the issue
+    } catch (err) {
+      setLocalError(err.message); // upload failed → previews are rolled back below
+    } finally {
+      setPendingImages((prev) => prev.filter((p) => !batch.some((b) => b.id === p.id)));
+      batch.forEach((b) => URL.revokeObjectURL(b.url));
+    }
+  };
+
+  const removeImage = async (url) => {
+    try {
+      await issueService.removeImage(issueId, url);
+      refetch();
+    } catch (err) {
+      setLocalError(err.message);
+    }
+  };
 
   const addComment = async () => {
     if (!comment.trim()) return;
@@ -105,7 +143,11 @@ export default function IssueDetailPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
-        breadcrumb={[issue?.project?.name || issue?.teamName || "Issue", issue ? issue.identifier : "…"]}
+        breadcrumb={[
+          issue?.teamName || "Team",
+          "Issues",
+          issue ? `${issue.identifier} ${issue.title}` : "…",
+        ]}
         onMenu={onMenu}
         actions={
           issue && (
@@ -150,6 +192,44 @@ export default function IssueDetailPage() {
                   rows={Math.max(4, description.split("\n").length + 1)}
                   className="mt-4 w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
                 />
+
+                {/* Image attachments */}
+                <div className="mt-4">
+                  {(issue.images?.length > 0 || pendingImages.length > 0) && (
+                    <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {issue.images?.map((url) => (
+                        <div key={url} className="group relative overflow-hidden rounded-lg border border-glass-border">
+                          <img
+                            src={url}
+                            alt="attachment"
+                            onClick={() => setLightbox(url)}
+                            className="h-36 w-full cursor-zoom-in object-cover"
+                          />
+                          <button
+                            onClick={() => removeImage(url)}
+                            className="absolute right-1.5 top-1.5 rounded-md bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                            title="Remove image"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {pendingImages.map((p) => (
+                        <div key={p.id} className="relative overflow-hidden rounded-lg border border-glass-border">
+                          <img src={p.url} alt="uploading" className="h-36 w-full object-cover opacity-50" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <Loader2 className="h-5 w-5 animate-spin text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg">
+                    <ImagePlus className="h-3.5 w-3.5" />
+                    Attach image
+                    <input type="file" accept="image/*" multiple hidden onChange={onPickImages} />
+                  </label>
+                </div>
 
                 <div className="mt-8">
                   <div className="flex items-center justify-between">
@@ -287,6 +367,8 @@ export default function IssueDetailPage() {
           </div>
         ) : null}
       </div>
+
+      <ImageLightbox src={lightbox} onClose={() => setLightbox(null)} />
     </div>
   );
 }

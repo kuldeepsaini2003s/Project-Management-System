@@ -118,18 +118,18 @@ export const api = createApi({
       ],
     }),
 
-    /* ---- labels ---- */
-    getTeamLabels: b.query({
-      query: (teamId) => `/teams/${teamId}/labels`,
-      providesTags: (r, e, teamId) => [{ type: "Labels", id: teamId }],
+    /* ---- labels (workspace-scoped) ---- */
+    getWorkspaceLabels: b.query({
+      query: (workspaceId) => `/workspaces/${workspaceId}/labels`,
+      providesTags: (r, e, workspaceId) => [{ type: "Labels", id: workspaceId }],
     }),
     createLabel: b.mutation({
-      query: ({ teamId, ...body }) => ({
-        url: `/teams/${teamId}/labels`,
+      query: ({ workspaceId, ...body }) => ({
+        url: `/workspaces/${workspaceId}/labels`,
         method: "POST",
         body,
       }),
-      invalidatesTags: (r, e, { teamId }) => [{ type: "Labels", id: teamId }],
+      invalidatesTags: (r, e, { workspaceId }) => [{ type: "Labels", id: workspaceId }],
     }),
 
     /* ---- projects ---- */
@@ -255,7 +255,7 @@ export const {
   useGetMyRequestQuery,
   useRequestJoinMutation,
   useRespondRequestMutation,
-  useGetTeamLabelsQuery,
+  useGetWorkspaceLabelsQuery,
   useCreateLabelMutation,
   useGetTeamProjectsQuery,
   useGetWorkspaceProjectsQuery,

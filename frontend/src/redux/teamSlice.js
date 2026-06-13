@@ -6,7 +6,6 @@ const teamSlice = createSlice({
     items: [], // teams in the sidebar (current workspace)
     current: null, // team being viewed
     members: [], // members of the current team
-    labels: [], // labels of the current team
     requests: [], // pending join requests of the current team
     loading: false,
   },
@@ -23,14 +22,6 @@ const teamSlice = createSlice({
     setTeamMembers: (state, action) => {
       state.members = action.payload;
     },
-    setTeamLabels: (state, action) => {
-      state.labels = action.payload;
-    },
-    addTeamLabel: (state, action) => {
-      if (!state.labels.some((l) => l.id === action.payload.id)) {
-        state.labels.push(action.payload);
-      }
-    },
     setTeamRequests: (state, action) => {
       state.requests = action.payload;
     },
@@ -45,8 +36,6 @@ export const {
   addTeam,
   setCurrentTeam,
   setTeamMembers,
-  setTeamLabels,
-  addTeamLabel,
   setTeamRequests,
   setTeamLoading,
 } = teamSlice.actions;

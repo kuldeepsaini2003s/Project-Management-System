@@ -7,8 +7,6 @@ import {
   createTeamProject,
   getTeamIssues,
   createTeamIssue,
-  getTeamLabels,
-  createTeamLabel,
 } from "../controllers/TeamController.js";
 import {
   getMembers,
@@ -34,9 +32,6 @@ router.post("/:id/projects", createTeamProject);
 
 router.get("/:id/issues", getTeamIssues);
 router.post("/:id/issues", createTeamIssue);
-
-router.get("/:id/labels", getTeamLabels);
-router.post("/:id/labels", createTeamLabel);
 
 // Members
 router.get("/:id/members", getMembers);

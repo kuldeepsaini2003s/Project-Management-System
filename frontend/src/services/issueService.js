@@ -6,6 +6,18 @@ export const issueService = {
   update: (id, payload) => api.patch(`/issues/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/issues/${id}`).then((r) => r.data),
 
+  uploadImages: (id, files) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("images", file));
+    return api
+      .post(`/issues/${id}/images`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
+  removeImage: (id, url) =>
+    api.delete(`/issues/${id}/images`, { data: { url } }).then((r) => r.data),
+
   createSubIssue: (id, payload) =>
     api.post(`/issues/${id}/sub-issues`, payload).then((r) => r.data),
   addComment: (id, body) =>

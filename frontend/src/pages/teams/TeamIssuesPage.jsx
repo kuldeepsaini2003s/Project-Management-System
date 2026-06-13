@@ -7,7 +7,8 @@ import Button from "../../components/ui/Button.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import IssueBoard from "../../components/issues/IssueBoard.jsx";
 import IssueFormModal from "../../components/issues/IssueFormModal.jsx";
-import { fetchTeam, fetchTeamMembers, fetchTeamLabels } from "../../redux/actions/teamActions.js";
+import { fetchTeam, fetchTeamMembers } from "../../redux/actions/teamActions.js";
+import { fetchWorkspaceLabels } from "../../redux/actions/workspaceActions.js";
 import { fetchTeamProjects } from "../../redux/actions/projectActions.js";
 import {
   fetchTeamIssues,
@@ -24,8 +25,9 @@ export default function TeamIssuesPage() {
   const [error, setError] = useState("");
 
   const team = useSelector((state) => state.team.current);
+  const workspaceId = useSelector((state) => state.ui.currentWorkspaceId);
   const issues = useSelector((state) => state.issue.teamIssues);
-  const labels = useSelector((state) => state.team.labels);
+  const labels = useSelector((state) => state.workspace.labels);
   const members = useSelector((state) => state.team.members);
   const projects = useSelector((state) => state.project.teamProjects);
   const loading = useSelector((state) => state.issue.loading);
@@ -33,10 +35,13 @@ export default function TeamIssuesPage() {
   useEffect(() => {
     dispatch(fetchTeam(teamId)).catch(() => {});
     dispatch(fetchTeamIssues(teamId)).catch((e) => setError(e.message));
-    dispatch(fetchTeamLabels(teamId)).catch(() => {});
     dispatch(fetchTeamProjects(teamId)).catch(() => {});
     dispatch(fetchTeamMembers(teamId)).catch(() => {});
   }, [dispatch, teamId]);
+
+  useEffect(() => {
+    if (workspaceId) dispatch(fetchWorkspaceLabels(workspaceId)).catch(() => {});
+  }, [dispatch, workspaceId]);
 
   const handleSubmit = (data) =>
     dispatch(createIssue(teamId, { ...data, projectId: data.projectId || null }));
@@ -79,6 +84,7 @@ export default function TeamIssuesPage() {
           mode="create"
           teamId={team.id}
           teamKey={team.key}
+          workspaceId={team.workspaceId}
           members={members}
           labels={labels}
           projects={projects}

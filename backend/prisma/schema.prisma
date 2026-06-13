@@ -81,6 +81,7 @@ model Workspace {
 
   memberships Membership[]
   teams       Team[]
+  labels      Label[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -115,7 +116,6 @@ model Team {
   joinRequests TeamJoinRequest[]
   projects     Project[]
   issues       Issue[]
-  labels       Label[]
   issueCounter Int               @default(0)
 
   createdAt DateTime @default(now())
@@ -201,15 +201,15 @@ model Label {
   name  String
   color String @default("#5e6ad2")
 
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  teamId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
 
   projects Project[] @relation("ProjectLabels")
   issues   Issue[]   @relation("IssueLabels")
 
   createdAt DateTime @default(now())
 
-  @@unique([teamId, name])
+  @@unique([workspaceId, name])
 }
 
 model Milestone {
@@ -234,6 +234,7 @@ model Issue {
   status      IssueStatus @default(TODO)
   priority    Priority    @default(NONE)
   sortOrder   Int         @default(0)
+  images      String[]    @default([])
 
   team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId     String
