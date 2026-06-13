@@ -62,10 +62,18 @@ export const updateIssue = (id, payload) => async (dispatch) => {
   return issue;
 };
 
-// Optimistic board drag — patch locally, then persist.
-export const moveIssueStatus = (id, status) => async (dispatch) => {
+// Optimistic board drag — move the card now, persist in the background, roll back on failure.
+export const moveIssueStatus = (id, status) => async (dispatch, getState) => {
+  const { teamIssues, projectIssues, myIssues } = getState().issue;
+  const previousStatus = [...teamIssues, ...projectIssues, ...myIssues].find((i) => i.id === id)?.status;
+
   dispatch(patchIssueStatus({ id, status }));
-  await issueService.update(id, { status });
+  try {
+    await issueService.update(id, { status });
+  } catch (err) {
+    if (previousStatus) dispatch(patchIssueStatus({ id, status: previousStatus }));
+    throw err;
+  }
 };
 
 export const deleteIssue = (id) => async () => {

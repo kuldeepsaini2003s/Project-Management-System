@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { Pencil, Trash2, Plus, Calendar } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import Button from "../../components/ui/Button.jsx";
@@ -10,18 +11,13 @@ import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
 import IssueBoard from "../../components/issues/IssueBoard.jsx";
 import IssueFormModal from "../../components/issues/IssueFormModal.jsx";
 import { PRIORITIES } from "../../constants/priority.js";
+import { fetchTeam, fetchTeamLabels, fetchTeamMembers } from "../../redux/actions/teamActions.js";
+import { fetchProject, updateProject, deleteProject } from "../../redux/actions/projectActions.js";
 import {
-  useGetProjectQuery,
-  useGetProjectIssuesQuery,
-  useGetTeamQuery,
-  useGetTeamLabelsQuery,
-  useGetTeamMembersQuery,
-  useUpdateProjectMutation,
-  useDeleteProjectMutation,
-  useCreateIssueMutation,
-  useUpdateIssueMutation,
-  errMsg,
-} from "../../redux/apiSlice.js";
+  fetchProjectIssues,
+  createIssue,
+  moveIssueStatus,
+} from "../../redux/actions/issueActions.js";
 
 const fmt = (v) =>
   v ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
@@ -30,44 +26,55 @@ export default function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { onMenu } = useOutletContext() || {};
+  const dispatch = useDispatch();
 
   const [tab, setTab] = useState("issues");
   const [editOpen, setEditOpen] = useState(false);
   const [issueModal, setIssueModal] = useState({ open: false, status: "TODO" });
   const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
-  const { data: project, isLoading, error: projErr } = useGetProjectQuery(projectId);
+  const project = useSelector((state) => state.project.current);
+  const team = useSelector((state) => state.team.current);
+  const issues = useSelector((state) => state.issue.projectIssues);
+  const labels = useSelector((state) => state.team.labels);
+  const members = useSelector((state) => state.team.members);
+  const loading = useSelector((state) => state.project.loading);
+
+  useEffect(() => {
+    setError("");
+    dispatch(fetchProject(projectId))
+      .then((p) => {
+        if (p?.teamId) {
+          dispatch(fetchTeam(p.teamId)).catch(() => {});
+          dispatch(fetchTeamLabels(p.teamId)).catch(() => {});
+          dispatch(fetchTeamMembers(p.teamId)).catch(() => {});
+        }
+      })
+      .catch((e) => setError(e.message));
+    dispatch(fetchProjectIssues(projectId)).catch(() => {});
+  }, [dispatch, projectId]);
+
   const teamId = project?.teamId;
-  const { data: team } = useGetTeamQuery(teamId, { skip: !teamId });
-  const { data: issueData } = useGetProjectIssuesQuery(projectId);
-  const { data: labels = [] } = useGetTeamLabelsQuery(teamId, { skip: !teamId });
-  const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
-
-  const [updateProject] = useUpdateProjectMutation();
-  const [deleteProject, { isLoading: deleting }] = useDeleteProjectMutation();
-  const [createIssue] = useCreateIssueMutation();
-  const [updateIssue] = useUpdateIssueMutation();
-
-  const issues = issueData?.issues || [];
   const priority = project && (PRIORITIES[project.priority] || PRIORITIES.NONE);
+  const onThisProject = project?.id === projectId;
 
-  const handleUpdate = (data) => updateProject({ id: projectId, teamId, ...data }).unwrap();
+  const handleUpdate = (data) => dispatch(updateProject(projectId, data));
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this project? This cannot be undone.")) return;
+    setDeleting(true);
     try {
-      await deleteProject({ id: projectId, teamId }).unwrap();
+      await dispatch(deleteProject(projectId));
       navigate(`/teams/${teamId}/projects`, { replace: true });
     } catch (err) {
-      setError(errMsg(err));
+      setError(err.message);
+      setDeleting(false);
     }
   };
 
-  const submitIssue = (data) =>
-    createIssue({ teamId, ...data, projectId }).unwrap();
-
-  const moveStatus = (id, status) =>
-    updateIssue({ id, teamId, projectId, status }).unwrap().catch(() => {});
+  const submitIssue = (data) => dispatch(createIssue(teamId, { ...data, projectId }));
+  const moveStatus = (id, status) => dispatch(moveIssueStatus(id, status)).catch(() => {});
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -75,7 +82,7 @@ export default function ProjectDetailPage() {
         breadcrumb={[team?.name || "Team", "Projects", project?.name || "…"]}
         onMenu={onMenu}
         actions={
-          project && (
+          onThisProject && (
             <>
               <Button variant="secondary" className="!w-auto px-2.5" onClick={() => setEditOpen(true)}>
                 <Pencil className="h-4 w-4" />
@@ -90,10 +97,10 @@ export default function ProjectDetailPage() {
       />
 
       <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg">
-        <FormError message={error || (projErr ? errMsg(projErr) : "")} />
-        {isLoading ? (
+        <FormError message={error} />
+        {loading && !onThisProject ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
-        ) : project ? (
+        ) : onThisProject ? (
           <div className="flex h-full flex-col">
             <div className="border-b border-glass-border p-5">
               <div className="flex items-start gap-3">
@@ -210,7 +217,7 @@ export default function ProjectDetailPage() {
         ) : null}
       </div>
 
-      {project && team && (
+      {onThisProject && team && (
         <>
           <ProjectFormModal
             open={editOpen}

@@ -7,6 +7,7 @@ import {
   addProject,
   updateProjectInStore,
   removeProjectFromStore,
+  patchProjectStatus,
   setCurrentProject,
   setProjectLoading,
 } from "../projectSlice.js";
@@ -54,4 +55,18 @@ export const updateProject = (id, payload) => async (dispatch) => {
 export const deleteProject = (id) => async (dispatch) => {
   await projectService.remove(id);
   dispatch(removeProjectFromStore(id));
+};
+
+// Optimistic drag: move the card now, persist in the background, roll back on failure.
+export const moveProjectStatus = (id, status) => async (dispatch, getState) => {
+  const { teamProjects, workspaceProjects } = getState().project;
+  const previousStatus = [...teamProjects, ...workspaceProjects].find((p) => p.id === id)?.status;
+
+  dispatch(patchProjectStatus({ id, status }));
+  try {
+    await projectService.update(id, { status });
+  } catch (err) {
+    if (previousStatus) dispatch(patchProjectStatus({ id, status: previousStatus }));
+    throw err;
+  }
 };

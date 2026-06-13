@@ -33,6 +33,17 @@ const projectSlice = createSlice({
       state.teamProjects = state.teamProjects.filter((p) => p.id !== id);
       state.workspaceProjects = state.workspaceProjects.filter((p) => p.id !== id);
     },
+    // Optimistic board drag — change just the status of one project.
+    patchProjectStatus: (state, action) => {
+      const { id, status } = action.payload;
+      const apply = (list) => {
+        const p = list.find((x) => x.id === id);
+        if (p) p.status = status;
+      };
+      apply(state.teamProjects);
+      apply(state.workspaceProjects);
+      if (state.current?.id === id) state.current.status = status;
+    },
     setCurrentProject: (state, action) => {
       state.current = action.payload;
     },
@@ -48,6 +59,7 @@ export const {
   addProject,
   updateProjectInStore,
   removeProjectFromStore,
+  patchProjectStatus,
   setCurrentProject,
   setProjectLoading,
 } = projectSlice.actions;

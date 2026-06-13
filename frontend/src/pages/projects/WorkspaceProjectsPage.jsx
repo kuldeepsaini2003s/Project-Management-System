@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import Button from "../../components/ui/Button.jsx";
@@ -9,30 +10,29 @@ import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
 import { useWorkspace } from "../../context/WorkspaceContext.jsx";
 import { useTeams } from "../../context/TeamContext.jsx";
 import {
-  useGetWorkspaceProjectsQuery,
-  useCreateProjectMutation,
-  useUpdateProjectMutation,
-  errMsg,
-} from "../../redux/apiSlice.js";
+  fetchWorkspaceProjects,
+  createProject,
+  moveProjectStatus,
+} from "../../redux/actions/projectActions.js";
 
 export default function WorkspaceProjectsPage() {
   const { onMenu } = useOutletContext() || {};
   const { current, currentId } = useWorkspace();
   const { teams } = useTeams();
+  const dispatch = useDispatch();
   const [modal, setModal] = useState({ open: false, status: "BACKLOG" });
+  const [error, setError] = useState("");
 
-  const { data: projects = [], isLoading, error } = useGetWorkspaceProjectsQuery(currentId, {
-    skip: !currentId,
-  });
-  const [createProject] = useCreateProjectMutation();
-  const [updateProject] = useUpdateProjectMutation();
+  const projects = useSelector((state) => state.project.workspaceProjects);
+  const loading = useSelector((state) => state.project.loading);
 
-  const handleCreate = (data) => createProject({ ...data }).unwrap();
+  useEffect(() => {
+    if (currentId) dispatch(fetchWorkspaceProjects(currentId)).catch((e) => setError(e.message));
+  }, [dispatch, currentId]);
 
-  const moveStatus = (id, status) => {
-    const project = projects.find((p) => p.id === id);
-    updateProject({ id, teamId: project?.teamId, status }).unwrap().catch(() => {});
-  };
+  const handleCreate = (data) => dispatch(createProject(data.teamId, data));
+  const moveStatus = (id, status) =>
+    dispatch(moveProjectStatus(id, status)).catch(() => {});
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -52,8 +52,8 @@ export default function WorkspaceProjectsPage() {
       />
 
       <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg p-3">
-        <FormError message={error ? errMsg(error) : ""} />
-        {isLoading ? (
+        <FormError message={error} />
+        {loading && projects.length === 0 ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading projects…</p>
         ) : (
           <ProjectBoard

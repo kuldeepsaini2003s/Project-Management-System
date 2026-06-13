@@ -1,32 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import Button from "../../components/ui/Button.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import ProjectBoard from "../../components/projects/ProjectBoard.jsx";
 import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
+import { fetchTeam } from "../../redux/actions/teamActions.js";
 import {
-  useGetTeamQuery,
-  useGetTeamProjectsQuery,
-  useCreateProjectMutation,
-  useUpdateProjectMutation,
-  errMsg,
-} from "../../redux/apiSlice.js";
+  fetchTeamProjects,
+  createProject,
+  moveProjectStatus,
+} from "../../redux/actions/projectActions.js";
 
 export default function TeamProjectsPage() {
   const { teamId } = useParams();
   const { onMenu } = useOutletContext() || {};
+  const dispatch = useDispatch();
   const [modal, setModal] = useState({ open: false, status: "BACKLOG" });
+  const [error, setError] = useState("");
 
-  const { data: team } = useGetTeamQuery(teamId);
-  const { data: projects = [], isLoading, error } = useGetTeamProjectsQuery(teamId);
-  const [createProject] = useCreateProjectMutation();
-  const [updateProject] = useUpdateProjectMutation();
+  const team = useSelector((state) => state.team.current);
+  const projects = useSelector((state) => state.project.teamProjects);
+  const loading = useSelector((state) => state.project.loading);
 
-  const handleCreate = (data) => createProject({ ...data }).unwrap();
+  useEffect(() => {
+    dispatch(fetchTeam(teamId)).catch(() => {});
+    dispatch(fetchTeamProjects(teamId)).catch((e) => setError(e.message));
+  }, [dispatch, teamId]);
+
+  const handleCreate = (data) => dispatch(createProject(data.teamId, data));
   const moveStatus = (id, status) =>
-    updateProject({ id, teamId, status }).unwrap().catch(() => {});
+    dispatch(moveProjectStatus(id, status)).catch(() => {});
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -42,8 +48,8 @@ export default function TeamProjectsPage() {
       />
 
       <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg p-3">
-        <FormError message={error ? errMsg(error) : ""} />
-        {isLoading ? (
+        <FormError message={error} />
+        {loading && projects.length === 0 ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading projects…</p>
         ) : (
           <ProjectBoard
@@ -54,7 +60,7 @@ export default function TeamProjectsPage() {
         )}
       </div>
 
-      {team && (
+      {team && team.id === teamId && (
         <ProjectFormModal
           open={modal.open}
           onClose={() => setModal((m) => ({ ...m, open: false }))}
