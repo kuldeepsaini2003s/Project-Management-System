@@ -1,5 +1,5 @@
 const base =
-  "inline-flex w-full items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60";
 
 const sizes = {
   md: "h-10 px-4",
@@ -7,9 +7,10 @@ const sizes = {
 };
 
 const variants = {
-  primary: "bg-brand text-brand-fg hover:bg-brand-hover",
+  primary:
+    "bg-brand text-brand-fg shadow-sm hover:bg-brand-hover hover:shadow-md active:translate-y-px",
   secondary:
-    "border border-border-strong bg-surface text-fg hover:bg-surface-hover",
+    "border border-border-strong bg-surface text-fg hover:bg-surface-hover active:translate-y-px",
   ghost: "text-fg-muted hover:bg-surface-hover hover:text-fg",
 };
 

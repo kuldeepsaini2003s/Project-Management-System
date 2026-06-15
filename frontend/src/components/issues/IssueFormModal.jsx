@@ -77,7 +77,7 @@ export default function IssueFormModal({
     <Modal
       open={open}
       onClose={loading ? undefined : onClose}
-      size="lg"
+      size="2xl"
       title={
         <span className="flex items-center gap-1.5 text-sm">
           <span className="rounded bg-brand/15 px-1.5 py-0.5 text-xs font-semibold text-brand">
@@ -103,7 +103,7 @@ export default function IssueFormModal({
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <FormError message={error} />
 
         <input
@@ -111,14 +111,14 @@ export default function IssueFormModal({
           onChange={(e) => set("title", e.target.value)}
           placeholder="Issue title"
           autoFocus
-          className="w-full bg-transparent text-lg font-medium text-fg placeholder:text-fg-subtle focus:outline-none"
+          className="w-full bg-transparent text-2xl font-semibold tracking-tight text-fg placeholder:text-fg-subtle focus:outline-none"
         />
         <textarea
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
-          rows={4}
+          rows={10}
           placeholder="Add description…"
-          className="w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
+          className="min-h-[300px] w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
         />
 
         <div className="flex flex-wrap gap-1.5 border-t border-glass-border pt-3">

@@ -13,7 +13,7 @@ import { fetchTeamProjects } from "../../redux/actions/projectActions.js";
 import {
   fetchTeamIssues,
   createIssue,
-  moveIssueStatus,
+  reorderIssues,
 } from "../../redux/actions/issueActions.js";
 
 export default function TeamIssuesPage() {
@@ -46,23 +46,28 @@ export default function TeamIssuesPage() {
   const handleSubmit = (data) =>
     dispatch(createIssue(teamId, { ...data, projectId: data.projectId || null }));
 
-  const moveStatus = (id, status) =>
-    dispatch(moveIssueStatus(id, status)).catch(() => {});
+  const handleReorder = (status, orderedIds) =>
+    dispatch(reorderIssues("teamIssues", status, orderedIds)).catch(() => {});
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
-        breadcrumb={[team?.name || "Team", "Issues"]}
+        breadcrumb={[{ label: team?.name || "Team", to: `/teams/${teamId}` }, "Issues"]}
         onMenu={onMenu}
         actions={
-          <Button className="!w-auto px-3" onClick={() => setModal({ open: true, status: "TODO" })}>
+          <Button
+            variant="ghost"
+            aria-label="New issue"
+            title="New issue"
+            className="!w-auto p-2"
+            onClick={() => setModal({ open: true, status: "TODO" })}
+          >
             <Plus className="h-4 w-4" />
-            New issue
           </Button>
         }
       />
 
-      <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg p-3">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
         {loading && issues.length === 0 ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading issues…</p>
@@ -70,7 +75,7 @@ export default function TeamIssuesPage() {
           <IssueBoard
             issues={issues}
             onCreate={(status) => setModal({ open: true, status })}
-            onMoveStatus={moveStatus}
+            onReorder={handleReorder}
             onOpen={(issue) => navigate(`/issues/${issue.id}`)}
           />
         )}

@@ -1,0 +1,87 @@
+import nodemailer from "nodemailer";
+import { env } from "../config/env.js";
+
+let transporter = null;
+
+// Build the transporter lazily so the app still boots without SMTP configured.
+const getTransporter = () => {
+  if (transporter) return transporter;
+  const { host, port, secure, user, pass } = env.smtp;
+  if (!host || !user || !pass) {
+    console.warn("[email] SMTP not configured — invite emails will be skipped.");
+    return null;
+  }
+  transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    // Gmail shows app passwords in 4 space-separated groups; strip whitespace.
+    auth: { user: user.trim(), pass: pass.replace(/\s+/g, "") },
+  });
+  return transporter;
+};
+
+// Verify SMTP auth at startup so credential problems surface immediately.
+export const verifyEmailTransport = async () => {
+  const tx = getTransporter();
+  if (!tx) return;
+  try {
+    await tx.verify();
+    console.log(`[email] SMTP ready — sending as ${env.smtp.user}`);
+  } catch (err) {
+    console.error(`[email] SMTP login FAILED: ${err.message}`);
+  }
+};
+
+const escapeHtml = (s = "") =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * Send a team invitation email. Returns true if an email was actually sent,
+ * false if SMTP isn't configured (the caller can still surface the link).
+ */
+export const sendTeamInviteEmail = async ({
+  to,
+  inviteUrl,
+  teamName,
+  inviterName,
+  expiresAt,
+}) => {
+  const tx = getTransporter();
+  if (!tx) return false;
+
+  const safeTeam = escapeHtml(teamName);
+  const safeInviter = escapeHtml(inviterName || "A teammate");
+  const expires = new Date(expiresAt).toLocaleString();
+
+  const html = `
+  <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1d1b19">
+    <h2 style="margin:0 0 12px;font-size:18px">You're invited to join ${safeTeam}</h2>
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#5f574e">
+      ${safeInviter} invited you to collaborate on the <strong>${safeTeam}</strong> team in ${escapeHtml(
+    env.appName
+  )}.
+    </p>
+    <a href="${inviteUrl}"
+       style="display:inline-block;background:#5b63d3;color:#fff;text-decoration:none;
+              padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">
+      Accept invitation
+    </a>
+    <p style="margin:16px 0 0;font-size:12px;color:#9a928a">
+      This invitation expires on ${expires}.
+    </p>
+  </div>`;
+
+  const text = `${safeInviter} invited you to join the "${teamName}" team in ${env.appName}.
+Open the email and click "Accept invitation" to join.
+This invitation expires on ${expires}.`;
+
+  await tx.sendMail({
+    from: env.smtp.from,
+    to,
+    subject: `Join ${teamName} on ${env.appName}`,
+    text,
+    html,
+  });
+  return true;
+};

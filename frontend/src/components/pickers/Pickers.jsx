@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Calendar, UserCircle2, Users, Tag, GitBranch, X } from "lucide-react";
+import { Check, Calendar, UserCircle2, Users, Tag, GitBranch, X, Box } from "lucide-react";
 import Popover from "../ui/Popover.jsx";
 import PillButton from "../ui/PillButton.jsx";
 import Avatar from "../ui/Avatar.jsx";
@@ -155,7 +155,7 @@ export function DatePicker({ value, onChange, label }) {
             type="date"
             value={value || ""}
             onChange={(e) => onChange(e.target.value || null)}
-            className="rounded-md border border-input-border bg-input px-2 py-1.5 text-sm text-fg focus:border-brand focus:outline-none"
+            className="rounded-md border border-input-border bg-input px-2 py-1.5 text-sm text-fg focus:outline-none"
           />
           {value && (
             <button
@@ -216,7 +216,7 @@ export function LabelPicker({ value = [], onChange, labels, onCreateLabel }) {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), create())}
               placeholder="New label…"
-              className="h-7 flex-1 rounded border border-input-border bg-input px-2 text-xs text-fg focus:border-brand focus:outline-none"
+              className="h-7 flex-1 rounded border border-input-border bg-input px-2 text-xs text-fg focus:outline-none"
             />
             <button
               type="button"
@@ -247,7 +247,11 @@ export function DependencyPicker({ value = [], onChange, projects }) {
       <div className="max-h-64 w-56 overflow-y-auto">
         {projects.map((p) => (
           <MenuItem key={p.id} selected={value.includes(p.id)} onClick={() => toggle(p.id)}>
-            <span>{p.icon || "📦"}</span>
+            {p.icon ? (
+              <span aria-hidden="true">{p.icon}</span>
+            ) : (
+              <Box className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
             <span className="truncate">{p.name}</span>
           </MenuItem>
         ))}

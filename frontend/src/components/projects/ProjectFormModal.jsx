@@ -133,7 +133,7 @@ export default function ProjectFormModal({
     <Modal
       open={open}
       onClose={loading ? undefined : onClose}
-      size="xl"
+      size="2xl"
       title={
         <span className="flex items-center gap-1.5 text-sm">
           <span className="rounded bg-brand/15 px-1.5 py-0.5 text-xs font-semibold text-brand">
@@ -168,7 +168,7 @@ export default function ProjectFormModal({
             <select
               value={activeTeamId || ""}
               onChange={(e) => setActiveTeamId(e.target.value)}
-              className="h-9 rounded-md border border-input-border bg-input px-2.5 text-sm text-fg focus:border-brand focus:outline-none"
+              className="h-9 rounded-md border border-input-border bg-input px-2.5 text-sm text-fg focus:outline-none"
             >
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -179,30 +179,29 @@ export default function ProjectFormModal({
           </div>
         )}
 
-        {/* Icon + name + summary */}
-        <div className="flex items-start gap-3">
+        {/* Icon (own row) + name + summary */}
+        <div>
           <input
             value={form.icon}
             onChange={(e) => set("icon", e.target.value)}
             maxLength={2}
             placeholder="📦"
-            className="h-9 w-9 shrink-0 rounded-md border border-border bg-surface text-center text-lg focus:border-brand focus:outline-none"
+            aria-label="Project icon"
+            className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-center text-xl focus:outline-none"
           />
-          <div className="flex-1">
-            <input
-              value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="Project name"
-              autoFocus
-              className="w-full bg-transparent text-xl font-semibold text-fg placeholder:text-fg-subtle focus:outline-none"
-            />
-            <input
-              value={form.summary}
-              onChange={(e) => set("summary", e.target.value)}
-              placeholder="Add a short summary…"
-              className="mt-1 w-full bg-transparent text-sm text-fg-muted placeholder:text-fg-subtle focus:outline-none"
-            />
-          </div>
+          <input
+            value={form.name}
+            onChange={(e) => set("name", e.target.value)}
+            placeholder="Project name"
+            autoFocus
+            className="w-full bg-transparent text-2xl font-semibold tracking-tight text-fg placeholder:text-fg-subtle focus:outline-none"
+          />
+          <input
+            value={form.summary}
+            onChange={(e) => set("summary", e.target.value)}
+            placeholder="Add a short summary…"
+            className="mt-2 w-full bg-transparent text-sm text-fg-muted placeholder:text-fg-subtle focus:outline-none"
+          />
         </div>
 
         {/* Property pills */}
@@ -244,18 +243,19 @@ export default function ProjectFormModal({
         <textarea
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
-          rows={5}
+          rows={10}
           placeholder="Write a description, a project brief, or collect ideas…"
-          className="w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
+          className="min-h-[300px] w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
         />
 
-        {/* Milestones */}
-        <div className="rounded-lg border border-glass-border p-3">
+        {/* Milestones — full-width bar */}
+        <div className="border-t border-glass-border pt-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-fg">Milestones</span>
             <button
               type="button"
               onClick={addMilestone}
+              aria-label="Add milestone"
               className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
             >
               <Plus className="h-4 w-4" />
@@ -269,13 +269,13 @@ export default function ProjectFormModal({
                     value={m.name}
                     onChange={(e) => updateMilestone(i, { name: e.target.value })}
                     placeholder="Milestone name"
-                    className="h-8 flex-1 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:border-brand focus:outline-none"
+                    className="h-8 flex-1 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:outline-none"
                   />
                   <input
                     type="date"
                     value={m.targetDate || ""}
                     onChange={(e) => updateMilestone(i, { targetDate: e.target.value || null })}
-                    className="h-8 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:border-brand focus:outline-none"
+                    className="h-8 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:outline-none"
                   />
                   <button
                     type="button"

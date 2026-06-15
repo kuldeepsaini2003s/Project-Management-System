@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useOutletContext } from "react-router-dom";
+import { useParams, useOutletContext, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
@@ -11,12 +11,13 @@ import { fetchTeam } from "../../redux/actions/teamActions.js";
 import {
   fetchTeamProjects,
   createProject,
-  moveProjectStatus,
+  reorderProjects,
 } from "../../redux/actions/projectActions.js";
 
 export default function TeamProjectsPage() {
   const { teamId } = useParams();
   const { onMenu } = useOutletContext() || {};
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const [modal, setModal] = useState({ open: false, status: "BACKLOG" });
   const [error, setError] = useState("");
@@ -31,23 +32,28 @@ export default function TeamProjectsPage() {
   }, [dispatch, teamId]);
 
   const handleCreate = (data) => dispatch(createProject(data.teamId, data));
-  const moveStatus = (id, status) =>
-    dispatch(moveProjectStatus(id, status)).catch(() => {});
+  const handleReorder = (status, orderedIds) =>
+    dispatch(reorderProjects("teamProjects", status, orderedIds)).catch(() => {});
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
-        breadcrumb={[team?.name || "Team", "Projects"]}
+        breadcrumb={[{ label: team?.name || "Team", to: `/teams/${teamId}` }, "Projects"]}
         onMenu={onMenu}
         actions={
-          <Button className="!w-auto px-3" onClick={() => setModal({ open: true, status: "BACKLOG" })}>
+          <Button
+            variant="ghost"
+            aria-label="New project"
+            title="New project"
+            className="!w-auto p-2"
+            onClick={() => setModal({ open: true, status: "BACKLOG" })}
+          >
             <Plus className="h-4 w-4" />
-            New project
           </Button>
         }
       />
 
-      <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg p-3">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
         {loading && projects.length === 0 ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading projects…</p>
@@ -55,7 +61,8 @@ export default function TeamProjectsPage() {
           <ProjectBoard
             projects={projects}
             onCreate={(status) => setModal({ open: true, status })}
-            onMoveStatus={moveStatus}
+            onReorder={handleReorder}
+            onOpen={(project) => navigate(`/projects/${project.id}`)}
           />
         )}
       </div>

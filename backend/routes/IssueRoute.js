@@ -4,6 +4,7 @@ import {
   getIssue,
   updateIssue,
   deleteIssue,
+  reorderIssues,
   createSubIssue,
   addComment,
   uploadIssueImages,
@@ -15,6 +16,7 @@ import { upload } from "../middleware/multerMiddleware.js";
 const router = Router();
 router.use(protect);
 
+router.post("/reorder", reorderIssues);
 router.get("/mine", getMyIssues);
 router.get("/:id", getIssue);
 router.patch("/:id", updateIssue);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useOutletContext, Link } from "react-router-dom";
-import { Trash2, Plus, Send, CornerDownRight } from "lucide-react";
+import { Trash2, Plus, Send, CornerDownRight, Box } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import Avatar from "../../components/ui/Avatar.jsx";
@@ -144,8 +144,8 @@ export default function IssueDetailPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
         breadcrumb={[
-          issue?.teamName || "Team",
-          "Issues",
+          { label: issue?.teamName || "Team", to: teamId ? `/teams/${teamId}` : undefined },
+          { label: "Issues", to: teamId ? `/teams/${teamId}/issues` : undefined },
           issue ? `${issue.identifier} ${issue.title}` : "…",
         ]}
         onMenu={onMenu}
@@ -267,7 +267,7 @@ export default function IssueDetailPage() {
                           onChange={(e) => setSubTitle(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && addSubIssue()}
                           placeholder="Sub-issue title"
-                          className="h-9 flex-1 rounded-md border border-input-border bg-input px-3 text-sm text-fg focus:border-brand focus:outline-none"
+                          className="h-9 flex-1 rounded-md border border-input-border bg-input px-3 text-sm text-fg focus:outline-none"
                         />
                         <Button className="!w-auto px-3" onClick={addSubIssue}>Add</Button>
                       </div>
@@ -390,7 +390,11 @@ function ProjectPicker({ value, projects, onChange }) {
         <PillButton onClick={toggle} active={!!selected}>
           {selected ? (
             <>
-              <span>{selected.icon || "📦"}</span>
+              {selected.icon ? (
+                <span aria-hidden="true">{selected.icon}</span>
+              ) : (
+                <Box className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
               <span className="truncate">{selected.name}</span>
             </>
           ) : (
@@ -413,7 +417,11 @@ function ProjectPicker({ value, projects, onChange }) {
               onClick={() => { onChange(p.id); close(); }}
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
             >
-              <span>{p.icon || "📦"}</span>
+              {p.icon ? (
+                <span aria-hidden="true">{p.icon}</span>
+              ) : (
+                <Box className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
               <span className="truncate">{p.name}</span>
             </button>
           ))}

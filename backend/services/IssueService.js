@@ -162,6 +162,22 @@ export const deleteIssue = async (userId, id) => {
   await prisma.issue.delete({ where: { id } });
 };
 
+// Persist a column's order (and the dropped card's status) after drag-and-drop.
+export const reorderIssues = async (userId, status, orderedIds) => {
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) return { ok: true };
+  if (status && !STATUSES.includes(status)) throw new ApiError(400, "Invalid status");
+  for (const id of orderedIds) await getIssueOrThrow(userId, id);
+  await prisma.$transaction(
+    orderedIds.map((id, i) =>
+      prisma.issue.update({
+        where: { id },
+        data: { sortOrder: i, ...(status ? { status } : {}) },
+      })
+    )
+  );
+  return { ok: true };
+};
+
 /* ----- sub-issues ----- */
 export const createSubIssue = async (userId, parentId, data) => {
   const parent = await getIssueOrThrow(userId, parentId);

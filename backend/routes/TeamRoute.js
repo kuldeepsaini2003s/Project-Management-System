@@ -18,6 +18,7 @@ import {
   requestToJoin,
   getRequests,
 } from "../controllers/TeamMemberController.js";
+import { createInvites } from "../controllers/TeamInviteController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
@@ -38,6 +39,9 @@ router.get("/:id/members", getMembers);
 router.post("/:id/members", addMember);
 router.patch("/:id/members/:userId", updateMemberRole);
 router.delete("/:id/members/:userId", removeMember);
+
+// Invite by email
+router.post("/:id/invites", createInvites);
 
 // Join flow
 router.get("/:id/public", getTeamPublic);

@@ -11,87 +11,107 @@
 /* ------------------------------------------------------------------ */
 
 :root {
-  /* Light theme */
-  --bg: #f4f5f8;
-  --bg-subtle: #eceef3;
+  /* Light theme — warm, clean glassmorphism (default) */
+  --bg: #f4ece4;
+  --bg-subtle: #efe6dc;
   --surface: #ffffff;
-  --surface-hover: #f1f2f5;
-  --sidebar: #fbfbfc;
+  --surface-hover: #f6f0ea;
+  --sidebar: #fbf8f4;
 
-  --fg: #0d0e10;
-  --fg-muted: #5c6069;
-  --fg-subtle: #868b94;
+  --fg: #1d1b19;
+  --fg-muted: #5f574e;
+  --fg-subtle: #756b61;
 
-  --border: #e2e4ea;
-  --border-strong: #d2d5dd;
+  --border: #e7ddd1;
+  --border-strong: #d6cabb;
 
   --input: #ffffff;
-  --input-border: #d2d5dd;
+  --input-border: #e0d6ca;
 
-  --brand: #5e6ad2;
-  --brand-hover: #525dc7;
+  --brand: #5b63d3;
+  --brand-hover: #4d55c8;
   --brand-fg: #ffffff;
+  --brand-glow: rgba(91, 99, 211, 0.35);
 
-  --danger: #d64545;
+  --danger: #d6455d;
   --warning: #d9920a;
-  --success: #2a9d63;
-  --ring: #5e6ad2;
+  --success: #1f9d60;
+  --ring: #5b63d3;
 
-  /* Glass */
+  /* Glass — iOS-style frosted panels (heavy blur, vibrancy, crisp rim) */
   --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-bg-strong: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.6);
-  --glass-blur: 18px;
+  --glass-bg-strong: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-highlight: rgba(255, 255, 255, 1);
+  --glass-blur: 34px;
+  --glass-filter: blur(34px) saturate(190%) brightness(1.07);
+  /* drop shadow + bright inner rim (top sheen + 1px inner stroke) */
+  --glass-shadow: 0 12px 40px rgba(80, 60, 120, 0.18), 0 2px 12px rgba(80, 60, 120, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+  --lift-shadow: 0 22px 56px rgba(80, 60, 120, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 
-  /* Backdrop blob colors */
-  --blob-1: rgba(94, 106, 210, 0.45);
-  --blob-2: rgba(190, 95, 220, 0.35);
-  --blob-3: rgba(80, 170, 220, 0.35);
+  /* Backdrop — vibrant warm gradient that shows THROUGH the glass */
+  --blob-1: rgba(255, 158, 120, 0.7);
+  --blob-2: rgba(176, 148, 255, 0.62);
+  --blob-3: rgba(120, 194, 255, 0.6);
+  --blob-4: rgba(255, 190, 130, 0.62);
 
-  --radius: 8px;
-  --radius-sm: 6px;
-  --radius-lg: 12px;
+  /* Rounded corners — generous, modern */
+  --radius-sm: 8px;
+  --radius: 11px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
 
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Plus Jakarta Sans", var(--font-sans);
 }
 
 .dark {
-  /* Dark theme (Linear-like, default app theme) */
-  --bg: #06070a;
-  --bg-subtle: #0a0b0f;
-  --surface: #101113;
-  --surface-hover: #1a1b1e;
-  --sidebar: #0c0d0e;
+  /* Dark theme (default app theme) */
+  --bg: #050609;
+  --bg-subtle: #0a0b10;
+  --surface: #101218;
+  --surface-hover: #1b1e27;
+  --sidebar: #0b0c11;
 
-  --fg: #f7f8f8;
-  --fg-muted: #9ca0a8;
-  --fg-subtle: #6f747c;
+  --fg: #f5f6f9;
+  --fg-muted: #a3a8b4;
+  --fg-subtle: #6c7280;
 
-  --border: #232427;
-  --border-strong: #2f3135;
+  --border: #20232d;
+  --border-strong: #2c3039;
 
-  --input: #141517;
-  --input-border: #2f3135;
+  --input: #14161d;
+  --input-border: #2c3039;
 
-  --brand: #5e6ad2;
-  --brand-hover: #6872e5;
+  --brand: #6d77e8;
+  --brand-hover: #7b84ee;
   --brand-fg: #ffffff;
+  --brand-glow: rgba(109, 119, 232, 0.5);
 
-  --danger: #f06b6b;
+  --danger: #f06b80;
   --warning: #e0a52a;
   --success: #3fb27f;
-  --ring: #6872e5;
+  --ring: #7b84ee;
 
-  /* Glass */
-  --glass-bg: rgba(18, 19, 23, 0.55);
-  --glass-bg-strong: rgba(20, 21, 26, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 20px;
+  /* Glass — iOS-style frosted (dark) */
+  --glass-bg: rgba(22, 24, 32, 0.5);
+  --glass-bg-strong: rgba(24, 26, 36, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-blur: 34px;
+  --glass-filter: blur(34px) saturate(180%) brightness(1.1);
+  --glass-shadow: 0 12px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --lift-shadow: 0 20px 52px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 
   /* Backdrop blob colors */
-  --blob-1: rgba(94, 106, 210, 0.4);
-  --blob-2: rgba(150, 70, 200, 0.32);
-  --blob-3: rgba(40, 130, 190, 0.3);
+  --blob-1: rgba(109, 119, 232, 0.42);
+  --blob-2: rgba(160, 80, 210, 0.32);
+  --blob-3: rgba(40, 140, 200, 0.3);
+  --blob-4: rgba(220, 110, 90, 0.2);
 }
 
 /* Map semantic tokens to Tailwind theme. `inline` keeps the var()
@@ -124,11 +144,14 @@
 
   --color-glass-border: var(--glass-border);
 
-  --radius-DEFAULT: var(--radius);
   --radius-sm: var(--radius-sm);
+  --radius-md: 9px;
+  --radius-DEFAULT: var(--radius);
   --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
 }
 
 * {
@@ -146,8 +169,70 @@ body {
   background-color: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Headings use the display font with tight tracking for a modern look. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Smooth, consistent micro-interactions on interactive elements. */
+a,
+button,
+input,
+select,
+textarea,
+[role="button"] {
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+::selection {
+  background: var(--brand-glow);
+  color: var(--fg);
+}
+
+/* Tailwind v4 preflight drops the default button pointer — restore it
+   so every clickable control reads as interactive (a11y / skill rule). */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label[for],
+summary {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Global keyboard focus ring. Components that opt into `outline-none`
+   (e.g. Button, Input) manage their own ring and override this. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Form fields never show a focus outline/ring anywhere in the app. */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* ------------------------------------------------------------------ */
@@ -155,17 +240,84 @@ body {
 /* ------------------------------------------------------------------ */
 
 .glass {
+  position: relative;
   background-color: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* A soft highlight along the top edge — the "frosted" sheen. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(to bottom, var(--glass-highlight), transparent 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .glass-strong {
   background-color: var(--glass-bg-strong);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  /* Floating surfaces (modals, popovers, dropdowns) pop in. */
+  animation: pop-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Frosted card tile — more opaque than .glass so cards stand out when
+   layered on a translucent glass column. No entrance animation. */
+.glass-card {
+  position: relative;
+  background-color: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Opt-in card lift on hover. */
+.hover-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    background-color 0.18s ease, border-color 0.18s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lift-shadow);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.3s ease both;
 }
 
 /* ------------------------------------------------------------------ */
@@ -184,60 +336,76 @@ body {
 .app-backdrop::after {
   content: "";
   position: absolute;
-  width: 60vw;
-  height: 60vw;
+  width: 64vw;
+  height: 64vw;
   border-radius: 50%;
   filter: blur(90px);
-  opacity: 0.9;
+  opacity: 1;
 }
 
 .app-backdrop::before {
-  top: -15vw;
+  top: -16vw;
   left: -10vw;
   background: radial-gradient(circle at center, var(--blob-1), transparent 60%);
-  animation: float-a 22s ease-in-out infinite;
+  animation: float-a 26s ease-in-out infinite;
 }
 
 .app-backdrop::after {
   bottom: -20vw;
-  right: -10vw;
+  right: -12vw;
   background: radial-gradient(circle at center, var(--blob-2), transparent 60%);
-  animation: float-b 26s ease-in-out infinite;
+  animation: float-b 30s ease-in-out infinite;
 }
 
 .app-backdrop > .blob {
   position: absolute;
-  top: 30%;
-  left: 40%;
-  width: 45vw;
-  height: 45vw;
+  top: 24%;
+  left: 36%;
+  width: 50vw;
+  height: 50vw;
   border-radius: 50%;
   filter: blur(100px);
-  opacity: 0.8;
+  opacity: 0.95;
   background: radial-gradient(circle at center, var(--blob-3), transparent 60%);
-  animation: float-c 30s ease-in-out infinite;
+  animation: float-c 34s ease-in-out infinite;
+}
+
+.app-backdrop > .blob::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  right: -40%;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  filter: blur(90px);
+  background: radial-gradient(circle at center, var(--blob-4), transparent 60%);
+  animation: float-a 38s ease-in-out infinite reverse;
 }
 
 @keyframes float-a {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(8vw, 6vh) scale(1.1); }
+  50% { transform: translate(9vw, 7vh) scale(1.12); }
 }
 
 @keyframes float-b {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-6vw, -8vh) scale(1.15); }
+  50% { transform: translate(-7vw, -9vh) scale(1.18); }
 }
 
 @keyframes float-c {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(-10vw, 5vh) scale(1.1); }
-  66% { transform: translate(6vw, -6vh) scale(0.95); }
+  33% { transform: translate(-11vw, 6vh) scale(1.1); }
+  66% { transform: translate(7vw, -7vh) scale(0.92); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .app-backdrop::before,
   .app-backdrop::after,
-  .app-backdrop > .blob {
+  .app-backdrop > .blob,
+  .app-backdrop > .blob::after,
+  .glass-strong,
+  .animate-fade-up {
     animation: none;
   }
 }
@@ -248,12 +416,18 @@ body {
   scrollbar-color: var(--border-strong) transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 *::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 8px;
+  border-radius: 9px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-subtle);
+  background-clip: content-box;
 }
 *::-webkit-scrollbar-track {
   background: transparent;

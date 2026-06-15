@@ -18,7 +18,7 @@ import { useTeams } from "../../context/TeamContext.jsx";
 const navItemClass = ({ isActive }) =>
   `flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
     isActive
-      ? "bg-surface-hover font-medium text-fg"
+      ? "bg-brand/10 font-medium text-brand"
       : "text-fg-muted hover:bg-surface-hover hover:text-fg"
   }`;
 
@@ -40,7 +40,7 @@ export default function Sidebar({ onClose }) {
 
   return (
     <>
-      <aside className="glass flex h-full  shrink-0 flex-col gap-1 px-3 py-3">
+      <aside className="glass flex h-full shrink-0 flex-col gap-1 rounded-2xl px-3 py-3">
         <div className="flex items-center gap-1">
           <div className="flex-1">
             <WorkspaceSwitcher onCreateWorkspace={() => setCreateWorkspaceOpen(true)} />

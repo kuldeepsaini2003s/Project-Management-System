@@ -10,6 +10,10 @@ export const updateProject = asyncHandler(async (req, res) => {
   res.json(await projectService.updateProject(req.userId, req.params.id, req.body));
 });
 
+export const reorderProjects = asyncHandler(async (req, res) => {
+  res.json(await projectService.reorderProjects(req.userId, req.body.status, req.body.orderedIds));
+});
+
 export const deleteProject = asyncHandler(async (req, res) => {
   await projectService.deleteProject(req.userId, req.params.id);
   res.status(204).send();

@@ -8,7 +8,7 @@ export default function Input({ label, id, className = "", ...props }) {
       )}
       <input
         id={id}
-        className={`h-10 w-full rounded-md border border-input-border bg-input px-3 text-sm text-fg placeholder:text-fg-subtle transition-colors focus:border-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${className}`}
+        className={`h-10 w-full rounded-md border border-input-border bg-input px-3 text-sm text-fg placeholder:text-fg-subtle transition-colors focus:outline-none ${className}`}
         {...props}
       />
     </div>

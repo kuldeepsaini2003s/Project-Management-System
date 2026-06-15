@@ -1,27 +1,30 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Pencil, Trash2, Plus, Calendar } from "lucide-react";
+import { Pencil, Trash2, Calendar, Box, Users, Hash } from "lucide-react";
 import Topbar from "../../components/layout/Topbar.jsx";
 import Button from "../../components/ui/Button.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import Avatar from "../../components/ui/Avatar.jsx";
 import ProjectStatusBadge from "../../components/projects/ProjectStatusBadge.jsx";
 import ProjectFormModal from "../../components/projects/ProjectFormModal.jsx";
-import IssueBoard from "../../components/issues/IssueBoard.jsx";
-import IssueFormModal from "../../components/issues/IssueFormModal.jsx";
 import { PRIORITIES } from "../../constants/priority.js";
 import { fetchTeam, fetchTeamMembers } from "../../redux/actions/teamActions.js";
 import { fetchWorkspaceLabels } from "../../redux/actions/workspaceActions.js";
 import { fetchProject, updateProject, deleteProject } from "../../redux/actions/projectActions.js";
-import {
-  fetchProjectIssues,
-  createIssue,
-  moveIssueStatus,
-} from "../../redux/actions/issueActions.js";
+import { fetchProjectIssues } from "../../redux/actions/issueActions.js";
 
 const fmt = (v) =>
   v ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
+
+function PropertyRow({ label, children }) {
+  return (
+    <div className="flex items-start gap-3 py-2 text-sm">
+      <span className="w-20 shrink-0 text-fg-subtle">{label}</span>
+      <div className="min-w-0 flex-1 text-fg">{children}</div>
+    </div>
+  );
+}
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
@@ -29,9 +32,7 @@ export default function ProjectDetailPage() {
   const { onMenu } = useOutletContext() || {};
   const dispatch = useDispatch();
 
-  const [tab, setTab] = useState("issues");
   const [editOpen, setEditOpen] = useState(false);
-  const [issueModal, setIssueModal] = useState({ open: false, status: "TODO" });
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
 
@@ -39,8 +40,6 @@ export default function ProjectDetailPage() {
   const team = useSelector((state) => state.team.current);
   const workspaceId = useSelector((state) => state.ui.currentWorkspaceId);
   const issues = useSelector((state) => state.issue.projectIssues);
-  const labels = useSelector((state) => state.workspace.labels);
-  const members = useSelector((state) => state.team.members);
   const loading = useSelector((state) => state.project.loading);
 
   useEffect(() => {
@@ -78,13 +77,20 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const submitIssue = (data) => dispatch(createIssue(teamId, { ...data, projectId }));
-  const moveStatus = (id, status) => dispatch(moveIssueStatus(id, status)).catch(() => {});
+  // Progress derived from the project's issues.
+  const total = issues.length;
+  const started = issues.filter((i) => i.status === "IN_PROGRESS").length;
+  const completed = issues.filter((i) => i.status === "DONE").length;
+  const pct = (n) => (total ? Math.round((n / total) * 100) : 0);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar
-        breadcrumb={[team?.name || "Team", "Projects", project?.name || "…"]}
+        breadcrumb={[
+          { label: team?.name || "Team", to: teamId ? `/teams/${teamId}` : undefined },
+          { label: "Projects", to: teamId ? `/teams/${teamId}/projects` : undefined },
+          project?.name || "…",
+        ]}
         onMenu={onMenu}
         actions={
           onThisProject && (
@@ -101,97 +107,39 @@ export default function ProjectDetailPage() {
         }
       />
 
-      <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
         {loading && !onThisProject ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
         ) : onThisProject ? (
-          <div className="flex h-full flex-col">
-            <div className="border-b border-glass-border p-5">
-              <div className="flex items-start gap-3">
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl"
-                  style={{ backgroundColor: (project.color || "#5e6ad2") + "22" }}
-                >
-                  {project.icon || "📦"}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-xl font-semibold tracking-tight text-fg">{project.name}</h1>
-                  {project.summary && <p className="mt-0.5 text-sm text-fg-muted">{project.summary}</p>}
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-fg-muted">
-                <ProjectStatusBadge status={project.status} />
-                {priority && priority.label !== "No priority" && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <priority.icon className="h-3.5 w-3.5" style={{ color: priority.color }} />
-                    {priority.label}
-                  </span>
-                )}
-                {project.lead && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Avatar name={project.lead.name} src={project.lead.avatarUrl} size="sm" />
-                    {project.lead.name}
-                  </span>
-                )}
-                {project.targetDate && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {fmt(project.targetDate)}
-                  </span>
-                )}
-                {project.members?.length > 0 && (
-                  <span className="flex -space-x-1.5">
-                    {project.members.slice(0, 5).map((m) => (
-                      <Avatar key={m.id} name={m.name} src={m.avatarUrl} size="sm" className="ring-1 ring-bg" />
-                    ))}
-                  </span>
-                )}
-                {project.labels?.map((l) => (
-                  <span key={l.id} className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
-                    {l.name}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-4 flex gap-1">
-                {["issues", "overview"].map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={`rounded-md px-3 py-1.5 text-sm capitalize transition-colors ${
-                      tab === t ? "bg-surface-hover font-medium text-fg" : "text-fg-muted hover:text-fg"
-                    }`}
+          <div className="flex h-full min-h-0 gap-2">
+            {/* Left: overview + description */}
+            <div className="glass min-h-0 flex-1 overflow-y-auto rounded-lg p-6">
+              <div className="mx-auto max-w-2xl">
+                <div className="flex items-start gap-3">
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl"
+                    style={{
+                      backgroundColor: (project.color || "#5e6ad2") + "22",
+                      color: project.color || "#5e6ad2",
+                    }}
                   >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-hidden p-3">
-              {tab === "issues" ? (
-                <div className="flex h-full flex-col gap-2">
-                  <div className="flex justify-end">
-                    <Button className="!w-auto px-3" onClick={() => setIssueModal({ open: true, status: "TODO" })}>
-                      <Plus className="h-4 w-4" />
-                      New issue
-                    </Button>
-                  </div>
-                  <div className="min-h-0 flex-1 overflow-hidden">
-                    <IssueBoard
-                      issues={issues}
-                      showProject={false}
-                      onCreate={(status) => setIssueModal({ open: true, status })}
-                      onMoveStatus={moveStatus}
-                      onOpen={(issue) => navigate(`/issues/${issue.id}`)}
-                    />
+                    {project.icon ? (
+                      <span aria-hidden="true">{project.icon}</span>
+                    ) : (
+                      <Box className="h-6 w-6" aria-hidden="true" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-2xl font-semibold tracking-tight text-fg">{project.name}</h1>
+                    {project.summary && (
+                      <p className="mt-1 text-sm leading-relaxed text-fg-muted">{project.summary}</p>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="mx-auto max-w-2xl overflow-y-auto p-3">
+
+                <div className="mt-6 border-t border-glass-border pt-5">
+                  <h2 className="mb-2 text-sm font-semibold text-fg">Description</h2>
                   {project.description ? (
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">
                       {project.description}
@@ -199,55 +147,151 @@ export default function ProjectDetailPage() {
                   ) : (
                     <p className="text-sm text-fg-subtle">No description yet.</p>
                   )}
-                  {project.milestones?.length > 0 && (
-                    <div className="mt-6">
-                      <h3 className="mb-2 text-sm font-semibold text-fg">Milestones</h3>
-                      <ul className="flex flex-col gap-1.5">
-                        {project.milestones.map((m) => (
-                          <li
-                            key={m.id}
-                            className="flex items-center justify-between rounded-md border border-glass-border px-3 py-2 text-sm"
-                          >
-                            <span className="text-fg">{m.name}</span>
-                            {m.targetDate && <span className="text-xs text-fg-subtle">{fmt(m.targetDate)}</span>}
-                          </li>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: properties + progress */}
+            <aside className="glass hidden w-80 shrink-0 overflow-y-auto rounded-lg p-4 lg:block">
+              <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
+                Properties
+              </h2>
+              <div className="divide-y divide-glass-border">
+                <PropertyRow label="Status">
+                  <ProjectStatusBadge status={project.status} />
+                </PropertyRow>
+                {priority && priority.label !== "No priority" && (
+                  <PropertyRow label="Priority">
+                    <span className="inline-flex items-center gap-1.5">
+                      <priority.icon className="h-3.5 w-3.5" style={{ color: priority.color }} />
+                      {priority.label}
+                    </span>
+                  </PropertyRow>
+                )}
+                {project.lead && (
+                  <PropertyRow label="Lead">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Avatar name={project.lead.name} src={project.lead.avatarUrl} size="sm" />
+                      <span className="truncate">{project.lead.name}</span>
+                    </span>
+                  </PropertyRow>
+                )}
+                {project.members?.length > 0 && (
+                  <PropertyRow label="Members">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="flex -space-x-1.5">
+                        {project.members.slice(0, 5).map((m) => (
+                          <Avatar key={m.id} name={m.name} src={m.avatarUrl} size="sm" className="ring-1 ring-bg" />
                         ))}
-                      </ul>
-                    </div>
-                  )}
+                      </span>
+                      <span className="text-fg-muted">{project.members.length}</span>
+                    </span>
+                  </PropertyRow>
+                )}
+                <PropertyRow label="Issues">
+                  <span className="inline-flex items-center gap-1.5 text-fg-muted">
+                    <Hash className="h-3.5 w-3.5" />
+                    {total}
+                  </span>
+                </PropertyRow>
+                {(project.startDate || project.targetDate) && (
+                  <PropertyRow label="Dates">
+                    <span className="inline-flex items-center gap-1.5 text-fg-muted">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {fmt(project.startDate) || "—"} → {fmt(project.targetDate) || "—"}
+                    </span>
+                  </PropertyRow>
+                )}
+                {team && (
+                  <PropertyRow label="Team">
+                    <span className="inline-flex items-center gap-1.5 text-fg-muted">
+                      <Users className="h-3.5 w-3.5" />
+                      {team.name}
+                    </span>
+                  </PropertyRow>
+                )}
+                {project.labels?.length > 0 && (
+                  <PropertyRow label="Labels">
+                    <span className="flex flex-wrap gap-1.5">
+                      {project.labels.map((l) => (
+                        <span
+                          key={l.id}
+                          className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 text-[11px] text-fg-muted"
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: l.color }} />
+                          {l.name}
+                        </span>
+                      ))}
+                    </span>
+                  </PropertyRow>
+                )}
+              </div>
+
+              {/* Progress */}
+              <div className="mt-5 border-t border-glass-border pt-4">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
+                  Progress
+                </h2>
+                <div className="mb-3 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-fg-muted">
+                    <span className="h-2 w-2 rounded-full bg-surface-hover ring-1 ring-border" />
+                    Scope <span className="font-medium text-fg">{total}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 text-fg-muted">
+                    <span className="h-2 w-2 rounded-full bg-warning" />
+                    Started <span className="font-medium text-fg">{started}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 text-fg-muted">
+                    <span className="h-2 w-2 rounded-full bg-brand" />
+                    Done <span className="font-medium text-fg">{completed}</span>
+                  </span>
+                </div>
+                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-surface-hover">
+                  <div className="bg-brand transition-all" style={{ width: `${pct(completed)}%` }} />
+                  <div className="bg-warning transition-all" style={{ width: `${pct(started)}%` }} />
+                </div>
+                <p className="mt-2 text-right text-xs text-fg-subtle">
+                  {pct(completed)}% complete
+                </p>
+              </div>
+
+              {/* Milestones */}
+              {project.milestones?.length > 0 && (
+                <div className="mt-5 border-t border-glass-border pt-4">
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
+                    Milestones
+                  </h2>
+                  <ul className="flex flex-col gap-1.5">
+                    {project.milestones.map((m) => (
+                      <li
+                        key={m.id}
+                        className="flex items-center justify-between rounded-md border border-glass-border px-3 py-2 text-sm"
+                      >
+                        <span className="truncate text-fg">{m.name}</span>
+                        {m.targetDate && (
+                          <span className="shrink-0 text-xs text-fg-subtle">{fmt(m.targetDate)}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
-            </div>
+            </aside>
           </div>
         ) : null}
       </div>
 
       {onThisProject && team && (
-        <>
-          <ProjectFormModal
-            open={editOpen}
-            onClose={() => setEditOpen(false)}
-            onSubmit={handleUpdate}
-            initial={project}
-            mode="edit"
-            teamId={team.id}
-            teamKey={team.key}
-            workspaceId={team.workspaceId}
-          />
-          <IssueFormModal
-            open={issueModal.open}
-            onClose={() => setIssueModal((m) => ({ ...m, open: false }))}
-            onSubmit={submitIssue}
-            mode="create"
-            teamId={team.id}
-            teamKey={team.key}
-            workspaceId={team.workspaceId}
-            members={members}
-            labels={labels}
-            lockedProjectId={projectId}
-            defaultStatus={issueModal.status}
-          />
-        </>
+        <ProjectFormModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          onSubmit={handleUpdate}
+          initial={project}
+          mode="edit"
+          teamId={team.id}
+          teamKey={team.key}
+          workspaceId={team.workspaceId}
+        />
       )}
     </div>
   );

@@ -1,30 +1,32 @@
 import { useState } from "react";
-import { UserPlus, Check, X } from "lucide-react";
+import { UserPlus, Check, X, MoreHorizontal } from "lucide-react";
 import Avatar from "../../components/ui/Avatar.jsx";
 import Button from "../../components/ui/Button.jsx";
+import Modal from "../../components/ui/Modal.jsx";
 import Popover from "../../components/ui/Popover.jsx";
+import FormError from "../../components/ui/FormError.jsx";
 import {
   useGetTeamRequestsQuery,
-  useGetWorkspaceMembersQuery,
-  useAddTeamMemberMutation,
   useRemoveTeamMemberMutation,
   useRespondRequestMutation,
+  useCreateTeamInvitesMutation,
   errMsg,
 } from "../../redux/apiSlice.js";
 
 const ROLE_LABEL = { OWNER: "Owner", ADMIN: "Admin", MEMBER: "Member" };
 
+const handleFromEmail = (email = "") => email.split("@")[0];
+
 export default function TeamMembersPanel({ team, members, isAdmin }) {
   const [error, setError] = useState("");
+  const [inviteOpen, setInviteOpen] = useState(false);
 
-  // Pending requests refresh on a slow interval so admins see new ones.
   const { data: requests = [] } = useGetTeamRequestsQuery(team.id, {
     skip: !isAdmin,
     pollingInterval: 15000,
   });
 
   const [respond] = useRespondRequestMutation();
-  const [addMember] = useAddTeamMemberMutation();
   const [removeMember] = useRemoveTeamMemberMutation();
 
   const onRespond = async (id, accept) => {
@@ -48,10 +50,12 @@ export default function TeamMembersPanel({ team, members, isAdmin }) {
     <div className="p-5">
       {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-fg">Team members</h2>
+      <div className="mb-4 flex items-center justify-end">
         {isAdmin && (
-          <AddMemberButton team={team} members={members} onAdd={addMember} onError={setError} />
+          <Button variant="secondary" className="!w-auto px-3" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="h-4 w-4" />
+            Invite people
+          </Button>
         )}
       </div>
 
@@ -89,83 +93,132 @@ export default function TeamMembersPanel({ team, members, isAdmin }) {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-glass-border">
-        <div className="grid grid-cols-[1fr_1fr_auto] gap-4 border-b border-glass-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
-          <span>Name</span>
-          <span className="hidden sm:block">Email</span>
-          <span>Role</span>
-        </div>
-        {members.map((m) => (
+      {/* Header */}
+      <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_12rem] gap-4 border-b border-glass-border px-2 pb-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
+        <span>Name</span>
+        <span className="hidden sm:block">Email</span>
+        <span className="text-right">Role</span>
+      </div>
+
+      {/* Rows */}
+      {members.map((m) => {
+        const removable = isAdmin && m.role !== "OWNER";
+        return (
           <div
             key={m.id}
-            className="grid grid-cols-[1fr_1fr_auto] items-center gap-4 border-b border-glass-border px-4 py-3 last:border-0"
+            className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_12rem] items-center gap-4 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-hover"
           >
-            <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
               <Avatar name={m.name} src={m.avatarUrl} size="lg" />
-              <span className="truncate text-sm text-fg">{m.name}</span>
+              <div className="min-w-0">
+                <p className="truncate text-sm text-fg">{m.name}</p>
+                <p className="truncate text-xs text-fg-subtle">{handleFromEmail(m.email)}</p>
+              </div>
             </div>
             <span className="hidden truncate text-sm text-fg-muted sm:block">{m.email}</span>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted">
-                {ROLE_LABEL[m.role] || m.role}
-              </span>
-              {isAdmin && m.role !== "OWNER" && (
-                <button onClick={() => onRemove(m.id)} className="text-xs text-fg-subtle hover:text-danger">
-                  Remove
-                </button>
+            <div className="flex items-center justify-end gap-7">
+              <span className="text-sm text-brand">{ROLE_LABEL[m.role] || m.role}</span>
+              {removable && (
+                <Popover
+                  align="right"
+                  trigger={({ toggle }) => (
+                    <button
+                      onClick={toggle}
+                      aria-label="Member options"
+                      className="rounded-md p-1 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  )}
+                >
+                  {({ close }) => (
+                    <button
+                      onClick={() => {
+                        close();
+                        onRemove(m.id);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-danger hover:bg-surface-hover"
+                    >
+                      Remove from team
+                    </button>
+                  )}
+                </Popover>
               )}
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
+
+      <InviteModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        teamId={team.id}
+      />
     </div>
   );
 }
 
-function AddMemberButton({ team, members, onAdd, onError }) {
-  const { data: wsMembers = [] } = useGetWorkspaceMembersQuery(team.workspaceId);
-  const ids = new Set(members.map((m) => m.id));
-  const candidates = wsMembers.filter((u) => !ids.has(u.id));
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const add = async (userId, close) => {
+function InviteModal({ open, onClose, teamId }) {
+  const [createInvites, { isLoading }] = useCreateTeamInvitesMutation();
+  const [text, setText] = useState("");
+  const [role, setRole] = useState("MEMBER");
+  const [error, setError] = useState("");
+
+  const parseEmails = (s) =>
+    [...new Set(s.split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+
+  const send = async () => {
+    const emails = parseEmails(text);
+    const invalid = emails.filter((e) => !EMAIL_RE.test(e));
+    if (emails.length === 0) return setError("Enter at least one email address");
+    if (invalid.length) return setError(`Invalid email: ${invalid[0]}`);
+    setError("");
     try {
-      await onAdd({ teamId: team.id, userId }).unwrap();
-      close();
+      await createInvites({ teamId, emails, role }).unwrap();
+      setText("");
+      onClose?.();
     } catch (err) {
-      onError(errMsg(err));
+      setError(errMsg(err));
     }
   };
 
   return (
-    <Popover
-      align="right"
-      trigger={({ toggle }) => (
-        <Button variant="secondary" className="!w-auto px-3" onClick={toggle}>
-          <UserPlus className="h-4 w-4" />
-          Add a member
+    <Modal
+      open={open}
+      onClose={isLoading ? undefined : onClose}
+      size="md"
+      title="Invite to your workspace"
+      footer={
+        <Button className="!w-auto px-4" onClick={send} isLoading={isLoading}>
+          Send invites
         </Button>
-      )}
+      }
     >
-      {({ close }) => (
-        <div className="max-h-64 w-60 overflow-y-auto">
-          {candidates.length === 0 ? (
-            <p className="px-2 py-2 text-xs text-fg-subtle">
-              Everyone in the workspace is already on this team. Share the invite link to add others.
-            </p>
-          ) : (
-            candidates.map((u) => (
-              <button
-                key={u.id}
-                onClick={() => add(u.id, close)}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
-              >
-                <Avatar name={u.name} src={u.avatarUrl} size="sm" />
-                <span className="truncate">{u.name}</span>
-              </button>
-            ))
-          )}
+      <div className="flex flex-col gap-2">
+        <FormError message={error} />
+        <label className="text-sm font-medium text-fg">Email</label>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          autoFocus
+          placeholder="email@algofolks.com, email2@algofolks.com…"
+          className="w-full resize-none rounded-lg border border-input-border bg-input px-3 py-2.5 text-sm text-fg placeholder:text-fg-subtle focus:outline-none"
+        />
+        <div className="mt-1 flex items-center gap-2">
+          <label className="text-sm text-fg-muted">Invite as</label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="h-9 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:outline-none"
+          >
+            <option value="MEMBER">Member</option>
+            <option value="ADMIN">Admin</option>
+          </select>
         </div>
-      )}
-    </Popover>
+      </div>
+    </Modal>
   );
 }

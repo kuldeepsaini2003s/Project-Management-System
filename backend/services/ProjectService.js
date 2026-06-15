@@ -37,7 +37,7 @@ export const getTeamProjects = async (userId, teamId) => {
   await getTeamOrThrow(userId, teamId);
   const projects = await prisma.project.findMany({
     where: { teamId },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     include,
   });
   return projects.map(shapeProject);
@@ -145,4 +145,20 @@ export const updateProject = async (userId, id, data) => {
 export const deleteProject = async (userId, id) => {
   await getProjectOrThrow(userId, id);
   await prisma.project.delete({ where: { id } });
+};
+
+// Persist a column's order (and the dropped card's status) after drag-and-drop.
+export const reorderProjects = async (userId, status, orderedIds) => {
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) return { ok: true };
+  if (status && !STATUSES.includes(status)) throw new ApiError(400, "Invalid status");
+  for (const id of orderedIds) await getProjectOrThrow(userId, id);
+  await prisma.$transaction(
+    orderedIds.map((id, i) =>
+      prisma.project.update({
+        where: { id },
+        data: { sortOrder: i, ...(status ? { status } : {}) },
+      })
+    )
+  );
+  return { ok: true };
 };

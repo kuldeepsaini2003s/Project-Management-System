@@ -8,8 +8,10 @@ const PillButton = forwardRef(function PillButton(
     <button
       ref={ref}
       type="button"
-      className={`inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs transition-colors hover:bg-surface-hover ${
-        active ? "text-fg" : "text-fg-muted"
+      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+        active
+          ? "border-border-strong bg-surface-hover text-fg"
+          : "border-border text-fg-muted hover:text-fg"
       } ${className}`}
       {...props}
     >

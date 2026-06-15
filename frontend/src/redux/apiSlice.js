@@ -118,6 +118,21 @@ export const api = createApi({
       ],
     }),
 
+    /* ---- email invites ---- */
+    createTeamInvites: b.mutation({
+      query: ({ teamId, emails, role }) => ({
+        url: `/teams/${teamId}/invites`,
+        method: "POST",
+        body: { emails, role },
+      }),
+      invalidatesTags: (r, e, { teamId }) => [{ type: "Members", id: teamId }],
+    }),
+    getInvite: b.query({ query: (token) => `/invites/${token}` }),
+    acceptInvite: b.mutation({
+      query: (token) => ({ url: `/invites/${token}/accept`, method: "POST" }),
+      invalidatesTags: ["Teams", "Workspaces"],
+    }),
+
     /* ---- labels (workspace-scoped) ---- */
     getWorkspaceLabels: b.query({
       query: (workspaceId) => `/workspaces/${workspaceId}/labels`,
@@ -255,6 +270,9 @@ export const {
   useGetMyRequestQuery,
   useRequestJoinMutation,
   useRespondRequestMutation,
+  useCreateTeamInvitesMutation,
+  useGetInviteQuery,
+  useAcceptInviteMutation,
   useGetWorkspaceLabelsQuery,
   useCreateLabelMutation,
   useGetTeamProjectsQuery,

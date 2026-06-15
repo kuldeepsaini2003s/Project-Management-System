@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Topbar from "../../components/layout/Topbar.jsx";
 import FormError from "../../components/ui/FormError.jsx";
 import IssueBoard from "../../components/issues/IssueBoard.jsx";
-import { fetchMyIssues, moveIssueStatus } from "../../redux/actions/issueActions.js";
+import { fetchMyIssues, reorderIssues } from "../../redux/actions/issueActions.js";
 
 export default function MyIssuesPage() {
   const { onMenu } = useOutletContext() || {};
@@ -19,14 +19,14 @@ export default function MyIssuesPage() {
     dispatch(fetchMyIssues()).catch((e) => setError(e.message));
   }, [dispatch]);
 
-  const moveStatus = (id, status) =>
-    dispatch(moveIssueStatus(id, status)).catch(() => {});
+  const handleReorder = (status, orderedIds) =>
+    dispatch(reorderIssues("myIssues", status, orderedIds)).catch(() => {});
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar breadcrumb={["My Issues"]} onMenu={onMenu} />
 
-      <div className="glass min-h-0 flex-1 overflow-hidden rounded-lg p-3">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
         {loading ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
@@ -37,7 +37,7 @@ export default function MyIssuesPage() {
         ) : (
           <IssueBoard
             issues={issues}
-            onMoveStatus={moveStatus}
+            onReorder={handleReorder}
             onOpen={(issue) => navigate(`/issues/${issue.id}`)}
           />
         )}

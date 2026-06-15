@@ -5,6 +5,8 @@ export const issueService = {
   get: (id) => api.get(`/issues/${id}`).then((r) => r.data),
   update: (id, payload) => api.patch(`/issues/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/issues/${id}`).then((r) => r.data),
+  reorder: (status, orderedIds) =>
+    api.post("/issues/reorder", { status, orderedIds }).then((r) => r.data),
 
   uploadImages: (id, files) => {
     const formData = new FormData();

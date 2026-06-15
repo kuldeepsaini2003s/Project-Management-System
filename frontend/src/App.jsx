@@ -14,11 +14,15 @@ import ProjectDetailPage from "./pages/projects/ProjectDetailPage.jsx";
 import WorkspaceProjectsPage from "./pages/projects/WorkspaceProjectsPage.jsx";
 import IssueDetailPage from "./pages/issues/IssueDetailPage.jsx";
 import MyIssuesPage from "./pages/issues/MyIssuesPage.jsx";
+import InvitePage from "./pages/InvitePage.jsx";
 import ComingSoon from "./pages/ComingSoon.jsx";
 
 export default function App() {
   return (
     <Routes>
+      {/* Public: invite links work before sign-in */}
+      <Route path="/invite/:token" element={<InvitePage />} />
+
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

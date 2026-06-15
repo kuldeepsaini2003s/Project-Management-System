@@ -15,6 +15,10 @@ export const updateIssue = asyncHandler(async (req, res) => {
   res.json(await issueService.updateIssue(req.userId, req.params.id, req.body));
 });
 
+export const reorderIssues = asyncHandler(async (req, res) => {
+  res.json(await issueService.reorderIssues(req.userId, req.body.status, req.body.orderedIds));
+});
+
 export const deleteIssue = asyncHandler(async (req, res) => {
   await issueService.deleteIssue(req.userId, req.params.id);
   res.status(204).send();

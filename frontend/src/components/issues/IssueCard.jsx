@@ -1,17 +1,18 @@
+import { Box } from "lucide-react";
 import { PRIORITIES } from "../../constants/priority.js";
 import Avatar from "../ui/Avatar.jsx";
 
-export default function IssueCard({ issue, onClick, onDragStart, showProject = true }) {
+export default function IssueCard({ issue, onClick, showProject = true, dragging = false }) {
   const priority = PRIORITIES[issue.priority] || PRIORITIES.NONE;
   const PIcon = priority.icon;
 
+  // While dragging, render a solid (non-blurred) card so the moving element is cheap and smooth.
+  const cls = dragging
+    ? "rounded-lg p-3 bg-surface border border-border-strong shadow-2xl cursor-grabbing"
+    : "glass-card hover-lift group cursor-grab rounded-lg p-3 hover:bg-surface-hover active:cursor-grabbing";
+
   return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart?.(e, issue)}
-      onClick={() => onClick?.(issue)}
-      className="glass group cursor-pointer rounded-lg p-3 transition-colors hover:bg-surface-hover"
-    >
+    <div onClick={() => onClick?.(issue)} className={cls}>
       <div className="flex items-center justify-between">
         <span className="text-xs text-fg-subtle">{issue.identifier}</span>
         {issue.assignee && (
@@ -34,7 +35,11 @@ export default function IssueCard({ issue, onClick, onDragStart, showProject = t
         ))}
         {showProject && issue.project && (
           <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 text-[11px] text-fg-muted">
-            <span>{issue.project.icon || "📦"}</span>
+            {issue.project.icon ? (
+              <span aria-hidden="true">{issue.project.icon}</span>
+            ) : (
+              <Box className="h-3 w-3" aria-hidden="true" />
+            )}
             {issue.project.name}
           </span>
         )}

@@ -7,9 +7,16 @@ import {
   setMyIssues,
   addIssue,
   patchIssueStatus,
+  reorderBoard,
   setCurrentIssue,
   setIssueLoading,
 } from "../issueSlice.js";
+
+const ISSUE_SETTERS = {
+  teamIssues: setTeamIssues,
+  projectIssues: setProjectIssues,
+  myIssues: setMyIssues,
+};
 
 export const fetchTeamIssues = (teamId) => async (dispatch) => {
   dispatch(setIssueLoading(true));
@@ -75,6 +82,20 @@ export const moveIssueStatus = (id, status) => async (dispatch, getState) => {
     throw err;
   }
 };
+
+// Optimistic board reorder (within or across columns): update now, persist, roll back on failure.
+export const reorderIssues =
+  (board, status, orderedIds) => async (dispatch, getState) => {
+    const snapshot = getState().issue[board];
+    dispatch(reorderBoard({ board, status, orderedIds }));
+    try {
+      await issueService.reorder(status, orderedIds);
+    } catch (err) {
+      const restore = ISSUE_SETTERS[board];
+      if (restore && snapshot) dispatch(restore(snapshot));
+      throw err;
+    }
+  };
 
 export const deleteIssue = (id) => async () => {
   await issueService.remove(id);

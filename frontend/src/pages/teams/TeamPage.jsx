@@ -26,9 +26,14 @@ function ShareButton({ teamId }) {
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <Button variant="secondary" className="!w-auto px-3" onClick={copy}>
+    <Button
+      variant="ghost"
+      aria-label={copied ? "Link copied" : "Share / Invite"}
+      title={copied ? "Link copied" : "Share / Invite"}
+      className="!w-auto p-2"
+      onClick={copy}
+    >
       {copied ? <Check className="h-4 w-4 text-success" /> : <Link2 className="h-4 w-4" />}
-      {copied ? "Link copied" : "Share / Invite"}
     </Button>
   );
 }

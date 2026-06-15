@@ -19,4 +19,18 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 
   googleClientId: required("GOOGLE_CLIENT_ID"),
+
+  // SMTP (Nodemailer) for team invitation emails.
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === "true", // true for port 465
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  },
+
+  appName: process.env.APP_NAME || "Linear",
+  // How long an invite link stays valid (hours).
+  inviteTtlHours: Number(process.env.INVITE_TTL_HOURS) || 72,
 };

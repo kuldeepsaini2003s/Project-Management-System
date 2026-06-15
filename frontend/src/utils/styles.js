@@ -17,7 +17,7 @@ const styles = {
 
   // Forms
   input:
-    "w-full rounded-md border border-input-border bg-input px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:border-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+    "w-full rounded-md border border-input-border bg-input px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none",
 };
 
 export default styles;

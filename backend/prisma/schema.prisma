@@ -53,6 +53,13 @@ enum JoinStatus {
   REJECTED
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
 model User {
   id        String       @id @default(cuid())
   email     String       @unique
@@ -65,6 +72,7 @@ model User {
   memberships     Membership[]
   teamMemberships TeamMembership[]
   joinRequests    TeamJoinRequest[]
+  sentInvites     TeamInvite[]      @relation("InviteInviter")
   ledProjects     Project[]         @relation("ProjectLead")
   projectMembers  ProjectMember[]
   assignedIssues  Issue[]           @relation("IssueAssignee")
@@ -114,6 +122,7 @@ model Team {
 
   memberships  TeamMembership[]
   joinRequests TeamJoinRequest[]
+  invites      TeamInvite[]
   projects     Project[]
   issues       Issue[]
   issueCounter Int               @default(0)
@@ -153,6 +162,26 @@ model TeamJoinRequest {
   @@unique([teamId, userId])
 }
 
+model TeamInvite {
+  id        String       @id @default(cuid())
+  email     String
+  token     String       @unique
+  role      TeamRole     @default(MEMBER)
+  status    InviteStatus @default(PENDING)
+  expiresAt DateTime
+  acceptedAt DateTime?
+
+  team        Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId      String
+  invitedBy   User?   @relation("InviteInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedById String?
+
+  createdAt DateTime @default(now())
+
+  @@index([teamId])
+  @@index([email])
+}
+
 model Project {
   id          String        @id @default(cuid())
   name        String
@@ -162,6 +191,7 @@ model Project {
   color       String?
   status      ProjectStatus @default(BACKLOG)
   priority    Priority      @default(NONE)
+  sortOrder   Int           @default(0)
   startDate   DateTime?
   targetDate  DateTime?
 

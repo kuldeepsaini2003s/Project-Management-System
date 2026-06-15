@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { THEME_KEY } from "../utils/constants.js";
 
-const ThemeContext = createContext({ theme: "dark", toggleTheme: () => {} });
+const ThemeContext = createContext({ theme: "light", toggleTheme: () => {} });
 
 const getInitialTheme = () => {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
   const stored = window.localStorage.getItem(THEME_KEY);
   if (stored === "light" || stored === "dark") return stored;
-  return "dark"; // default theme is dark
+  return "light"; // default theme is light (warm glassmorphism)
 };
 
 export function ThemeProvider({ children }) {

@@ -44,6 +44,22 @@ const projectSlice = createSlice({
       apply(state.workspaceProjects);
       if (state.current?.id === id) state.current.status = status;
     },
+    // Optimistic board reorder: set status + order of a column from an id list.
+    reorderBoard: (state, action) => {
+      const { board, status, orderedIds } = action.payload;
+      const list = state[board];
+      if (!list) return;
+      orderedIds.forEach((id, i) => {
+        const p = list.find((x) => x.id === id);
+        if (p) {
+          p.status = status;
+          p.sortOrder = i;
+        }
+      });
+      const targetItems = orderedIds.map((id) => list.find((x) => x.id === id)).filter(Boolean);
+      let ti = 0;
+      state[board] = list.map((p) => (p.status === status ? targetItems[ti++] || p : p));
+    },
     setCurrentProject: (state, action) => {
       state.current = action.payload;
     },
@@ -60,6 +76,7 @@ export const {
   updateProjectInStore,
   removeProjectFromStore,
   patchProjectStatus,
+  reorderBoard,
   setCurrentProject,
   setProjectLoading,
 } = projectSlice.actions;

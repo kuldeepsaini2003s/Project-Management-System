@@ -15,7 +15,7 @@ function TeamGlyph({ team }) {
 
 const subClass = ({ isActive }) =>
   `flex items-center gap-2 rounded-md py-1.5 pl-9 pr-2 text-sm transition-colors ${
-    isActive ? "bg-surface-hover font-medium text-fg" : "text-fg-muted hover:bg-surface-hover hover:text-fg"
+    isActive ? "bg-brand/10 font-medium text-brand" : "text-fg-muted hover:bg-surface-hover hover:text-fg"
   }`;
 
 export default function TeamNavItem({ team, onNavigate }) {

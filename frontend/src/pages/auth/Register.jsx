@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout.jsx";
 import Divider from "../../components/auth/Divider.jsx";
 import GoogleAuthButton from "../../components/auth/GoogleAuthButton.jsx";
@@ -11,6 +11,8 @@ import { useAuth } from "../../context/AuthContext.jsx";
 export default function Register() {
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
 
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
@@ -24,7 +26,7 @@ export default function Register() {
     setLoading(true);
     try {
       await action();
-      navigate("/", { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

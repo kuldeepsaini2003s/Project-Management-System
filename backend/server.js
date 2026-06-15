@@ -12,8 +12,10 @@ import IssueRoute from "./routes/IssueRoute.js";
 import LabelRoute from "./routes/LabelRoute.js";
 import CommentRoute from "./routes/CommentRoute.js";
 import JoinRequestRoute from "./routes/JoinRequestRoute.js";
+import InviteRoute from "./routes/InviteRoute.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { verifyEmailTransport } from "./services/EmailService.js";
 
 const app = express();
 
@@ -34,12 +36,14 @@ app.use("/api/issues", IssueRoute);
 app.use("/api/labels", LabelRoute);
 app.use("/api/comments", CommentRoute);
 app.use("/api/join-requests", JoinRequestRoute);
+app.use("/api/invites", InviteRoute);
 
 app.use(notFound);
 app.use(errorHandler);
 
 app.listen(env.port, () => {
   console.log(`Server running on http://localhost:${env.port}`);
+  verifyEmailTransport();
 });
 
 export default app;

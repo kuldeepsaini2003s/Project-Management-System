@@ -8,9 +8,15 @@ import {
   updateProjectInStore,
   removeProjectFromStore,
   patchProjectStatus,
+  reorderBoard,
   setCurrentProject,
   setProjectLoading,
 } from "../projectSlice.js";
+
+const PROJECT_SETTERS = {
+  teamProjects: setTeamProjects,
+  workspaceProjects: setWorkspaceProjects,
+};
 
 export const fetchTeamProjects = (teamId) => async (dispatch) => {
   dispatch(setProjectLoading(true));
@@ -56,6 +62,20 @@ export const deleteProject = (id) => async (dispatch) => {
   await projectService.remove(id);
   dispatch(removeProjectFromStore(id));
 };
+
+// Optimistic board reorder (within or across columns): update now, persist, roll back on failure.
+export const reorderProjects =
+  (board, status, orderedIds) => async (dispatch, getState) => {
+    const snapshot = getState().project[board];
+    dispatch(reorderBoard({ board, status, orderedIds }));
+    try {
+      await projectService.reorder(status, orderedIds);
+    } catch (err) {
+      const restore = PROJECT_SETTERS[board];
+      if (restore && snapshot) dispatch(restore(snapshot));
+      throw err;
+    }
+  };
 
 // Optimistic drag: move the card now, persist in the background, roll back on failure.
 export const moveProjectStatus = (id, status) => async (dispatch, getState) => {
