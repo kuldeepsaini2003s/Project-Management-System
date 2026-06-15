@@ -57,7 +57,7 @@ function Column({ status, meta, items, onCreate, addLabel, renderCard, onOpen })
   return (
     <div
       ref={setNodeRef}
-      className={`glass flex w-72 shrink-0 flex-col rounded-xl p-1.5 transition-shadow ${
+      className={`glass flex w-[80vw] max-w-[18rem] shrink-0 flex-col rounded-xl p-1.5 transition-shadow sm:w-72 ${
         isOver ? "ring-2 ring-brand/60" : ""
       }`}
     >

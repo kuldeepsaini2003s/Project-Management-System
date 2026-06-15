@@ -243,9 +243,9 @@ export default function ProjectFormModal({
         <textarea
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
-          rows={10}
+          rows={6}
           placeholder="Write a description, a project brief, or collect ideas…"
-          className="min-h-[300px] w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
+          className="min-h-[160px] w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none sm:min-h-[300px]"
         />
 
         {/* Milestones — full-width bar */}

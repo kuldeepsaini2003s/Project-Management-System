@@ -112,9 +112,9 @@ export default function ProjectDetailPage() {
         {loading && !onThisProject ? (
           <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
         ) : onThisProject ? (
-          <div className="flex h-full min-h-0 gap-2">
+          <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto lg:flex-row lg:overflow-hidden">
             {/* Left: overview + description */}
-            <div className="glass min-h-0 flex-1 overflow-y-auto rounded-lg p-6">
+            <div className="glass rounded-lg p-5 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
               <div className="mx-auto max-w-2xl">
                 <div className="flex items-start gap-3">
                   <span
@@ -151,8 +151,8 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            {/* Right: properties + progress */}
-            <aside className="glass hidden w-80 shrink-0 overflow-y-auto rounded-lg p-4 lg:block">
+            {/* Right: properties + progress (stacks below on small screens) */}
+            <aside className="glass w-full shrink-0 rounded-lg p-4 lg:w-80 lg:overflow-y-auto">
               <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                 Properties
               </h2>

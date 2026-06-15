@@ -94,7 +94,7 @@ export default function TeamMembersPanel({ team, members, isAdmin }) {
       )}
 
       {/* Header */}
-      <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_12rem] gap-4 border-b border-glass-border px-2 pb-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
+      <div className="grid grid-cols-[minmax(0,1fr)_8rem] sm:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_12rem] gap-4 border-b border-glass-border px-2 pb-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
         <span>Name</span>
         <span className="hidden sm:block">Email</span>
         <span className="text-right">Role</span>
@@ -106,7 +106,7 @@ export default function TeamMembersPanel({ team, members, isAdmin }) {
         return (
           <div
             key={m.id}
-            className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_12rem] items-center gap-4 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-hover"
+            className="grid grid-cols-[minmax(0,1fr)_8rem] sm:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_12rem] items-center gap-4 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-hover"
           >
             <div className="flex min-w-0 items-center gap-2.5">
               <Avatar name={m.name} src={m.avatarUrl} size="lg" />
@@ -116,7 +116,7 @@ export default function TeamMembersPanel({ team, members, isAdmin }) {
               </div>
             </div>
             <span className="hidden truncate text-sm text-fg-muted sm:block">{m.email}</span>
-            <div className="flex items-center justify-end gap-7">
+            <div className="flex items-center justify-end gap-3 sm:gap-7">
               <span className="text-sm text-brand">{ROLE_LABEL[m.role] || m.role}</span>
               {removable && (
                 <Popover

@@ -116,9 +116,9 @@ export default function IssueFormModal({
         <textarea
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
-          rows={10}
+          rows={6}
           placeholder="Add description…"
-          className="min-h-[300px] w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none"
+          className="min-h-[160px] w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none sm:min-h-[300px]"
         />
 
         <div className="flex flex-wrap gap-1.5 border-t border-glass-border pt-3">
