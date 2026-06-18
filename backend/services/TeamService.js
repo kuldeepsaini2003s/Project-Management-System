@@ -24,15 +24,32 @@ const shapeTeam = (team) => ({
   createdAt: team.createdAt,
 });
 
-// Teams in the workspace that the user is actually a member of.
+// Teams in the workspace that the user is actually a member of (rich shape for lists).
 export const getWorkspaceTeams = async (userId, workspaceId) => {
   await assertMembership(userId, workspaceId);
   const teams = await prisma.team.findMany({
     where: { workspaceId, memberships: { some: { userId } } },
     orderBy: { createdAt: "asc" },
-    include: includeForUser(userId),
+    include: {
+      memberships: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+      _count: { select: { memberships: true } },
+      projects: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, select: { id: true } },
+    },
   });
-  return teams.map(shapeTeam);
+  return teams.map((team) => ({
+    id: team.id,
+    name: team.name,
+    key: team.key,
+    icon: team.icon,
+    color: team.color,
+    description: team.description,
+    workspaceId: team.workspaceId,
+    role: team.memberships.find((m) => m.userId === userId)?.role,
+    memberCount: team._count.memberships,
+    members: team.memberships.slice(0, 5).map((m) => m.user),
+    activeProjectCount: team.projects.length,
+    createdAt: team.createdAt,
+  }));
 };
 
 export const createTeam = async (userId, workspaceId, { name, icon, color, key }) => {

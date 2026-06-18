@@ -37,5 +37,17 @@ export const teamService = {
   listRequests: (id) => api.get(`/teams/${id}/requests`).then((r) => r.data),
   respondRequest: (requestId, accept) =>
     api.post(`/join-requests/${requestId}/respond`, { accept }).then((r) => r.data),
+
+  // GitHub integration (OAuth)
+  getGithub: (id) => api.get(`/teams/${id}/github`).then((r) => r.data),
+  githubAuthorizeUrl: (id) => api.get(`/teams/${id}/github/authorize`).then((r) => r.data),
+  listRepos: (id) => api.get(`/teams/${id}/github/repos`).then((r) => r.data),
+  disconnectGithub: (id) => api.delete(`/teams/${id}/github`).then((r) => r.data),
+
+  // Slack integration (incoming webhook)
+  getSlack: (id) => api.get(`/teams/${id}/slack`).then((r) => r.data),
+  connectSlack: (id, webhookUrl) =>
+    api.post(`/teams/${id}/slack`, { webhookUrl }).then((r) => r.data),
+  disconnectSlack: (id) => api.delete(`/teams/${id}/slack`).then((r) => r.data),
 };
 

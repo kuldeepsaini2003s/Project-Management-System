@@ -68,11 +68,13 @@ model User {
   avatarUrl String?
   provider  AuthProvider @default(EMAIL)
   googleId  String?      @unique
+  lastSeenAt DateTime?
 
   memberships     Membership[]
   teamMemberships TeamMembership[]
   joinRequests    TeamJoinRequest[]
   sentInvites     TeamInvite[]      @relation("InviteInviter")
+  notifications   Notification[]
   ledProjects     Project[]         @relation("ProjectLead")
   projectMembers  ProjectMember[]
   assignedIssues  Issue[]           @relation("IssueAssignee")
@@ -123,6 +125,8 @@ model Team {
   memberships  TeamMembership[]
   joinRequests TeamJoinRequest[]
   invites      TeamInvite[]
+  github       GithubConnection?
+  slack        SlackConnection?
   projects     Project[]
   issues       Issue[]
   issueCounter Int               @default(0)
@@ -192,6 +196,7 @@ model Project {
   status      ProjectStatus @default(BACKLOG)
   priority    Priority      @default(NONE)
   sortOrder   Int           @default(0)
+  repoFullName String?      // linked GitHub repository (owner/name)
   startDate   DateTime?
   targetDate  DateTime?
 
@@ -279,8 +284,9 @@ model Issue {
   parentId String?
   children Issue[] @relation("IssueChildren")
 
-  labels   Label[]   @relation("IssueLabels")
-  comments Comment[]
+  labels       Label[]           @relation("IssueLabels")
+  comments     Comment[]
+  pullRequests PullRequestLink[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -302,5 +308,59 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([issueId])
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  type  String // ISSUE_ASSIGNED, ISSUE_COMMENT, JOIN_REQUEST, JOIN_ACCEPTED, ...
+  title String
+  body  String?
+  link  String? // in-app route to open
+
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model GithubConnection {
+  id             String  @id @default(cuid())
+  team           Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId         String  @unique
+  installationId String? // GitHub App installation id
+  account        String? // org/user the app was installed on
+  repoFullName   String? // optional default repo (repos are linked per project)
+
+  createdAt DateTime @default(now())
+}
+
+model SlackConnection {
+  id         String  @id @default(cuid())
+  team       Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId     String  @unique
+  webhookUrl String
+  channel    String?
+
+  createdAt DateTime @default(now())
+}
+
+model PullRequestLink {
+  id      String @id @default(cuid())
+  issue   Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId String
+
+  number Int?
+  title  String?
+  url    String
+  state  String  @default("open") // open, closed, merged
+  author String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([issueId, url])
   @@index([issueId])
 }

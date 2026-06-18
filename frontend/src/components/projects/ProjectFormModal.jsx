@@ -13,6 +13,8 @@ import {
 } from "../pickers/Pickers.jsx";
 import { PROJECT_STATUSES, STATUS_ORDER } from "../../constants/projectStatus.js";
 import { PRIORITIES, PRIORITY_ORDER } from "../../constants/priority.js";
+import { Github } from "lucide-react";
+import { teamService } from "../../services/teamService.js";
 import {
   useGetTeamMembersQuery,
   useGetWorkspaceLabelsQuery,
@@ -33,6 +35,7 @@ const EMPTY = {
   dependsOnIds: [],
   startDate: null,
   targetDate: null,
+  repoFullName: "",
   milestones: [],
 };
 
@@ -99,6 +102,42 @@ export default function ProjectFormModal({
         : { ...EMPTY, status: defaultStatus || "BACKLOG" }
     );
   }, [open, initial, teamId, defaultStatus]);
+
+  // GitHub repos for the active team (only if connected).
+  const [repos, setRepos] = useState([]);
+  const [githubConnected, setGithubConnected] = useState(false);
+
+  useEffect(() => {
+    if (!open || !activeTeamId) {
+      setRepos([]);
+      setGithubConnected(false);
+      return;
+    }
+    let active = true;
+    teamService
+      .getGithub(activeTeamId)
+      .then((g) => {
+        if (!active) return;
+        setGithubConnected(!!g.connected);
+        if (g.connected) {
+          teamService
+            .listRepos(activeTeamId)
+            .then((r) => active && setRepos(r))
+            .catch(() => {});
+        } else {
+          setRepos([]);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setGithubConnected(false);
+          setRepos([]);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, activeTeamId]);
 
   const createLabel = (name) => createLabelMut({ workspaceId: activeWorkspaceId, name }).unwrap();
 
@@ -236,6 +275,26 @@ export default function ProjectFormModal({
             projects={projects}
           />
         </div>
+
+        {/* GitHub repository link */}
+        {githubConnected && (
+          <div className="flex items-center gap-2">
+            <Github className="h-4 w-4 shrink-0 text-fg-muted" />
+            <select
+              value={form.repoFullName || ""}
+              onChange={(e) => set("repoFullName", e.target.value)}
+              className="h-9 max-w-xs flex-1 rounded-md border border-input-border bg-input px-2 text-sm text-fg focus:outline-none"
+            >
+              <option value="">No repository</option>
+              {repos.map((r) => (
+                <option key={r.fullName} value={r.fullName}>
+                  {r.fullName}
+                  {r.private ? " (private)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="h-px bg-glass-border" />
 

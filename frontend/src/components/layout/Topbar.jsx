@@ -1,10 +1,11 @@
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import ThemeToggle from "../ui/ThemeToggle.jsx";
+import NotificationBell from "../notifications/NotificationBell.jsx";
 
 export default function Topbar({ breadcrumb = [], actions, onMenu }) {
   return (
-    <header className="glass flex h-12 shrink-0 items-center gap-2 rounded-lg px-3">
+    <header className="glass relative z-40 flex h-12 shrink-0 items-center gap-2 rounded-lg px-3">
       <button
         onClick={onMenu}
         className="rounded-md p-1.5 text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg md:hidden"
@@ -40,12 +41,7 @@ export default function Topbar({ breadcrumb = [], actions, onMenu }) {
       <div className="ml-auto flex items-center gap-1">
         {actions}
         <ThemeToggle className="!h-8 !w-8 !border-0 bg-transparent" />
-        <button
-          className="rounded-md p-1.5 text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-          title="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-        </button>
+        <NotificationBell />
       </div>
     </header>
   );

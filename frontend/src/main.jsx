@@ -8,6 +8,7 @@ import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { WorkspaceProvider } from "./context/WorkspaceContext.jsx";
 import { TeamProvider } from "./context/TeamContext.jsx";
+import { NotificationProvider } from "./context/NotificationContext.jsx";
 import App from "./App.jsx";
 import "./index.css";
 
@@ -21,9 +22,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <AuthProvider>
             <WorkspaceProvider>
               <TeamProvider>
-                <BrowserRouter>
-                  <App />
-                </BrowserRouter>
+                <NotificationProvider>
+                  <BrowserRouter>
+                    <App />
+                  </BrowserRouter>
+                </NotificationProvider>
               </TeamProvider>
             </WorkspaceProvider>
           </AuthProvider>

@@ -14,6 +14,28 @@ const buildAuthResponse = (user) => ({
   token: signToken({ sub: user.id }),
 });
 
+// Ensure the user has a workspace + proper team memberships. Runs on login,
+// google auth, and /auth/me so data always loads (no refresh needed).
+const ensureWorkspaceSetup = async (user) => {
+  const count = await prisma.membership.count({ where: { userId: user.id } });
+  if (count === 0) await createDefaultWorkspaceForUser(user);
+
+  // Backfill legacy teams in the user's workspaces that have no members.
+  const orphanTeams = await prisma.team.findMany({
+    where: {
+      workspace: { memberships: { some: { userId: user.id } } },
+      memberships: { none: {} },
+    },
+    select: { id: true },
+  });
+  if (orphanTeams.length) {
+    await prisma.teamMembership.createMany({
+      data: orphanTeams.map((t) => ({ teamId: t.id, userId: user.id, role: "OWNER" })),
+      skipDuplicates: true,
+    });
+  }
+};
+
 // Every new account gets a starter workspace (with a default team) they own.
 const createDefaultWorkspaceForUser = (user) => {
   const first = user.name?.split(" ")[0] || "My";
@@ -70,6 +92,7 @@ export const loginUser = async ({ email, password }) => {
 
   if (!valid) throw new ApiError(401, "Invalid email or password");
 
+  await ensureWorkspaceSetup(user);
   return buildAuthResponse(user);
 };
 
@@ -104,32 +127,13 @@ export const authenticateWithGoogle = async ({ accessToken }) => {
     });
   }
 
+  await ensureWorkspaceSetup(user);
   return buildAuthResponse(user);
 };
 
 export const getCurrentUserProfile = async (userId) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new ApiError(404, "User not found");
-
-  // Self-heal: accounts created before workspaces existed get one now.
-  const count = await prisma.membership.count({ where: { userId } });
-  if (count === 0) await createDefaultWorkspaceForUser(user);
-
-  // Backfill: legacy teams (created before team membership existed) in the
-  // user's workspaces and lacking any members get this user as OWNER.
-  const orphanTeams = await prisma.team.findMany({
-    where: {
-      workspace: { memberships: { some: { userId } } },
-      memberships: { none: {} },
-    },
-    select: { id: true },
-  });
-  if (orphanTeams.length) {
-    await prisma.teamMembership.createMany({
-      data: orphanTeams.map((t) => ({ teamId: t.id, userId, role: "OWNER" })),
-      skipDuplicates: true,
-    });
-  }
-
+  await ensureWorkspaceSetup(user);
   return sanitizeUser(user);
 };

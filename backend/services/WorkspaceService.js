@@ -73,13 +73,76 @@ export const deleteWorkspace = async (userId, id) => {
   await prisma.workspace.delete({ where: { id } });
 };
 
-// Workspace members (for member/lead/assignee pickers).
+// Search issues + projects across the user's teams in a workspace.
+export const searchWorkspace = async (userId, workspaceId, q) => {
+  await assertMembership(userId, workspaceId);
+  const query = (q || "").trim();
+  if (!query) return { issues: [], projects: [] };
+
+  const teamFilter = { workspaceId, memberships: { some: { userId } } };
+
+  const [issues, projects] = await Promise.all([
+    prisma.issue.findMany({
+      where: { team: teamFilter, title: { contains: query, mode: "insensitive" } },
+      take: 30,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        team: { select: { key: true } },
+        assignee: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    }),
+    prisma.project.findMany({
+      where: { team: teamFilter, name: { contains: query, mode: "insensitive" } },
+      take: 20,
+      orderBy: { updatedAt: "desc" },
+      include: { team: { select: { name: true } } },
+    }),
+  ]);
+
+  return {
+    issues: issues.map((i) => ({
+      id: i.id,
+      title: i.title,
+      status: i.status,
+      priority: i.priority,
+      identifier: `${i.team.key}-${i.number}`,
+      assignee: i.assignee,
+    })),
+    projects: projects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      icon: p.icon,
+      color: p.color,
+      teamName: p.team.name,
+    })),
+  };
+};
+
+// Workspace members (for member/lead/assignee pickers + Members page).
 export const getWorkspaceMembers = async (userId, workspaceId) => {
   await assertMembership(userId, workspaceId);
   const memberships = await prisma.membership.findMany({
     where: { workspaceId },
-    include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } },
+    include: {
+      user: { select: { id: true, name: true, email: true, avatarUrl: true, lastSeenAt: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
-  return memberships.map((m) => ({ ...m.user, role: m.role }));
+
+  // Which teams (keys) each member belongs to in this workspace.
+  const userIds = memberships.map((m) => m.userId);
+  const teamMems = await prisma.teamMembership.findMany({
+    where: { userId: { in: userIds }, team: { workspaceId } },
+    include: { team: { select: { key: true } } },
+  });
+  const teamsByUser = {};
+  for (const tm of teamMems) (teamsByUser[tm.userId] ||= []).push(tm.team.key);
+
+  return memberships.map((m) => ({
+    ...m.user,
+    role: m.role,
+    joinedAt: m.createdAt,
+    teams: teamsByUser[m.userId] || [],
+  }));
 };

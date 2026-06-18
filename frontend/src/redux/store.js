@@ -6,6 +6,7 @@ import workspaceReducer from "./workspaceSlice.js";
 import teamReducer from "./teamSlice.js";
 import projectReducer from "./projectSlice.js";
 import issueReducer from "./issueSlice.js";
+import notificationReducer from "./notificationSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     team: teamReducer,
     project: projectReducer,
     issue: issueReducer,
+    notification: notificationReducer,
   },
   middleware: (getDefault) => getDefault().concat(api.middleware),
 });

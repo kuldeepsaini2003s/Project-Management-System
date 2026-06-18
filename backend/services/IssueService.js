@@ -1,6 +1,9 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { getTeamOrThrow, getProjectOrThrow, getIssueOrThrow } from "../utils/access.js";
+import { createNotification } from "./NotificationService.js";
+import { postToTeamSlack } from "./SlackService.js";
+import { env } from "../config/env.js";
 
 const STATUSES = ["BACKLOG", "TODO", "IN_PROGRESS", "DONE", "CANCELLED"];
 const PRIORITIES = ["NONE", "URGENT", "HIGH", "MEDIUM", "LOW"];
@@ -11,7 +14,7 @@ const userSel = { select: { id: true, name: true, avatarUrl: true } };
 const include = {
   assignee: userSel,
   labels: true,
-  project: { select: { id: true, name: true, icon: true } },
+  project: { select: { id: true, name: true, icon: true, repoFullName: true } },
   team: { select: { key: true } },
 };
 
@@ -20,7 +23,7 @@ const detailInclude = {
   assignee: userSel,
   createdBy: userSel,
   labels: true,
-  project: { select: { id: true, name: true, icon: true } },
+  project: { select: { id: true, name: true, icon: true, repoFullName: true } },
   team: { select: { id: true, key: true, name: true, workspaceId: true } },
   parent: { select: { id: true, number: true, title: true, team: { select: { key: true } } } },
   children: {
@@ -31,6 +34,7 @@ const detailInclude = {
     include: { author: userSel },
     orderBy: { createdAt: "asc" },
   },
+  pullRequests: { orderBy: { createdAt: "desc" } },
 };
 
 const buildIdentifier = (key, number) => `${key}-${number}`;
@@ -129,7 +133,17 @@ export const createIssue = async (userId, teamId, data) => {
       include,
     });
   });
-  return shapeIssue(issue);
+
+  const shaped = shapeIssue(issue);
+  if (issue.assigneeId && issue.assigneeId !== userId) {
+    await createNotification(issue.assigneeId, {
+      type: "ISSUE_ASSIGNED",
+      title: `${shaped.identifier} assigned to you`,
+      body: issue.title,
+      link: `/issues/${issue.id}`,
+    });
+  }
+  return shaped;
 };
 
 export const getIssueById = async (userId, id) => {
@@ -139,7 +153,7 @@ export const getIssueById = async (userId, id) => {
 };
 
 export const updateIssue = async (userId, id, data) => {
-  await getIssueOrThrow(userId, id);
+  const before = await getIssueOrThrow(userId, id);
   validateIssueInput(data);
 
   const patch = {
@@ -154,6 +168,23 @@ export const updateIssue = async (userId, id, data) => {
   if (data.labelIds) patch.labels = { set: data.labelIds.map((x) => ({ id: x })) };
 
   await prisma.issue.update({ where: { id }, data: patch });
+
+  // Notify a newly-assigned user.
+  if (
+    data.assigneeId &&
+    data.assigneeId !== before.assigneeId &&
+    data.assigneeId !== userId
+  ) {
+    const updated = await getIssueById(userId, id);
+    await createNotification(data.assigneeId, {
+      type: "ISSUE_ASSIGNED",
+      title: `${updated.identifier} assigned to you`,
+      body: updated.title,
+      link: `/issues/${id}`,
+    });
+    return updated;
+  }
+
   return getIssueById(userId, id);
 };
 
@@ -189,13 +220,76 @@ export const createSubIssue = async (userId, parentId, data) => {
 };
 
 /* ----- comments ----- */
-export const addCommentToIssue = async (userId, issueId, body) => {
+export const addCommentToIssue = async (userId, issueId, body, mentionIds = []) => {
   await getIssueOrThrow(userId, issueId);
   if (!body?.trim()) throw new ApiError(400, "Comment cannot be empty");
   const comment = await prisma.comment.create({
     data: { issueId, authorId: userId, body: body.trim() },
     include: { author: userSel },
   });
+
+  const issue = await prisma.issue.findUnique({
+    where: { id: issueId },
+    select: {
+      number: true,
+      title: true,
+      teamId: true,
+      createdById: true,
+      assigneeId: true,
+      team: { select: { key: true } },
+    },
+  });
+  if (issue) {
+    const identifier = buildIdentifier(issue.team.key, issue.number);
+
+    // Creator + assignee get a "new comment" notification (not the commenter).
+    const commentRecipients = [...new Set([issue.createdById, issue.assigneeId])].filter(
+      (uid) => uid && uid !== userId
+    );
+    for (const uid of commentRecipients) {
+      await createNotification(uid, {
+        type: "ISSUE_COMMENT",
+        title: `New comment on ${identifier}`,
+        body: `${comment.author.name}: ${comment.body.slice(0, 80)}`,
+        link: `/issues/${issueId}`,
+      });
+    }
+
+    // Mentioned team members get a "mention" notification (deduped).
+    const mentionRecipients = [...new Set(mentionIds || [])].filter(
+      (uid) => uid && uid !== userId && !commentRecipients.includes(uid)
+    );
+    if (mentionRecipients.length) {
+      const members = await prisma.teamMembership.findMany({
+        where: { teamId: issue.teamId, userId: { in: mentionRecipients } },
+        include: { user: { select: { id: true, name: true } } },
+      });
+      const validUsers = members.map((m) => m.user);
+      const valid = new Set(validUsers.map((u) => u.id));
+      for (const uid of mentionRecipients) {
+        if (!valid.has(uid)) continue;
+        await createNotification(uid, {
+          type: "MENTION",
+          title: `${comment.author.name} mentioned you in ${identifier}`,
+          body: comment.body.slice(0, 80),
+          link: `/issues/${issueId}`,
+        });
+      }
+
+      // Also push the mention to the team's Slack channel (best-effort).
+      if (validUsers.length) {
+        const names = validUsers.map((u) => u.name).join(", ");
+        const link = `${env.clientUrl}/issues/${issueId}`;
+        const text = [
+          `:speech_balloon: *${comment.author.name}* mentioned *${names}* in *${identifier}*`,
+          comment.body.slice(0, 200),
+          `<${link}|Open issue>`,
+        ].join("\n");
+        postToTeamSlack(issue.teamId, text).catch(() => {});
+      }
+    }
+  }
+
   return comment;
 };
 

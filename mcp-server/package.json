@@ -1,0 +1,18 @@
+{
+  "name": "linear-app-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server that pushes task-mention notifications to Slack. Works with Claude Desktop, Cursor, and any MCP client (stdio or HTTP).",
+  "type": "module",
+  "bin": {
+    "linear-app-mcp": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "start:http": "node index.js --http"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "express": "^4.21.1",
+    "zod": "^3.23.8"
+  }
+}

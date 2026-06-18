@@ -29,6 +29,10 @@ export const getMembers = asyncHandler(async (req, res) => {
   res.json(await workspaceService.getWorkspaceMembers(req.userId, req.params.id));
 });
 
+export const searchWorkspace = asyncHandler(async (req, res) => {
+  res.json(await workspaceService.searchWorkspace(req.userId, req.params.id, req.query.q));
+});
+
 export const getWorkspaceTeams = asyncHandler(async (req, res) => {
   res.json(await teamService.getWorkspaceTeams(req.userId, req.params.id));
 });

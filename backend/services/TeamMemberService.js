@@ -1,6 +1,7 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { assertTeamMembership, assertTeamAdmin } from "../utils/membership.js";
+import { createNotification } from "./NotificationService.js";
 
 const userSelect = { id: true, name: true, email: true, avatarUrl: true };
 
@@ -82,6 +83,25 @@ export const createJoinRequest = async (userId, teamId) => {
     update: { status: "PENDING" },
     create: { teamId, userId },
   });
+
+  // Notify the team's admins/owners.
+  const [requester, admins] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    prisma.teamMembership.findMany({
+      where: { teamId, role: { in: ["OWNER", "ADMIN"] } },
+      select: { userId: true },
+    }),
+  ]);
+  for (const a of admins) {
+    if (a.userId !== userId) {
+      await createNotification(a.userId, {
+        type: "JOIN_REQUEST",
+        title: `Request to join ${team.name}`,
+        body: `${requester?.name || "Someone"} asked to join the team`,
+        link: `/teams/${teamId}`,
+      });
+    }
+  }
   return { status: request.status };
 };
 
@@ -120,6 +140,12 @@ export const respondToJoinRequest = async (userId, requestId, accept) => {
       }),
       prisma.teamJoinRequest.update({ where: { id: requestId }, data: { status: "ACCEPTED" } }),
     ]);
+    await createNotification(request.userId, {
+      type: "JOIN_ACCEPTED",
+      title: `You joined ${request.team.name}`,
+      body: "Your request to join the team was accepted",
+      link: `/teams/${request.teamId}`,
+    });
   } else {
     await prisma.teamJoinRequest.update({ where: { id: requestId }, data: { status: "REJECTED" } });
   }

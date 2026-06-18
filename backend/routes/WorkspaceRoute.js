@@ -6,6 +6,7 @@ import {
   updateWorkspace,
   deleteWorkspace,
   getMembers,
+  searchWorkspace,
   getWorkspaceTeams,
   createWorkspaceTeam,
   getWorkspaceProjects,
@@ -24,6 +25,7 @@ router.patch("/:id", updateWorkspace);
 router.delete("/:id", deleteWorkspace);
 
 router.get("/:id/members", getMembers);
+router.get("/:id/search", searchWorkspace);
 router.get("/:id/teams", getWorkspaceTeams);
 router.post("/:id/teams", createWorkspaceTeam);
 router.get("/:id/projects", getWorkspaceProjects);

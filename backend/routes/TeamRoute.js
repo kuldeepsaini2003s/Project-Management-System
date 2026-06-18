@@ -19,6 +19,12 @@ import {
   getRequests,
 } from "../controllers/TeamMemberController.js";
 import { createInvites } from "../controllers/TeamInviteController.js";
+import { getConnection, authorize, listRepos, disconnect } from "../controllers/GithubController.js";
+import {
+  getConnection as getSlack,
+  connect as connectSlack,
+  disconnect as disconnectSlack,
+} from "../controllers/SlackController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
@@ -42,6 +48,17 @@ router.delete("/:id/members/:userId", removeMember);
 
 // Invite by email
 router.post("/:id/invites", createInvites);
+
+// GitHub integration (OAuth)
+router.get("/:id/github", getConnection);
+router.get("/:id/github/authorize", authorize);
+router.get("/:id/github/repos", listRepos);
+router.delete("/:id/github", disconnect);
+
+// Slack integration (incoming webhook)
+router.get("/:id/slack", getSlack);
+router.post("/:id/slack", connectSlack);
+router.delete("/:id/slack", disconnectSlack);
 
 // Join flow
 router.get("/:id/public", getTeamPublic);

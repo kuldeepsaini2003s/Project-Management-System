@@ -29,7 +29,9 @@ export const createSubIssue = asyncHandler(async (req, res) => {
 });
 
 export const addComment = asyncHandler(async (req, res) => {
-  res.status(201).json(await issueService.addCommentToIssue(req.userId, req.params.id, req.body.body));
+  res.status(201).json(
+    await issueService.addCommentToIssue(req.userId, req.params.id, req.body.body, req.body.mentionIds)
+  );
 });
 
 export const deleteComment = asyncHandler(async (req, res) => {

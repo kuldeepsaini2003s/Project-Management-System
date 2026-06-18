@@ -20,6 +20,9 @@ export const issueService = {
   removeImage: (id, url) =>
     api.delete(`/issues/${id}/images`, { data: { url } }).then((r) => r.data),
 
+  linkPr: (id, url) => api.post(`/issues/${id}/links`, { url }).then((r) => r.data),
+  unlinkPr: (linkId) => api.delete(`/issues/links/${linkId}`).then((r) => r.data),
+
   createSubIssue: (id, payload) =>
     api.post(`/issues/${id}/sub-issues`, payload).then((r) => r.data),
   addComment: (id, body) =>

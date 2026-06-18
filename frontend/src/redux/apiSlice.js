@@ -239,10 +239,10 @@ export const api = createApi({
         ),
     }),
     addComment: b.mutation({
-      query: ({ issueId, body }) => ({
+      query: ({ issueId, body, mentionIds }) => ({
         url: `/issues/${issueId}/comments`,
         method: "POST",
-        body: { body },
+        body: { body, mentionIds },
       }),
       invalidatesTags: (r, e, { issueId }) => [{ type: "Issue", id: issueId }],
     }),

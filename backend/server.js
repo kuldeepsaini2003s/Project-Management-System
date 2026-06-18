@@ -1,8 +1,10 @@
 import express from "express";
+import http from "http";
 import cors from "cors";
 import morgan from "morgan";
 
 import { env } from "./config/env.js";
+import { initSocket } from "./config/socket.js";
 import AuthRoute from "./routes/AuthRoute.js";
 import UserRoute from "./routes/UserRoute.js";
 import WorkspaceRoute from "./routes/WorkspaceRoute.js";
@@ -13,6 +15,9 @@ import LabelRoute from "./routes/LabelRoute.js";
 import CommentRoute from "./routes/CommentRoute.js";
 import JoinRequestRoute from "./routes/JoinRequestRoute.js";
 import InviteRoute from "./routes/InviteRoute.js";
+import NotificationRoute from "./routes/NotificationRoute.js";
+import WebhookRoute from "./routes/WebhookRoute.js";
+import GithubRoute from "./routes/GithubRoute.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyEmailTransport } from "./services/EmailService.js";
@@ -20,8 +25,12 @@ import { verifyEmailTransport } from "./services/EmailService.js";
 const app = express();
 
 app.use(cors({ origin: env.clientUrl, credentials: true }));
-app.use(express.json());
 app.use(morgan("dev"));
+
+// Webhooks need the raw body for signature verification — mount BEFORE express.json.
+app.use("/api/webhooks", express.raw({ type: "*/*" }), WebhookRoute);
+
+app.use(express.json());
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
@@ -37,11 +46,16 @@ app.use("/api/labels", LabelRoute);
 app.use("/api/comments", CommentRoute);
 app.use("/api/join-requests", JoinRequestRoute);
 app.use("/api/invites", InviteRoute);
+app.use("/api/notifications", NotificationRoute);
+app.use("/api/github", GithubRoute);
 
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(env.port, () => {
+const httpServer = http.createServer(app);
+initSocket(httpServer);
+
+httpServer.listen(env.port, () => {
   console.log(`Server running on http://localhost:${env.port}`);
   verifyEmailTransport();
 });
