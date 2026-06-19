@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const CURRENT_KEY = "linear-current-workspace";
+const CURRENT_KEY = "algofolks-current-workspace";
 
 const uiSlice = createSlice({
   name: "ui",

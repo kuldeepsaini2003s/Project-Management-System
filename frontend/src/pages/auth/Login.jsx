@@ -42,7 +42,7 @@ export default function Login() {
   const handleGoogle = (accessToken) => run(() => loginWithGoogle(accessToken));
 
   return (
-    <AuthLayout title="Log in to Linear">
+    <AuthLayout title="Log in to Algofolks">
       <div className="flex flex-col gap-4">
         <FormError message={error} />
 
