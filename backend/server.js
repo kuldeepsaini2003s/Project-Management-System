@@ -26,13 +26,12 @@ const app = express();
 
 app.use(
   cors({
-    origin(origin, cb) {
-      // Allow non-browser clients (no Origin) and any allow-listed frontend origin.
-      if (!origin || env.clientUrls.includes(origin.replace(/\/$/, ""))) return cb(null, true);
-      return cb(new Error(`Origin ${origin} not allowed by CORS`));
-    },
+    origin: [
+      "http://localhost:5173",
+      "https://algofolks-linear-app.vercel.app",
+    ],
     credentials: true,
-  })
+  }),
 );
 app.use(morgan("dev"));
 
