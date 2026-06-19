@@ -10,9 +10,18 @@ const required = (key) => {
   return value;
 };
 
+// Allowed frontend origins. Supports a single CLIENT_URL or a comma-separated
+// CLIENT_URLS list (e.g. localhost + the deployed Vercel URL). Used for CORS and
+// for validating the GitHub return-redirect origin (prevents open redirects).
+const clientUrls = (process.env.CLIENT_URLS || process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
 export const env = {
   port: process.env.PORT || 5000,
-  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
+  clientUrl: clientUrls[0],
+  clientUrls,
   // Public URL of THIS backend (used to build the GitHub webhook URL).
   apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 5000}`,
   nodeEnv: process.env.NODE_ENV || "development",

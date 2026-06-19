@@ -1,6 +1,20 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import * as githubService from "../services/GithubService.js";
 
+// Origin of the frontend that initiated the request, so GitHub can redirect the
+// user back to the SAME app (works across localhost / deployed frontends).
+const reqOrigin = (req) => {
+  if (req.headers.origin) return req.headers.origin;
+  if (req.headers.referer) {
+    try {
+      return new URL(req.headers.referer).origin;
+    } catch {
+      /* ignore */
+    }
+  }
+  return undefined;
+};
+
 export const getConnection = asyncHandler(async (req, res) => {
   res.json(await githubService.getConnection(req.userId, req.params.id));
 });
@@ -10,12 +24,14 @@ export const getConnection = asyncHandler(async (req, res) => {
 // GitHub's account chooser (used by "Use a different account").
 export const authorize = asyncHandler(async (req, res) => {
   const force = req.query.force === "1" || req.query.force === "true";
-  res.json(await githubService.buildAuthorizeUrl(req.userId, req.params.id, { force }));
+  res.json(
+    await githubService.buildAuthorizeUrl(req.userId, req.params.id, { force, origin: reqOrigin(req) })
+  );
 });
 
 // Returns GitHub's "configure repositories" page URL for an existing install.
 export const manage = asyncHandler(async (req, res) => {
-  res.json(await githubService.buildManageUrl(req.userId, req.params.id));
+  res.json(await githubService.buildManageUrl(req.userId, req.params.id, { origin: reqOrigin(req) }));
 });
 
 export const listRepos = asyncHandler(async (req, res) => {

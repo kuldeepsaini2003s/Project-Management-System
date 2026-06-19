@@ -60,9 +60,27 @@ const installationExists = async (installationId) => {
   }
 };
 
-export const buildAuthorizeUrl = async (userId, teamId, { force = false } = {}) => {
+// Validate the frontend origin that started the flow against the allow-list, so
+// the GitHub return redirect always lands back on a trusted frontend (and the
+// correct one when several share a backend). Falls back to the primary origin.
+const resolveReturnOrigin = (origin) => {
+  const clean = (origin || "").replace(/\/$/, "");
+  return env.clientUrls.includes(clean) ? clean : env.clientUrl;
+};
+
+// Sign the install "state": team + initiating user + return origin. GitHub echoes
+// this back to the Setup URL, which is how the callback knows WHICH team/workspace
+// to attach the installation to (so it can never leak to another team).
+const buildState = (teamId, userId, origin) =>
+  signToken({ gh: true, t: teamId, u: userId, c: resolveReturnOrigin(origin) });
+
+const installUrl = (state) =>
+  `https://github.com/apps/${env.github.appSlug}/installations/new?state=${encodeURIComponent(state)}`;
+
+export const buildAuthorizeUrl = async (userId, teamId, { force = false, origin } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
+  const returnOrigin = resolveReturnOrigin(origin);
 
   // Unless the caller explicitly wants to pick a different account (force), and
   // if THIS team previously connected (we already know its own installation id),
@@ -74,59 +92,68 @@ export const buildAuthorizeUrl = async (userId, teamId, { force = false } = {}) 
     const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
     if (conn?.installationId && (await installationExists(conn.installationId))) {
       await prisma.githubConnection.update({ where: { teamId }, data: { active: true } });
-      return { url: `${env.clientUrl}/teams/${teamId}/integrations?github=connected`, linked: true };
+      return { url: `${returnOrigin}/teams/${teamId}/integrations?github=connected`, linked: true };
     }
   }
 
   // Fresh connection, reconnect after uninstall, or an explicit account switch:
   // send the user through GitHub's real install flow. GitHub shows the account
   // chooser (scoped to whoever is logged into GitHub in that browser) and
-  // redirects back to our setup callback with the chosen installation id.
-  const state = signToken({ gh: true, t: teamId, u: userId });
-  return { url: `https://github.com/apps/${env.github.appSlug}/installations/new?state=${state}` };
+  // redirects back to our setup callback with the chosen installation id + state.
+  return { url: installUrl(buildState(teamId, userId, origin)) };
 };
 
-// GitHub's native page to manage which repositories the installation can access.
-// Used by the "Configure repositories" button (when already connected).
-export const buildManageUrl = async (userId, teamId) => {
+// GitHub's page to manage which repositories the installation can access (and to
+// switch/add accounts). Carries state so the post-update redirect returns to the
+// app and refreshes the connection (without state, GitHub would dead-end here).
+export const buildManageUrl = async (userId, teamId, { origin } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
-  return { url: `https://github.com/apps/${env.github.appSlug}/installations/new` };
+  return { url: installUrl(buildState(teamId, userId, origin)) };
 };
 
-// GitHub redirects here after the user installs/selects repos.
+// GitHub redirects here after the user installs / selects repos / switches account.
 export const handleSetupCallback = async (query) => {
-  const fail = (msg) => `${env.clientUrl}/?github=error&message=${encodeURIComponent(msg)}`;
-  const { installation_id: installationId, state } = query;
-  if (!installationId || !state) return fail("Missing installation/state");
+  // Default error landing (real origin is recovered from state below when possible).
+  let returnOrigin = env.clientUrl;
+  const fail = (msg) => `${returnOrigin}/?github=error&message=${encodeURIComponent(msg)}`;
+
+  const { installation_id: installationId, state, setup_action: setupAction } = query;
+
+  // The user uninstalled via this page (rare) — nothing to store.
+  if (setupAction === "request") return `${returnOrigin}/?github=error&message=Installation%20pending%20approval`;
+  if (!installationId) return fail("GitHub did not return an installation id");
+  if (!state) return fail("Missing authorization state — please start the connect again");
 
   let decoded;
   try {
     decoded = verifyToken(state);
   } catch {
-    return fail("Invalid or expired state");
+    return fail("Invalid or expired authorization state");
   }
-  const { t: teamId, u: userId, gh } = decoded || {};
-  if (!gh || !teamId || !userId) return fail("Invalid state");
+  const { t: teamId, u: userId, gh, c } = decoded || {};
+  if (!gh || !teamId || !userId) return fail("Invalid authorization state");
+  returnOrigin = resolveReturnOrigin(c);
 
+  // The installation is attached to whichever team/user signed the state — so it
+  // is stored per-team (within its workspace), never shared across teams/users.
   try {
     await assertTeamAdmin(userId, teamId);
   } catch {
-    return fail("Not authorized for this team");
+    return fail("You are not authorized to connect GitHub for this team");
   }
 
-  // Look up which account the app was installed on.
+  // Confirm the installation exists and capture which account it belongs to.
   let account = null;
   try {
     const res = await fetch(`${API}/app/installations/${installationId}`, {
       headers: ghHeaders(appJwt()),
     });
-    if (res.ok) {
-      const data = await res.json();
-      account = data.account?.login || null;
-    }
+    if (!res.ok) return fail("Could not verify the GitHub installation");
+    const data = await res.json();
+    account = data.account?.login || null;
   } catch {
-    /* non-fatal */
+    return fail("Could not reach GitHub to verify the installation");
   }
 
   await prisma.githubConnection.upsert({
@@ -135,7 +162,7 @@ export const handleSetupCallback = async (query) => {
     create: { teamId, installationId: String(installationId), account, active: true },
   });
 
-  return `${env.clientUrl}/teams/${teamId}/integrations?github=connected`;
+  return `${returnOrigin}/teams/${teamId}/integrations?github=connected`;
 };
 
 /* ---------------- Status / repos ---------------- */

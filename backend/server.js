@@ -24,7 +24,16 @@ import { verifyEmailTransport } from "./services/EmailService.js";
 
 const app = express();
 
-app.use(cors({ origin: env.clientUrl, credentials: true }));
+app.use(
+  cors({
+    origin(origin, cb) {
+      // Allow non-browser clients (no Origin) and any allow-listed frontend origin.
+      if (!origin || env.clientUrls.includes(origin.replace(/\/$/, ""))) return cb(null, true);
+      return cb(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+  })
+);
 app.use(morgan("dev"));
 
 // Webhooks need the raw body for signature verification — mount BEFORE express.json.
