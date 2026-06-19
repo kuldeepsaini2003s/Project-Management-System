@@ -35,7 +35,7 @@ export default function NotionIntegrationPage() {
             </div>
           </div>
 
-          <div className="glass-card rounded-xl p-5">
+          <div className="glass-card rounded-xl p-2">
             <NotionConnect teamId={teamId} isAdmin={isAdmin} />
           </div>
         </div>

@@ -37,7 +37,7 @@ export default function GitHubIntegrationPage() {
             </div>
           </div>
 
-          <div className="glass-card rounded-xl p-5">
+          <div className="glass-card rounded-xl p-2">
             <GitHubConnect teamId={teamId} isAdmin={isAdmin} />
           </div>
         </div>

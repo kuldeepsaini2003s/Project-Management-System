@@ -59,11 +59,6 @@ export default function GitHubConnect({ teamId, isAdmin }) {
 
   return (
     <div>
-      <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-subtle">
-        <Github className="h-3.5 w-3.5" />
-        GitHub
-      </p>
-
       {error && <p className="mb-2 text-xs text-danger">{error}</p>}
 
       {conn?.connected ? (
