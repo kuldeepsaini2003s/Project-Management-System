@@ -31,6 +31,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://algofolks-linear-app.vercel.app",
+      "https://task-management-with-algofolks.vercel.app",
     ],
     credentials: true,
   }),
