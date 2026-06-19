@@ -48,11 +48,50 @@ const getInstallationToken = async (installationId) => {
 
 /* ---------------- Install flow ---------------- */
 
-export const buildAuthorizeUrl = async (userId, teamId) => {
+// Whether a specific installation still exists on GitHub (not uninstalled).
+const installationExists = async (installationId) => {
+  try {
+    const res = await fetch(`${API}/app/installations/${installationId}`, {
+      headers: ghHeaders(appJwt()),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
+export const buildAuthorizeUrl = async (userId, teamId, { force = false } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
+
+  // Unless the caller explicitly wants to pick a different account (force), and
+  // if THIS team previously connected (we already know its own installation id),
+  // a "disconnect" only deactivated the record — the app is still installed on
+  // that account. Reactivate the team's OWN installation instead of sending the
+  // user to GitHub's "already installed" dead-end. This never touches another
+  // team's / account's installation, so it's multi-tenant safe.
+  if (!force) {
+    const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
+    if (conn?.installationId && (await installationExists(conn.installationId))) {
+      await prisma.githubConnection.update({ where: { teamId }, data: { active: true } });
+      return { url: `${env.clientUrl}/teams/${teamId}/integrations?github=connected`, linked: true };
+    }
+  }
+
+  // Fresh connection, reconnect after uninstall, or an explicit account switch:
+  // send the user through GitHub's real install flow. GitHub shows the account
+  // chooser (scoped to whoever is logged into GitHub in that browser) and
+  // redirects back to our setup callback with the chosen installation id.
   const state = signToken({ gh: true, t: teamId, u: userId });
   return { url: `https://github.com/apps/${env.github.appSlug}/installations/new?state=${state}` };
+};
+
+// GitHub's native page to manage which repositories the installation can access.
+// Used by the "Configure repositories" button (when already connected).
+export const buildManageUrl = async (userId, teamId) => {
+  await assertTeamAdmin(userId, teamId);
+  if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
+  return { url: `https://github.com/apps/${env.github.appSlug}/installations/new` };
 };
 
 // GitHub redirects here after the user installs/selects repos.
@@ -92,8 +131,8 @@ export const handleSetupCallback = async (query) => {
 
   await prisma.githubConnection.upsert({
     where: { teamId },
-    update: { installationId: String(installationId), account },
-    create: { teamId, installationId: String(installationId), account },
+    update: { installationId: String(installationId), account, active: true },
+    create: { teamId, installationId: String(installationId), account, active: true },
   });
 
   return `${env.clientUrl}/teams/${teamId}/integrations?github=connected`;
@@ -104,13 +143,16 @@ export const handleSetupCallback = async (query) => {
 export const getConnection = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
   const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
-  return { connected: !!conn?.installationId, account: conn?.account || null };
+  const connected = !!conn?.installationId && conn.active !== false;
+  return { connected, account: connected ? conn.account || null : null };
 };
 
 export const listRepos = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
   const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
-  if (!conn?.installationId) throw new ApiError(400, "GitHub is not connected for this team");
+  if (!conn?.installationId || conn.active === false) {
+    throw new ApiError(400, "GitHub is not connected for this team");
+  }
 
   const token = await getInstallationToken(conn.installationId);
   const repos = [];
@@ -131,7 +173,10 @@ export const listRepos = async (userId, teamId) => {
 
 export const disconnectGithub = async (userId, teamId) => {
   await assertTeamAdmin(userId, teamId);
-  await prisma.githubConnection.deleteMany({ where: { teamId } });
+  // Deactivate but keep the record so the team can reconnect its OWN installation
+  // without hitting GitHub's "already installed" dead-end. (The app stays installed
+  // on the account; manage/uninstall it from GitHub if a full removal is wanted.)
+  await prisma.githubConnection.updateMany({ where: { teamId }, data: { active: false } });
   return { ok: true };
 };
 

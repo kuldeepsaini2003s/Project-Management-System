@@ -19,7 +19,7 @@ import {
   getRequests,
 } from "../controllers/TeamMemberController.js";
 import { createInvites } from "../controllers/TeamInviteController.js";
-import { getConnection, authorize, listRepos, disconnect } from "../controllers/GithubController.js";
+import { getConnection, authorize, manage, listRepos, disconnect } from "../controllers/GithubController.js";
 import {
   getConnection as getSlack,
   connect as connectSlack,
@@ -52,6 +52,7 @@ router.post("/:id/invites", createInvites);
 // GitHub integration (OAuth)
 router.get("/:id/github", getConnection);
 router.get("/:id/github/authorize", authorize);
+router.get("/:id/github/manage", manage);
 router.get("/:id/github/repos", listRepos);
 router.delete("/:id/github", disconnect);
 

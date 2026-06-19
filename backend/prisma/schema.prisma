@@ -334,6 +334,7 @@ model GithubConnection {
   installationId String? // GitHub App installation id
   account        String? // org/user the app was installed on
   repoFullName   String? // optional default repo (repos are linked per project)
+  active         Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
 
   createdAt DateTime @default(now())
 }

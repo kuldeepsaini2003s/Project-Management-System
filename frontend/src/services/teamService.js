@@ -40,7 +40,9 @@ export const teamService = {
 
   // GitHub integration (OAuth)
   getGithub: (id) => api.get(`/teams/${id}/github`).then((r) => r.data),
-  githubAuthorizeUrl: (id) => api.get(`/teams/${id}/github/authorize`).then((r) => r.data),
+  githubAuthorizeUrl: (id, force) =>
+    api.get(`/teams/${id}/github/authorize${force ? "?force=1" : ""}`).then((r) => r.data),
+  githubManageUrl: (id) => api.get(`/teams/${id}/github/manage`).then((r) => r.data),
   listRepos: (id) => api.get(`/teams/${id}/github/repos`).then((r) => r.data),
   disconnectGithub: (id) => api.delete(`/teams/${id}/github`).then((r) => r.data),
 

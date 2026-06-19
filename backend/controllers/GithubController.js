@@ -6,8 +6,16 @@ export const getConnection = asyncHandler(async (req, res) => {
 });
 
 // Returns the GitHub App install URL for the frontend to redirect to.
+// ?force=1 skips reactivating the team's existing install and always shows
+// GitHub's account chooser (used by "Use a different account").
 export const authorize = asyncHandler(async (req, res) => {
-  res.json(await githubService.buildAuthorizeUrl(req.userId, req.params.id));
+  const force = req.query.force === "1" || req.query.force === "true";
+  res.json(await githubService.buildAuthorizeUrl(req.userId, req.params.id, { force }));
+});
+
+// Returns GitHub's "configure repositories" page URL for an existing install.
+export const manage = asyncHandler(async (req, res) => {
+  res.json(await githubService.buildManageUrl(req.userId, req.params.id));
 });
 
 export const listRepos = asyncHandler(async (req, res) => {
