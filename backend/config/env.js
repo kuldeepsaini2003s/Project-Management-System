@@ -58,6 +58,16 @@ export const env = {
       `${process.env.API_URL || "http://localhost:5000"}/api/slack/setup`,
   },
 
+  // Notion Public Integration (notion.com/my-integrations → New integration → Public).
+  // Redirect URL to register: {API_URL}/api/notion/setup
+  notion: {
+    clientId: process.env.NOTION_CLIENT_ID || "",
+    clientSecret: process.env.NOTION_CLIENT_SECRET || "",
+    redirectUri:
+      process.env.NOTION_REDIRECT_URI ||
+      `${process.env.API_URL || "http://localhost:5000"}/api/notion/setup`,
+  },
+
   // GitHub App (Settings → Developer settings → GitHub Apps).
   github: {
     appId: process.env.GITHUB_APP_ID,

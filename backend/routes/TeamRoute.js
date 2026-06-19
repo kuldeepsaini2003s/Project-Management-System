@@ -25,6 +25,11 @@ import {
   authorize as authorizeSlack,
   disconnect as disconnectSlack,
 } from "../controllers/SlackController.js";
+import {
+  getConnection as getNotion,
+  authorize as authorizeNotion,
+  disconnect as disconnectNotion,
+} from "../controllers/NotionController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
@@ -60,6 +65,11 @@ router.delete("/:id/github", disconnect);
 router.get("/:id/slack", getSlack);
 router.get("/:id/slack/authorize", authorizeSlack);
 router.delete("/:id/slack", disconnectSlack);
+
+// Notion integration (OAuth)
+router.get("/:id/notion", getNotion);
+router.get("/:id/notion/authorize", authorizeNotion);
+router.delete("/:id/notion", disconnectNotion);
 
 // Join flow
 router.get("/:id/public", getTeamPublic);

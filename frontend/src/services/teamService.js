@@ -49,5 +49,10 @@ export const teamService = {
   getSlack: (id) => api.get(`/teams/${id}/slack`).then((r) => r.data),
   slackAuthorizeUrl: (id) => api.get(`/teams/${id}/slack/authorize`).then((r) => r.data),
   disconnectSlack: (id) => api.delete(`/teams/${id}/slack`).then((r) => r.data),
+
+  // Notion integration (OAuth)
+  getNotion: (id) => api.get(`/teams/${id}/notion`).then((r) => r.data),
+  notionAuthorizeUrl: (id) => api.get(`/teams/${id}/notion/authorize`).then((r) => r.data),
+  disconnectNotion: (id) => api.delete(`/teams/${id}/notion`).then((r) => r.data),
 };
 

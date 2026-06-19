@@ -127,6 +127,7 @@ model Team {
   invites      TeamInvite[]
   github       GithubConnection?
   slack        SlackConnection?
+  notion       NotionConnection?
   projects     Project[]
   issues       Issue[]
   issueCounter Int               @default(0)
@@ -348,6 +349,21 @@ model SlackConnection {
   channel       String? // e.g. "#general"
   slackTeamId   String? // Slack workspace ID (T...)
   slackTeamName String? // Slack workspace display name
+  active        Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NotionConnection {
+  id            String  @id @default(cuid())
+  team          Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId        String  @unique
+  accessToken   String  // Notion bot access token
+  workspaceId   String  // Notion workspace ID
+  workspaceName String? // Notion workspace display name
+  workspaceIcon String? // Notion workspace icon URL
+  botId         String? // Notion bot ID
   active        Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
 
   createdAt DateTime @default(now())

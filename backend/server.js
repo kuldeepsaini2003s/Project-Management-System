@@ -19,6 +19,7 @@ import NotificationRoute from "./routes/NotificationRoute.js";
 import WebhookRoute from "./routes/WebhookRoute.js";
 import GithubRoute from "./routes/GithubRoute.js";
 import SlackRoute from "./routes/SlackRoute.js";
+import NotionRoute from "./routes/NotionRoute.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyEmailTransport } from "./services/EmailService.js";
@@ -58,6 +59,7 @@ app.use("/api/invites", InviteRoute);
 app.use("/api/notifications", NotificationRoute);
 app.use("/api/github", GithubRoute);
 app.use("/api/slack", SlackRoute);
+app.use("/api/notion", NotionRoute);
 
 app.use(notFound);
 app.use(errorHandler);
