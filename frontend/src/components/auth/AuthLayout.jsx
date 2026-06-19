@@ -23,21 +23,22 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           {children}
 
           {footer && (
-            <div className="mt-6 text-center text-sm text-fg-muted">{footer}</div>
+            <div className="mt-6 text-center text-sm text-fg-muted">
+              {footer}
+            </div>
           )}
         </div>
       </main>
 
-      <footer className="px-5 py-6 text-center text-xs text-fg-subtle">
-        By continuing you agree to Linear's{" "}
-        <a href="#" className="underline-offset-2 hover:text-fg-muted hover:underline">
-          Terms of Service
-        </a>{" "}
-        and{" "}
-        <a href="#" className="underline-offset-2 hover:text-fg-muted hover:underline">
-          Privacy Policy
-        </a>
-        .
+      <footer className="px-5 py-6 text-center text-xs text-fg-subtle font-semibold">
+        Made with ❤️ by Algofolks{" "}
+        <br />
+        <p
+          href="#"
+          className="underline-offset-2 hover:text-fg-muted hover:underline"
+        >
+          Engineered by Heart, Developed with Passion.
+        </p>        
       </footer>
     </div>
   );

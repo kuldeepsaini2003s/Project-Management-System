@@ -42,7 +42,7 @@ const createDefaultWorkspaceForUser = (user) => {
   const key = (first.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 3) || "TEAM").padEnd(2, "X");
   return prisma.workspace.create({
     data: {
-      name: `${first}'s Workspace`,
+      name: `${first}'s`,
       memberships: { create: { userId: user.id, role: "OWNER" } },
       teams: {
         create: {

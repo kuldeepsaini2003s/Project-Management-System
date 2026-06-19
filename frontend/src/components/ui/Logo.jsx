@@ -1,12 +1,10 @@
 export default function Logo({ withWordmark = true, className = "" }) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <svg className="h-6 w-6 text-fg" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">
-        <path d="M1.225 61.523c-.222-.949.908-1.546 1.597-.857l36.512 36.512c.69.69.092 1.82-.857 1.597C18.802 94.27 5.73 81.198 1.225 61.523zM.002 46.889a.99.99 0 0 0 .29.76L52.35 99.71a.99.99 0 0 0 .76.29c2.072-.097 4.103-.337 6.087-.71.78-.147 1.05-1.106.49-1.667L2.378 40.31c-.56-.56-1.52-.29-1.667.49-.373 1.984-.613 4.015-.71 6.087zM4.21 28.234a.99.99 0 0 0 .213 1.097l66.246 66.246a.99.99 0 0 0 1.097.213 49.9 49.9 0 0 0 4.667-2.45.99.99 0 0 0 .19-1.541L8.201 23.377a.99.99 0 0 0-1.541.19 49.9 49.9 0 0 0-2.45 4.667zM12.738 16.358c-.36-.36-.39-.928-.06-1.314C21.81 4.262 35.111-1 49.999-1c27.062 0 49 21.938 49 49 0 14.888-5.262 28.19-16.044 37.321-.386.33-.954.3-1.314-.06L12.738 16.358z" />
-      </svg>
+      <img src="/logo.webp" alt="Algofolks Logo" className="h-6 w-6" />
       {withWordmark && (
         <span className="text-[17px] font-semibold tracking-tight text-fg">
-          Linear
+          Algofolks
         </span>
       )}
     </div>
