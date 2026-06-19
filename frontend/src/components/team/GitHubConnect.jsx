@@ -22,12 +22,19 @@ export default function GitHubConnect({ teamId, isAdmin }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
-  const connect = async (force = false) => {
+  const connect = async () => {
     setError("");
     setLoading(true);
     try {
-      const { url } = await teamService.githubAuthorizeUrl(teamId, force);
-      window.location.href = url; // GitHub's install/authorize screen (account chooser when forced)
+      const result = await teamService.githubAuthorizeUrl(teamId);
+      if (result.reconnected) {
+        // Existing installation reactivated instantly — no GitHub redirect needed.
+        await refresh();
+        setLoading(false);
+        return;
+      }
+      // Fresh install — redirect to GitHub's installation flow.
+      window.location.href = result.url;
     } catch (e) {
       setError(e.message);
       setLoading(false);
@@ -75,29 +82,16 @@ export default function GitHubConnect({ teamId, isAdmin }) {
             </button>
           )}
           {isAdmin && (
-            <button
-              onClick={() => connect(true)}
-              className="self-start text-xs text-brand hover:underline"
-            >
-              Use a different account
-            </button>
-          )}
-          {isAdmin && (
             <button onClick={disconnect} className="self-start text-xs text-danger hover:underline">
               Disconnect
             </button>
           )}
         </div>
       ) : isAdmin ? (
-        <div className="flex flex-col items-start gap-1.5">
-          <Button className="!w-auto px-3" onClick={() => connect(false)} isLoading={loading}>
-            <Github className="h-4 w-4" />
-            Connect GitHub
-          </Button>
-          <button onClick={() => connect(true)} className="text-xs text-fg-muted hover:underline">
-            Use a different account
-          </button>
-        </div>
+        <Button className="!w-auto px-3" onClick={connect} isLoading={loading}>
+          <Github className="h-4 w-4" />
+          Connect GitHub
+        </Button>
       ) : (
         <p className="text-sm text-fg-subtle">GitHub is not connected.</p>
       )}

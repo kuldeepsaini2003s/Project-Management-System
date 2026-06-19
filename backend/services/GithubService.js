@@ -80,30 +80,52 @@ const buildState = (teamId, userId, origin) =>
 const installUrl = (state) =>
   `https://github.com/apps/${env.github.appSlug}/installations/new?state=${encodeURIComponent(state)}`;
 
-export const buildAuthorizeUrl = async (userId, teamId, { force = false, origin } = {}) => {
+export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
 
-  // ALWAYS go through GitHub's install/select-account flow. We deliberately do
-  // NOT short-circuit by reusing a stored installation — the GitHub callback is
-  // the single source of truth, so the connection can never show a stale/other
-  // account. GitHub shows the account chooser (scoped to whoever is logged into
-  // GitHub in that browser) and redirects back to our Setup URL with the chosen
-  // installation id + our signed state (team + user + return origin).
   const existing = await prisma.githubConnection.findUnique({ where: { teamId } });
-  log(
-    `authorize team=${teamId} user=${userId} force=${force} origin=${origin || "-"} ` +
-      `existingRow=${existing ? `{installationId:${existing.installationId}, account:${existing.account}, active:${existing.active}}` : "none"} → GitHub install flow`
-  );
+
+  if (existing) {
+    log(
+      `authorize reconnect attempt: team=${teamId} user=${userId} ` +
+        `installation=${existing.installationId} account=${existing.account} active=${existing.active}`
+    );
+    // Check if the stored GitHub installation is still valid.
+    const exists = await installationExists(existing.installationId);
+    if (exists) {
+      // Reconnect instantly — no GitHub redirect needed.
+      await prisma.githubConnection.update({ where: { teamId }, data: { active: true } });
+      log(
+        `authorize reconnect SUCCESS: team=${teamId} installation=${existing.installationId} ` +
+          `account=${existing.account} → active=true`
+      );
+      return { reconnected: true, account: existing.account };
+    }
+    log(
+      `authorize reconnect: team=${teamId} installation=${existing.installationId} ` +
+        `no longer exists on GitHub → starting fresh installation flow`
+    );
+  } else {
+    log(`authorize connect: team=${teamId} user=${userId} no existing connection → fresh installation flow`);
+  }
+
+  // No valid stored installation — send the user through GitHub's install flow.
+  log(`authorize: team=${teamId} user=${userId} → redirecting to GitHub installation flow`);
   return { url: installUrl(buildState(teamId, userId, origin)) };
 };
 
-// GitHub's page to manage which repositories the installation can access (and to
-// switch/add accounts). Carries state so the post-update redirect returns to the
-// app and refreshes the connection (without state, GitHub would dead-end here).
+// GitHub's page to manage which repositories the installation can access.
+// Carries state so the post-update redirect returns to the app and refreshes
+// the connection (without state, GitHub would dead-end on the settings page).
 export const buildManageUrl = async (userId, teamId, { origin } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
+  const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
+  if (!conn?.installationId || conn.active === false) {
+    throw new ApiError(400, "GitHub is not connected for this team");
+  }
+  log(`manage: team=${teamId} installation=${conn.installationId} → configure repositories`);
   return { url: installUrl(buildState(teamId, userId, origin)) };
 };
 
@@ -167,6 +189,8 @@ export const handleSetupCallback = async (query) => {
 
   const before = await prisma.githubConnection.findUnique({ where: { teamId } });
   log("setup: GithubConnection BEFORE =", JSON.stringify(before));
+  const isFirstConnect = !before;
+  log(isFirstConnect ? "setup: fresh connect (no prior record)" : `setup: updating existing record (was active=${before.active})`);
 
   const after = await prisma.githubConnection.upsert({
     where: { teamId },
@@ -174,7 +198,10 @@ export const handleSetupCallback = async (query) => {
     create: { teamId, installationId: String(installationId), account, accountType, active: true },
   });
   log("setup: GithubConnection AFTER  =", JSON.stringify(after));
-  log(`setup: SAVED installation=${installationId} account=${account} → team=${teamId}. Redirecting to ${returnOrigin}`);
+  log(
+    `setup: ${isFirstConnect ? "CONNECT" : "REINSTALL"} complete — ` +
+      `installation=${installationId} account=${account} team=${teamId} → redirecting to ${returnOrigin}`
+  );
 
   return `${returnOrigin}/teams/${teamId}/integrations?github=connected`;
 };
@@ -215,12 +242,18 @@ export const listRepos = async (userId, teamId) => {
 
 export const disconnectGithub = async (userId, teamId) => {
   await assertTeamAdmin(userId, teamId);
-  // Fully remove the record so there is never any stale account to reuse. The app
-  // stays installed on the GitHub account (uninstall it from GitHub for a full
-  // revoke); reconnecting goes through GitHub's flow again and re-saves fresh data.
-  const before = await prisma.githubConnection.findUnique({ where: { teamId } });
-  await prisma.githubConnection.deleteMany({ where: { teamId } });
-  log(`disconnect team=${teamId} removed=${JSON.stringify(before)}`);
+  // Mark as inactive — do NOT delete the record or uninstall the GitHub App.
+  // This lets reconnect work instantly (active=true) if the installation is still valid,
+  // without requiring the user to go through GitHub's install flow again.
+  const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
+  if (!conn) {
+    log(`disconnect team=${teamId} → no connection record found`);
+    return { ok: true };
+  }
+  await prisma.githubConnection.update({ where: { teamId }, data: { active: false } });
+  log(
+    `disconnect team=${teamId} installation=${conn.installationId} account=${conn.account} → active=false`
+  );
   return { ok: true };
 };
 
