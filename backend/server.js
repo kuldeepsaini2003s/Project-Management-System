@@ -18,6 +18,7 @@ import InviteRoute from "./routes/InviteRoute.js";
 import NotificationRoute from "./routes/NotificationRoute.js";
 import WebhookRoute from "./routes/WebhookRoute.js";
 import GithubRoute from "./routes/GithubRoute.js";
+import SlackRoute from "./routes/SlackRoute.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyEmailTransport } from "./services/EmailService.js";
@@ -56,6 +57,7 @@ app.use("/api/join-requests", JoinRequestRoute);
 app.use("/api/invites", InviteRoute);
 app.use("/api/notifications", NotificationRoute);
 app.use("/api/github", GithubRoute);
+app.use("/api/slack", SlackRoute);
 
 app.use(notFound);
 app.use(errorHandler);

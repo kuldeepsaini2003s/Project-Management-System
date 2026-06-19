@@ -190,27 +190,30 @@ export default function Sidebar({ onClose }) {
           {firstTeamId && (
             <>
               <SectionLabel>Integrations</SectionLabel>
-              <button
-                onClick={() => go(`/teams/${firstTeamId}/integrations`)}
-                className={tryItemClass}
+              <NavLink
+                to={`/teams/${firstTeamId}/integrations/github`}
+                className={navItemClass}
+                onClick={onClose}
               >
                 <Github className="h-4 w-4" />
-                <span className="flex-1 text-left">Connect GitHub</span>
-              </button>
-              <button
-                onClick={() => go(`/teams/${firstTeamId}/integrations`)}
-                className={tryItemClass}
+                <span className="flex-1">GitHub</span>
+              </NavLink>
+              <NavLink
+                to={`/teams/${firstTeamId}/integrations/slack`}
+                className={navItemClass}
+                onClick={onClose}
               >
                 <Slack className="h-4 w-4" />
-                <span className="flex-1 text-left">Connect Slack</span>
-              </button>
-              <button
-                onClick={() => go(`/teams/${firstTeamId}/integrations`)}
-                className={tryItemClass}
+                <span className="flex-1">Slack</span>
+              </NavLink>
+              <NavLink
+                to={`/teams/${firstTeamId}/integrations/notion`}
+                className={navItemClass}
+                onClick={onClose}
               >
                 <BookText className="h-4 w-4" />
-                <span className="flex-1 text-left">Connect Notion</span>
-              </button>
+                <span className="flex-1">Notion</span>
+              </NavLink>
             </>
           )}
         </nav>

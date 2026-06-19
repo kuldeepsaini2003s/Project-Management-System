@@ -22,7 +22,7 @@ import { createInvites } from "../controllers/TeamInviteController.js";
 import { getConnection, authorize, manage, listRepos, disconnect } from "../controllers/GithubController.js";
 import {
   getConnection as getSlack,
-  connect as connectSlack,
+  authorize as authorizeSlack,
   disconnect as disconnectSlack,
 } from "../controllers/SlackController.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -56,9 +56,9 @@ router.get("/:id/github/manage", manage);
 router.get("/:id/github/repos", listRepos);
 router.delete("/:id/github", disconnect);
 
-// Slack integration (incoming webhook)
+// Slack integration (OAuth)
 router.get("/:id/slack", getSlack);
-router.post("/:id/slack", connectSlack);
+router.get("/:id/slack/authorize", authorizeSlack);
 router.delete("/:id/slack", disconnectSlack);
 
 // Join flow

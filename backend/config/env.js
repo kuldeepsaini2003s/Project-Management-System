@@ -45,6 +45,19 @@ export const env = {
   // How long an invite link stays valid (hours).
   inviteTtlHours: Number(process.env.INVITE_TTL_HOURS) || 72,
 
+  // Slack App (api.slack.com/apps → OAuth & Permissions).
+  // Redirect URL to register: {API_URL}/api/slack/setup
+  // Bot Token Scope required: incoming-webhook
+  slack: {
+    clientId: process.env.SLACK_CLIENT_ID || "",
+    clientSecret: process.env.SLACK_CLIENT_SECRET || "",
+    signingSecret: process.env.SLACK_SIGNING_SECRET || "",
+    // Must match exactly what's registered in Slack App → OAuth & Permissions → Redirect URLs.
+    redirectUri:
+      process.env.SLACK_REDIRECT_URI ||
+      `${process.env.API_URL || "http://localhost:5000"}/api/slack/setup`,
+  },
+
   // GitHub App (Settings → Developer settings → GitHub Apps).
   github: {
     appId: process.env.GITHUB_APP_ID,

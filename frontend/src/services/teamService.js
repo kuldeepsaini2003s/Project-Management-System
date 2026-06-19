@@ -45,10 +45,9 @@ export const teamService = {
   listRepos: (id) => api.get(`/teams/${id}/github/repos`).then((r) => r.data),
   disconnectGithub: (id) => api.delete(`/teams/${id}/github`).then((r) => r.data),
 
-  // Slack integration (incoming webhook)
+  // Slack integration (OAuth)
   getSlack: (id) => api.get(`/teams/${id}/slack`).then((r) => r.data),
-  connectSlack: (id, webhookUrl) =>
-    api.post(`/teams/${id}/slack`, { webhookUrl }).then((r) => r.data),
+  slackAuthorizeUrl: (id) => api.get(`/teams/${id}/slack/authorize`).then((r) => r.data),
   disconnectSlack: (id) => api.delete(`/teams/${id}/slack`).then((r) => r.data),
 };
 
