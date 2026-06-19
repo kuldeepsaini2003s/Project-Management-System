@@ -14,6 +14,9 @@ const ghHeaders = (token) => ({
   "X-GitHub-Api-Version": "2022-11-28",
 });
 
+// Diagnostic logger — every GitHub connect/callback/db step is traced with this.
+const log = (...args) => console.log("[github]", ...args);
+
 /* ---------------- App auth ---------------- */
 
 // Short-lived JWT identifying the GitHub App (RS256, signed with the private key).
@@ -80,26 +83,18 @@ const installUrl = (state) =>
 export const buildAuthorizeUrl = async (userId, teamId, { force = false, origin } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
-  const returnOrigin = resolveReturnOrigin(origin);
 
-  // Unless the caller explicitly wants to pick a different account (force), and
-  // if THIS team previously connected (we already know its own installation id),
-  // a "disconnect" only deactivated the record — the app is still installed on
-  // that account. Reactivate the team's OWN installation instead of sending the
-  // user to GitHub's "already installed" dead-end. This never touches another
-  // team's / account's installation, so it's multi-tenant safe.
-  if (!force) {
-    const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
-    if (conn?.installationId && (await installationExists(conn.installationId))) {
-      await prisma.githubConnection.update({ where: { teamId }, data: { active: true } });
-      return { url: `${returnOrigin}/teams/${teamId}/integrations?github=connected`, linked: true };
-    }
-  }
-
-  // Fresh connection, reconnect after uninstall, or an explicit account switch:
-  // send the user through GitHub's real install flow. GitHub shows the account
-  // chooser (scoped to whoever is logged into GitHub in that browser) and
-  // redirects back to our setup callback with the chosen installation id + state.
+  // ALWAYS go through GitHub's install/select-account flow. We deliberately do
+  // NOT short-circuit by reusing a stored installation — the GitHub callback is
+  // the single source of truth, so the connection can never show a stale/other
+  // account. GitHub shows the account chooser (scoped to whoever is logged into
+  // GitHub in that browser) and redirects back to our Setup URL with the chosen
+  // installation id + our signed state (team + user + return origin).
+  const existing = await prisma.githubConnection.findUnique({ where: { teamId } });
+  log(
+    `authorize team=${teamId} user=${userId} force=${force} origin=${origin || "-"} ` +
+      `existingRow=${existing ? `{installationId:${existing.installationId}, account:${existing.account}, active:${existing.active}}` : "none"} → GitHub install flow`
+  );
   return { url: installUrl(buildState(teamId, userId, origin)) };
 };
 
@@ -116,12 +111,17 @@ export const buildManageUrl = async (userId, teamId, { origin } = {}) => {
 export const handleSetupCallback = async (query) => {
   // Default error landing (real origin is recovered from state below when possible).
   let returnOrigin = env.clientUrl;
-  const fail = (msg) => `${returnOrigin}/?github=error&message=${encodeURIComponent(msg)}`;
+  const fail = (msg) => {
+    log("setup FAIL:", msg);
+    return `${returnOrigin}/?github=error&message=${encodeURIComponent(msg)}`;
+  };
 
   const { installation_id: installationId, state, setup_action: setupAction } = query;
+  log("setup callback HIT. query=", JSON.stringify(query));
 
-  // The user uninstalled via this page (rare) — nothing to store.
-  if (setupAction === "request") return `${returnOrigin}/?github=error&message=Installation%20pending%20approval`;
+  // The user requested install on an org needing owner approval (rare).
+  if (setupAction === "request")
+    return `${returnOrigin}/?github=error&message=Installation%20pending%20approval`;
   if (!installationId) return fail("GitHub did not return an installation id");
   if (!state) return fail("Missing authorization state — please start the connect again");
 
@@ -132,6 +132,7 @@ export const handleSetupCallback = async (query) => {
     return fail("Invalid or expired authorization state");
   }
   const { t: teamId, u: userId, gh, c } = decoded || {};
+  log(`setup decoded state: teamId=${teamId} userId=${userId} gh=${gh} returnOrigin(c)=${c}`);
   if (!gh || !teamId || !userId) return fail("Invalid authorization state");
   returnOrigin = resolveReturnOrigin(c);
 
@@ -143,24 +144,37 @@ export const handleSetupCallback = async (query) => {
     return fail("You are not authorized to connect GitHub for this team");
   }
 
-  // Confirm the installation exists and capture which account it belongs to.
+  // Confirm the installation exists and capture which account (login + type) it
+  // belongs to — straight from GitHub, so it can never be a stale value.
   let account = null;
+  let accountType = null;
   try {
     const res = await fetch(`${API}/app/installations/${installationId}`, {
       headers: ghHeaders(appJwt()),
     });
-    if (!res.ok) return fail("Could not verify the GitHub installation");
+    if (!res.ok) {
+      log(`setup: GET /app/installations/${installationId} → HTTP ${res.status}`);
+      return fail("Could not verify the GitHub installation");
+    }
     const data = await res.json();
     account = data.account?.login || null;
-  } catch {
+    accountType = data.account?.type || null; // "User" or "Organization"
+    log(`setup: installation ${installationId} belongs to ${account} (${accountType})`);
+  } catch (e) {
+    log("setup: error verifying installation:", e?.message);
     return fail("Could not reach GitHub to verify the installation");
   }
 
-  await prisma.githubConnection.upsert({
+  const before = await prisma.githubConnection.findUnique({ where: { teamId } });
+  log("setup: GithubConnection BEFORE =", JSON.stringify(before));
+
+  const after = await prisma.githubConnection.upsert({
     where: { teamId },
-    update: { installationId: String(installationId), account, active: true },
-    create: { teamId, installationId: String(installationId), account, active: true },
+    update: { installationId: String(installationId), account, accountType, active: true },
+    create: { teamId, installationId: String(installationId), account, accountType, active: true },
   });
+  log("setup: GithubConnection AFTER  =", JSON.stringify(after));
+  log(`setup: SAVED installation=${installationId} account=${account} → team=${teamId}. Redirecting to ${returnOrigin}`);
 
   return `${returnOrigin}/teams/${teamId}/integrations?github=connected`;
 };
@@ -171,6 +185,7 @@ export const getConnection = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
   const conn = await prisma.githubConnection.findUnique({ where: { teamId } });
   const connected = !!conn?.installationId && conn.active !== false;
+  log(`getConnection team=${teamId} → connected=${connected} account=${connected ? conn.account : "-"}`);
   return { connected, account: connected ? conn.account || null : null };
 };
 
@@ -200,10 +215,12 @@ export const listRepos = async (userId, teamId) => {
 
 export const disconnectGithub = async (userId, teamId) => {
   await assertTeamAdmin(userId, teamId);
-  // Deactivate but keep the record so the team can reconnect its OWN installation
-  // without hitting GitHub's "already installed" dead-end. (The app stays installed
-  // on the account; manage/uninstall it from GitHub if a full removal is wanted.)
-  await prisma.githubConnection.updateMany({ where: { teamId }, data: { active: false } });
+  // Fully remove the record so there is never any stale account to reuse. The app
+  // stays installed on the GitHub account (uninstall it from GitHub for a full
+  // revoke); reconnecting goes through GitHub's flow again and re-saves fresh data.
+  const before = await prisma.githubConnection.findUnique({ where: { teamId } });
+  await prisma.githubConnection.deleteMany({ where: { teamId } });
+  log(`disconnect team=${teamId} removed=${JSON.stringify(before)}`);
   return { ok: true };
 };
 

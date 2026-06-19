@@ -332,7 +332,8 @@ model GithubConnection {
   team           Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId         String  @unique
   installationId String? // GitHub App installation id
-  account        String? // org/user the app was installed on
+  account        String? // login of the org/user the app was installed on
+  accountType    String? // "User" or "Organization"
   repoFullName   String? // optional default repo (repos are linked per project)
   active         Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
 
