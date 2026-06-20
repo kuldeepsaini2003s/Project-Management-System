@@ -12,7 +12,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Normalize errors to a readable message for the UI.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
