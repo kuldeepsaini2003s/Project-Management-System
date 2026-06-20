@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "../ui/Modal.jsx";
 import Button from "../ui/Button.jsx";
 
@@ -8,14 +8,22 @@ const PRESET_COLORS = [
 ];
 
 export default function LabelFormModal({ open, onClose, onSave, initial }) {
-  const [name, setName] = useState(initial?.name || "");
-  const [color, setColor] = useState(initial?.color || "#6366f1");
-  const [description, setDescription] = useState(initial?.description || "");
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#6366f1");
+  const [description, setDescription] = useState("");
+
+  // Reset form whenever the modal opens or switches to a different label
+  useEffect(() => {
+    if (open) {
+      setName(initial?.name || "");
+      setColor(initial?.color || "#6366f1");
+      setDescription(initial?.description || "");
+    }
+  }, [open, initial?.id]);
 
   const handleSave = () => {
     if (!name.trim()) return;
     onSave({ name: name.trim(), color, description });
-    setName(""); setColor("#6366f1"); setDescription("");
   };
 
   return (

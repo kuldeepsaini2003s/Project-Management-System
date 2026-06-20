@@ -12,10 +12,6 @@ import {
   Users,
   LayoutGrid,
   Settings2,
-  Github,
-  Slack,
-  BookText,
-  Server,
 } from "lucide-react";
 import WorkspaceSwitcher from "../workspace/WorkspaceSwitcher.jsx";
 import CreateWorkspaceModal from "../workspace/CreateWorkspaceModal.jsx";
@@ -39,7 +35,9 @@ const tryItemClass =
 function SectionLabel({ children, action }) {
   return (
     <div className="flex items-center justify-between px-2 pb-1 pt-4">
-      <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{children}</span>
+      <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
+        {children}
+      </span>
       {action}
     </div>
   );
@@ -66,7 +64,9 @@ export default function Sidebar({ onClose }) {
       <aside className="glass flex h-full w-64 shrink-0 flex-col gap-1 rounded-2xl px-3 py-3">
         <div className="flex items-center gap-1">
           <div className="flex-1">
-            <WorkspaceSwitcher onCreateWorkspace={() => setCreateWorkspaceOpen(true)} />
+            <WorkspaceSwitcher
+              onCreateWorkspace={() => setCreateWorkspaceOpen(true)}
+            />
           </div>
           <button
             onClick={() => go("/search")}
@@ -134,14 +134,20 @@ export default function Sidebar({ onClose }) {
             {({ close }) => (
               <div className="w-52">
                 <button
-                  onClick={() => { close(); go("/members"); }}
+                  onClick={() => {
+                    close();
+                    go("/members");
+                  }}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
                 >
                   <Users className="h-4 w-4 text-fg-muted" />
                   Members
                 </button>
                 <button
-                  onClick={() => { close(); go("/teams"); }}
+                  onClick={() => {
+                    close();
+                    go("/teams");
+                  }}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
                 >
                   <LayoutGrid className="h-4 w-4 text-fg-muted" />
@@ -149,7 +155,10 @@ export default function Sidebar({ onClose }) {
                 </button>
                 <div className="my-1 h-px bg-glass-border" />
                 <button
-                  onClick={() => { close(); setCustomizeOpen(true); }}
+                  onClick={() => {
+                    close();
+                    setCustomizeOpen(true);
+                  }}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
                 >
                   <Settings2 className="h-4 w-4 text-fg-muted" />
@@ -188,52 +197,25 @@ export default function Sidebar({ onClose }) {
             )}
           </div>
 
-          {firstTeamId && (
-            <>
-              <SectionLabel>Integrations</SectionLabel>
-              <NavLink
-                to={`/teams/${firstTeamId}/integrations/github`}
-                className={navItemClass}
-                onClick={onClose}
-              >
-                <Github className="h-4 w-4" />
-                <span className="flex-1">GitHub</span>
-              </NavLink>
-              <NavLink
-                to={`/teams/${firstTeamId}/integrations/slack`}
-                className={navItemClass}
-                onClick={onClose}
-              >
-                <Slack className="h-4 w-4" />
-                <span className="flex-1">Slack</span>
-              </NavLink>
-              <NavLink
-                to={`/teams/${firstTeamId}/integrations/notion`}
-                className={navItemClass}
-                onClick={onClose}
-              >
-                <BookText className="h-4 w-4" />
-                <span className="flex-1">Notion</span>
-              </NavLink>
-              <NavLink
-                to={`/teams/${firstTeamId}/integrations/mcp`}
-                className={navItemClass}
-                onClick={onClose}
-              >
-                <Server className="h-4 w-4" />
-                <span className="flex-1">MCP Server</span>
-              </NavLink>
-            </>
-          )}
         </nav>
-
-        <div className="mt-auto px-2 pt-2 text-xs text-fg-subtle">Free plan</div>
       </aside>
 
-      <CreateWorkspaceModal open={createWorkspaceOpen} onClose={() => setCreateWorkspaceOpen(false)} />
-      <CreateTeamModal open={createTeamOpen} onClose={() => setCreateTeamOpen(false)} />
-      <CreateIssueModal open={createIssueOpen} onClose={() => setCreateIssueOpen(false)} />
-      <CustomizeSidebarModal open={customizeOpen} onClose={() => setCustomizeOpen(false)} />
+      <CreateWorkspaceModal
+        open={createWorkspaceOpen}
+        onClose={() => setCreateWorkspaceOpen(false)}
+      />
+      <CreateTeamModal
+        open={createTeamOpen}
+        onClose={() => setCreateTeamOpen(false)}
+      />
+      <CreateIssueModal
+        open={createIssueOpen}
+        onClose={() => setCreateIssueOpen(false)}
+      />
+      <CustomizeSidebarModal
+        open={customizeOpen}
+        onClose={() => setCustomizeOpen(false)}
+      />
     </>
   );
 }

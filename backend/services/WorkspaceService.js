@@ -5,6 +5,7 @@ import { assertMembership, assertOwner } from "../utils/membership.js";
 const shapeWorkspace = (workspace) => ({
   id: workspace.id,
   name: workspace.name,
+  logoUrl: workspace.logoUrl || null,
   role: workspace.memberships?.[0]?.role,
   memberCount: workspace._count?.memberships,
   teamCount: workspace._count?.teams,
@@ -58,11 +59,14 @@ export const getWorkspaceById = async (userId, id) => {
   return shapeWorkspace(workspace);
 };
 
-export const updateWorkspace = async (userId, id, { name }) => {
+export const updateWorkspace = async (userId, id, { name, logoUrl }) => {
   await assertOwner(userId, id);
   const workspace = await prisma.workspace.update({
     where: { id },
-    data: { name: name?.trim() },
+    data: {
+      ...(name !== undefined && { name: name.trim() }),
+      ...(logoUrl !== undefined && { logoUrl }),
+    },
     include: includeForUser(userId),
   });
   return shapeWorkspace(workspace);
@@ -134,10 +138,12 @@ export const getWorkspaceMembers = async (userId, workspaceId) => {
   const userIds = memberships.map((m) => m.userId);
   const teamMems = await prisma.teamMembership.findMany({
     where: { userId: { in: userIds }, team: { workspaceId } },
-    include: { team: { select: { key: true } } },
+    include: { team: { select: { id: true, name: true, key: true } } },
   });
   const teamsByUser = {};
-  for (const tm of teamMems) (teamsByUser[tm.userId] ||= []).push(tm.team.key);
+  for (const tm of teamMems) {
+    (teamsByUser[tm.userId] ||= []).push({ id: tm.team.id, name: tm.team.name, key: tm.team.key });
+  }
 
   return memberships.map((m) => ({
     ...m.user,

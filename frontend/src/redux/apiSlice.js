@@ -19,7 +19,9 @@ export const api = createApi({
   baseQuery,
   tagTypes: [
     "Me",
+    "Sessions",
     "Workspaces",
+    "Workspace",
     "WsMembers",
     "Teams",
     "Team",
@@ -34,15 +36,47 @@ export const api = createApi({
     "Issue",
     "Requests",
     "MyRequest",
+    "GitHubConn",
+    "SlackConn",
+    "NotionConn",
   ],
   endpoints: (b) => ({
-    /* ---- auth / workspace ---- */
+    /* ---- auth / user ---- */
     getMe: b.query({ query: () => "/auth/me", providesTags: ["Me"] }),
+    updateUser: b.mutation({
+      query: ({ id, ...body }) => ({ url: `/users/${id}`, method: "PUT", body }),
+      invalidatesTags: ["Me"],
+    }),
+    changeEmail: b.mutation({
+      query: ({ id, email }) => ({ url: `/users/${id}/email`, method: "PATCH", body: { email } }),
+      invalidatesTags: ["Me"],
+    }),
+    getUserSessions: b.query({
+      query: (id) => `/users/${id}/sessions`,
+      providesTags: (r, e, id) => [{ type: "Sessions", id }],
+    }),
+    revokeSession: b.mutation({
+      query: ({ userId, sessionId }) => ({ url: `/users/${userId}/sessions/${sessionId}`, method: "DELETE" }),
+      invalidatesTags: (r, e, { userId }) => [{ type: "Sessions", id: userId }],
+    }),
+    revokeAllOtherSessions: b.mutation({
+      query: ({ userId }) => ({ url: `/users/${userId}/sessions`, method: "DELETE" }),
+      invalidatesTags: (r, e, { userId }) => [{ type: "Sessions", id: userId }],
+    }),
 
+    /* ---- workspaces ---- */
     getWorkspaces: b.query({ query: () => "/workspaces", providesTags: ["Workspaces"] }),
     createWorkspace: b.mutation({
       query: (body) => ({ url: "/workspaces", method: "POST", body }),
       invalidatesTags: ["Workspaces"],
+    }),
+    getWorkspace: b.query({
+      query: (id) => `/workspaces/${id}`,
+      providesTags: (r, e, id) => [{ type: "Workspace", id }],
+    }),
+    updateWorkspace: b.mutation({
+      query: ({ id, ...body }) => ({ url: `/workspaces/${id}`, method: "PATCH", body }),
+      invalidatesTags: (r, e, { id }) => [{ type: "Workspace", id }, "Workspaces"],
     }),
     getWorkspaceMembers: b.query({
       query: (id) => `/workspaces/${id}/members`,
@@ -68,7 +102,11 @@ export const api = createApi({
     }),
     updateTeam: b.mutation({
       query: ({ id, ...body }) => ({ url: `/teams/${id}`, method: "PATCH", body }),
-      invalidatesTags: (r, e, { id }) => [{ type: "Team", id }],
+      invalidatesTags: (r, e, { id, workspaceId }) => [{ type: "Team", id }, { type: "Teams", id: workspaceId }],
+    }),
+    deleteTeam: b.mutation({
+      query: ({ id }) => ({ url: `/teams/${id}`, method: "DELETE" }),
+      invalidatesTags: (r, e, { workspaceId }) => [{ type: "Teams", id: workspaceId }],
     }),
 
     /* ---- team members ---- */
@@ -144,6 +182,14 @@ export const api = createApi({
         method: "POST",
         body,
       }),
+      invalidatesTags: (r, e, { workspaceId }) => [{ type: "Labels", id: workspaceId }],
+    }),
+    updateLabel: b.mutation({
+      query: ({ id, ...body }) => ({ url: `/labels/${id}`, method: "PATCH", body }),
+      invalidatesTags: (r, e, { workspaceId }) => [{ type: "Labels", id: workspaceId }],
+    }),
+    deleteLabel: b.mutation({
+      query: ({ id }) => ({ url: `/labels/${id}`, method: "DELETE" }),
       invalidatesTags: (r, e, { workspaceId }) => [{ type: "Labels", id: workspaceId }],
     }),
 
@@ -250,18 +296,65 @@ export const api = createApi({
       query: ({ commentId }) => ({ url: `/comments/${commentId}`, method: "DELETE" }),
       invalidatesTags: (r, e, { issueId }) => [{ type: "Issue", id: issueId }],
     }),
+
+    /* ---- team integrations: GitHub ---- */
+    getTeamGithub: b.query({
+      query: (teamId) => `/teams/${teamId}/github`,
+      providesTags: (r, e, teamId) => [{ type: "GitHubConn", id: teamId }],
+    }),
+    getTeamGithubAuthorize: b.query({
+      query: (teamId) => `/teams/${teamId}/github/authorize`,
+    }),
+    disconnectTeamGithub: b.mutation({
+      query: (teamId) => ({ url: `/teams/${teamId}/github`, method: "DELETE" }),
+      invalidatesTags: (r, e, teamId) => [{ type: "GitHubConn", id: teamId }],
+    }),
+
+    /* ---- team integrations: Slack ---- */
+    getTeamSlack: b.query({
+      query: (teamId) => `/teams/${teamId}/slack`,
+      providesTags: (r, e, teamId) => [{ type: "SlackConn", id: teamId }],
+    }),
+    getTeamSlackAuthorize: b.query({
+      query: (teamId) => `/teams/${teamId}/slack/authorize`,
+    }),
+    disconnectTeamSlack: b.mutation({
+      query: (teamId) => ({ url: `/teams/${teamId}/slack`, method: "DELETE" }),
+      invalidatesTags: (r, e, teamId) => [{ type: "SlackConn", id: teamId }],
+    }),
+
+    /* ---- team integrations: Notion ---- */
+    getTeamNotion: b.query({
+      query: (teamId) => `/teams/${teamId}/notion`,
+      providesTags: (r, e, teamId) => [{ type: "NotionConn", id: teamId }],
+    }),
+    getTeamNotionAuthorize: b.query({
+      query: (teamId) => `/teams/${teamId}/notion/authorize`,
+    }),
+    disconnectTeamNotion: b.mutation({
+      query: (teamId) => ({ url: `/teams/${teamId}/notion`, method: "DELETE" }),
+      invalidatesTags: (r, e, teamId) => [{ type: "NotionConn", id: teamId }],
+    }),
   }),
 });
 
 export const {
   useGetMeQuery,
+  useUpdateUserMutation,
+  useChangeEmailMutation,
+  useGetUserSessionsQuery,
+  useRevokeSessionMutation,
+  useRevokeAllOtherSessionsMutation,
   useGetWorkspacesQuery,
   useCreateWorkspaceMutation,
+  useGetWorkspaceQuery,
+  useUpdateWorkspaceMutation,
   useGetWorkspaceMembersQuery,
   useGetWorkspaceTeamsQuery,
   useCreateTeamMutation,
   useGetTeamQuery,
   useUpdateTeamMutation,
+  useDeleteTeamMutation,
   useGetTeamMembersQuery,
   useAddTeamMemberMutation,
   useRemoveTeamMemberMutation,
@@ -275,6 +368,8 @@ export const {
   useAcceptInviteMutation,
   useGetWorkspaceLabelsQuery,
   useCreateLabelMutation,
+  useUpdateLabelMutation,
+  useDeleteLabelMutation,
   useGetTeamProjectsQuery,
   useGetWorkspaceProjectsQuery,
   useGetProjectQuery,
@@ -291,4 +386,14 @@ export const {
   useCreateSubIssueMutation,
   useAddCommentMutation,
   useDeleteCommentMutation,
+  /* integrations */
+  useGetTeamGithubQuery,
+  useLazyGetTeamGithubAuthorizeQuery,
+  useDisconnectTeamGithubMutation,
+  useGetTeamSlackQuery,
+  useLazyGetTeamSlackAuthorizeQuery,
+  useDisconnectTeamSlackMutation,
+  useGetTeamNotionQuery,
+  useLazyGetTeamNotionAuthorizeQuery,
+  useDisconnectTeamNotionMutation,
 } = api;

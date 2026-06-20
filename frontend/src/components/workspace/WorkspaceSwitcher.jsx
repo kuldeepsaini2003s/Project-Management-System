@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Plus, LogOut, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "../../context/WorkspaceContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import Avatar from "../ui/Avatar.jsx";
@@ -15,6 +16,7 @@ function WorkspaceGlyph({ name }) {
 export default function WorkspaceSwitcher({ onCreateWorkspace }) {
   const { workspaces, current, switchWorkspace } = useWorkspace();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -82,8 +84,8 @@ export default function WorkspaceSwitcher({ onCreateWorkspace }) {
             <span className="flex-1 truncate text-sm text-fg">{user?.name}</span>
           </div>
           <button
-            disabled
-            className="flex w-full cursor-not-allowed items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg-subtle"
+            onClick={() => { setOpen(false); navigate("/settings"); }}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
           >
             <Settings className="h-4 w-4" />
             Settings

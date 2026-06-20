@@ -1,19 +1,45 @@
 import { useState } from "react";
-import { Search, Plus } from "lucide-react";
-import { projectLabels } from "../../../data/settings/mockLabels.js";
+import { Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { useWorkspace } from "../../../context/WorkspaceContext.jsx";
+import {
+  useGetWorkspaceLabelsQuery,
+  useCreateLabelMutation,
+  useUpdateLabelMutation,
+  useDeleteLabelMutation,
+} from "../../../redux/apiSlice.js";
 import SettingsPageHeader from "../../../components/settings/SettingsPageHeader.jsx";
 import Button from "../../../components/ui/Button.jsx";
 import LabelFormModal from "../../../components/settings/LabelFormModal.jsx";
 
 export default function ProjectLabelsPage() {
+  const { currentId } = useWorkspace();
+  const { data: labels = [], isLoading } = useGetWorkspaceLabelsQuery(currentId, { skip: !currentId });
+  const [createLabel] = useCreateLabelMutation();
+  const [updateLabel] = useUpdateLabelMutation();
+  const [deleteLabel] = useDeleteLabelMutation();
+
   const [search, setSearch] = useState("");
-  const [scope, setScope] = useState("Workspace");
   const [createOpen, setCreateOpen] = useState(false);
-  const [labels, setLabels] = useState(projectLabels);
+  const [editing, setEditing] = useState(null);
 
   const filtered = labels.filter((l) =>
     l.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleCreate = async (data) => {
+    await createLabel({ workspaceId: currentId, ...data });
+    setCreateOpen(false);
+  };
+
+  const handleUpdate = async (data) => {
+    await updateLabel({ id: editing.id, workspaceId: currentId, ...data });
+    setEditing(null);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this label? It will be removed from all projects.")) return;
+    await deleteLabel({ id, workspaceId: currentId });
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-8">
@@ -30,20 +56,7 @@ export default function ProjectLabelsPage() {
             className="h-8 w-full rounded-md border border-input-border bg-input pl-8 pr-3 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-brand"
           />
         </div>
-        <button
-          onClick={() => setScope(scope === "Workspace" ? "Team" : "Workspace")}
-          className="flex h-8 items-center gap-1.5 rounded-md border border-input-border bg-input px-3 text-sm text-fg hover:bg-surface-hover transition-colors"
-        >
-          {scope}
-          <svg className="h-3.5 w-3.5 text-fg-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M4 6l4 4 4-4" />
-          </svg>
-        </button>
-        <div className="ml-auto flex gap-2">
-          <Button variant="secondary" className="!w-auto px-3 text-sm flex items-center gap-1.5" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
-            New group
-          </Button>
+        <div className="ml-auto">
           <Button className="!w-auto px-3 text-sm flex items-center gap-1.5" onClick={() => setCreateOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
             New label
@@ -57,30 +70,45 @@ export default function ProjectLabelsPage() {
           <thead>
             <tr className="border-b border-glass-border">
               <th className="py-3 pl-5 pr-3 text-left text-xs font-medium text-fg-muted">Name ↓</th>
-              <th className="py-3 px-3 text-left text-xs font-medium text-fg-muted">Description</th>
-              <th className="py-3 px-3 text-right text-xs font-medium text-fg-muted">Issues</th>
-              <th className="py-3 px-3 text-right text-xs font-medium text-fg-muted">Last applied</th>
-              <th className="py-3 pl-3 pr-5 text-right text-xs font-medium text-fg-muted">Created</th>
+              <th className="py-3 px-3 text-right text-xs font-medium text-fg-muted">Projects</th>
+              <th className="py-3 pl-3 pr-5 text-right text-xs font-medium text-fg-muted"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-glass-border">
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-fg-muted">No labels found</td>
-              </tr>
+            {isLoading ? (
+              <tr><td colSpan={3} className="py-10 text-center text-sm text-fg-muted">Loading…</td></tr>
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={3} className="py-10 text-center text-sm text-fg-muted">
+                {search ? "No labels match your search" : "No labels yet — create one above"}
+              </td></tr>
             ) : (
               filtered.map((label) => (
-                <tr key={label.id} className="hover:bg-surface-hover transition-colors">
+                <tr key={label.id} className="hover:bg-surface-hover transition-colors group">
                   <td className="py-3 pl-5 pr-3">
                     <div className="flex items-center gap-2.5">
                       <span className="inline-flex h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                       <span className="font-medium text-fg">{label.name}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-3 text-fg-muted">{label.description || "—"}</td>
-                  <td className="py-3 px-3 text-right text-fg-muted">{label.issues}</td>
-                  <td className="py-3 px-3 text-right text-fg-muted">{label.lastApplied}</td>
-                  <td className="py-3 pl-3 pr-5 text-right text-fg-muted">{label.created}</td>
+                  <td className="py-3 px-3 text-right text-fg-muted">{label.projectCount ?? 0}</td>
+                  <td className="py-3 pl-3 pr-5">
+                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => setEditing(label)}
+                        className="rounded p-1 text-fg-muted hover:text-fg transition-colors"
+                        title="Edit"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(label.id)}
+                        className="rounded p-1 text-fg-muted hover:text-danger transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             )}
@@ -88,10 +116,17 @@ export default function ProjectLabelsPage() {
         </table>
       </div>
 
-      <LabelFormModal open={createOpen} onClose={() => setCreateOpen(false)} onSave={(l) => {
-        setLabels((prev) => [...prev, { ...l, id: String(Date.now()), issues: 0, lastApplied: "—", created: "Now" }]);
-        setCreateOpen(false);
-      }} />
+      <LabelFormModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSave={handleCreate}
+      />
+      <LabelFormModal
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        onSave={handleUpdate}
+        initial={editing}
+      />
     </div>
   );
 }

@@ -5,7 +5,21 @@ import { assertMembership } from "../utils/membership.js";
 // Labels are shared across all teams in a workspace.
 export const getWorkspaceLabels = async (userId, workspaceId) => {
   await assertMembership(userId, workspaceId);
-  return prisma.label.findMany({ where: { workspaceId }, orderBy: { name: "asc" } });
+  const labels = await prisma.label.findMany({
+    where: { workspaceId },
+    orderBy: { name: "asc" },
+    include: {
+      _count: { select: { issues: true, projects: true } },
+    },
+  });
+  return labels.map((l) => ({
+    id: l.id,
+    name: l.name,
+    color: l.color,
+    workspaceId: l.workspaceId,
+    issueCount: l._count.issues,
+    projectCount: l._count.projects,
+  }));
 };
 
 export const createLabel = async (userId, workspaceId, { name, color }) => {
@@ -17,9 +31,25 @@ export const createLabel = async (userId, workspaceId, { name, color }) => {
   });
   if (existing) return existing;
 
-  return prisma.label.create({
+  const label = await prisma.label.create({
     data: { workspaceId, name: name.trim(), color: color || "#5e6ad2" },
+    include: { _count: { select: { issues: true, projects: true } } },
   });
+  return { ...label, issueCount: label._count.issues, projectCount: label._count.projects };
+};
+
+export const updateLabel = async (userId, id, { name, color }) => {
+  const label = await prisma.label.findUnique({ where: { id } });
+  if (!label) throw new ApiError(404, "Label not found");
+  await assertMembership(userId, label.workspaceId);
+  if (!name?.trim()) throw new ApiError(400, "Label name is required");
+
+  const updated = await prisma.label.update({
+    where: { id },
+    data: { name: name.trim(), color: color || label.color },
+    include: { _count: { select: { issues: true, projects: true } } },
+  });
+  return { ...updated, issueCount: updated._count.issues, projectCount: updated._count.projects };
 };
 
 export const deleteLabel = async (userId, id) => {

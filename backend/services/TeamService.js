@@ -32,7 +32,7 @@ export const getWorkspaceTeams = async (userId, workspaceId) => {
     orderBy: { createdAt: "asc" },
     include: {
       memberships: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
-      _count: { select: { memberships: true } },
+      _count: { select: { memberships: true, issues: true } },
       projects: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, select: { id: true } },
     },
   });
@@ -46,6 +46,7 @@ export const getWorkspaceTeams = async (userId, workspaceId) => {
     workspaceId: team.workspaceId,
     role: team.memberships.find((m) => m.userId === userId)?.role,
     memberCount: team._count.memberships,
+    issueCount: team._count.issues,
     members: team.memberships.slice(0, 5).map((m) => m.user),
     activeProjectCount: team.projects.length,
     createdAt: team.createdAt,

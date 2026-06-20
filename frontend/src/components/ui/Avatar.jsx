@@ -1,7 +1,9 @@
 const sizes = {
+  xs: "h-4 w-4 text-[9px]",
   sm: "h-5 w-5 text-[10px]",
   md: "h-6 w-6 text-[11px]",
   lg: "h-8 w-8 text-xs",
+  xl: "h-14 w-14 text-lg",
 };
 
 // Deterministic accent color from a string.

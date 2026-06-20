@@ -14,8 +14,21 @@ const touchLastSeen = (userId) => {
     .catch(() => {});
 };
 
+const touchSession = (sessionId) => {
+  if (!sessionId) return;
+  prisma.userSession
+    .updateMany({
+      where: {
+        sessionId,
+        lastActiveAt: { lt: new Date(Date.now() - 60_000) },
+      },
+      data: { lastActiveAt: new Date() },
+    })
+    .catch(() => {});
+};
+
 /**
- * Require a valid Bearer JWT. Attaches req.userId on success.
+ * Require a valid Bearer JWT. Attaches req.userId and req.sessionId on success.
  */
 export const protect = (req, res, next) => {
   const header = req.headers.authorization || "";
@@ -28,7 +41,9 @@ export const protect = (req, res, next) => {
   try {
     const decoded = verifyToken(token);
     req.userId = decoded.sub;
-    touchLastSeen(req.userId); // fire-and-forget
+    req.sessionId = decoded.sid || null;
+    touchLastSeen(req.userId);
+    touchSession(req.sessionId);
     next();
   } catch {
     next(new ApiError(401, "Invalid or expired token"));

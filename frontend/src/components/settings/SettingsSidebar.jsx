@@ -45,7 +45,7 @@ export default function SettingsSidebar({ onClose }) {
   return (
     <div className="flex h-full flex-col overflow-y-auto py-3 px-2">
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/", { replace: true })}
         className="mb-3 flex items-center gap-1.5 px-2.5 py-1 text-sm text-fg-muted transition-colors hover:text-fg"
       >
         <ChevronLeft className="h-4 w-4" />

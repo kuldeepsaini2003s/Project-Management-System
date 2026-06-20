@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { signToken } from "../utils/jwt.js";
@@ -9,10 +10,17 @@ const SALT_ROUNDS = 10;
 // Strip sensitive fields before returning a user to the client.
 const sanitizeUser = ({ password, ...user }) => user;
 
-const buildAuthResponse = (user) => ({
-  user: sanitizeUser(user),
-  token: signToken({ sub: user.id }),
-});
+const buildAuthResponse = async (user, { userAgent, ipAddress } = {}) => {
+  const sessionId = randomUUID();
+  // Fire-and-forget: create the session record
+  prisma.userSession
+    .create({ data: { userId: user.id, sessionId, userAgent, ipAddress } })
+    .catch(() => {});
+  return {
+    user: sanitizeUser(user),
+    token: signToken({ sub: user.id, sid: sessionId }),
+  };
+};
 
 // Ensure the user has a workspace + proper team memberships. Runs on login,
 // google auth, and /auth/me so data always loads (no refresh needed).
@@ -56,7 +64,8 @@ const createDefaultWorkspaceForUser = (user) => {
   });
 };
 
-export const registerUser = async ({ name, email, password }) => {
+export const registerUser = async (data) => {
+  const { name, email, password, userAgent, ipAddress } = data;
   if (!name || !email || !password) {
     throw new ApiError(400, "Name, email and password are required");
   }
@@ -74,10 +83,11 @@ export const registerUser = async ({ name, email, password }) => {
   });
   await createDefaultWorkspaceForUser(user);
 
-  return buildAuthResponse(user);
+  return buildAuthResponse(user, { userAgent, ipAddress });
 };
 
-export const loginUser = async ({ email, password }) => {
+export const loginUser = async (data) => {
+  const { email, password } = data;
   if (!email || !password) {
     throw new ApiError(400, "Email and password are required");
   }
@@ -93,10 +103,10 @@ export const loginUser = async ({ email, password }) => {
   if (!valid) throw new ApiError(401, "Invalid email or password");
 
   await ensureWorkspaceSetup(user);
-  return buildAuthResponse(user);
+  return buildAuthResponse(user, { userAgent: data?.userAgent, ipAddress: data?.ipAddress });
 };
 
-export const authenticateWithGoogle = async ({ accessToken }) => {
+export const authenticateWithGoogle = async ({ accessToken, userAgent, ipAddress }) => {
   if (!accessToken) throw new ApiError(400, "Google accessToken is required");
 
   const profile = await verifyGoogleAccessToken(accessToken);
@@ -128,7 +138,7 @@ export const authenticateWithGoogle = async ({ accessToken }) => {
   }
 
   await ensureWorkspaceSetup(user);
-  return buildAuthResponse(user);
+  return buildAuthResponse(user, { userAgent, ipAddress });
 };
 
 export const getCurrentUserProfile = async (userId) => {
