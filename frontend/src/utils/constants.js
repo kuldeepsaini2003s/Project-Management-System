@@ -1,6 +1,6 @@
 export const BACKEND_URL = import.meta.env.VITE_API_URL;
 
-// Socket.IO server origin (root, not /api). In dev the backend runs on :5000.
+// Socket.IO server origin (root, not /api). In dev the backend runs on :5000. 
 export const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL;
 
