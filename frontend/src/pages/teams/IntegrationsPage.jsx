@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
-import { ExternalLink, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { ExternalLink, CheckCircle2, AlertCircle, Loader2, Zap, ArrowRight } from "lucide-react";
 import {
   useGetTeamQuery,
   useGetTeamGithubQuery,
@@ -151,6 +151,7 @@ function IntegrationCard({ icon, name, description, details, teamId, useConn, us
 export default function IntegrationsPage() {
   const { teamId } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const activeTab = searchParams.get("tab"); // "github" | "slack" | "notion" | null
 
   const { data: team } = useGetTeamQuery(teamId, { skip: !teamId });
@@ -224,6 +225,42 @@ export default function IntegrationsPage() {
             highlight={activeTab === props.key}
           />
         ))}
+
+        {/* MCP / API card */}
+        <div className="rounded-xl border border-brand/25 bg-brand/5 p-5 transition-colors hover:border-brand/40">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand/15">
+              <Zap className="h-6 w-6 text-brand" />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-semibold text-fg">MCP Server & API</span>
+                <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
+                  New
+                </span>
+              </div>
+              <p className="text-sm text-fg-muted">
+                Connect Claude, GPT, or any LLM to this workspace via the Model Context Protocol.
+                Create issues, notify Slack, and query your data from any AI agent.
+              </p>
+              <ul className="mt-1 flex flex-col gap-0.5">
+                {["11 tools — list, create, update issues & projects", "Create issue + Slack notify in one tool call", "Use with Claude Desktop, n8n, Zapier, or any HTTP client"].map((d) => (
+                  <li key={d} className="flex items-center gap-1.5 text-xs text-fg-muted">
+                    <span className="h-1 w-1 rounded-full bg-brand/60 shrink-0" />
+                    {d}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => navigate(`/teams/${teamId}/integrations/mcp`)}
+              className="shrink-0 flex items-center gap-1.5 rounded-md bg-brand px-4 py-1.5 text-sm font-medium text-white hover:bg-brand/90 transition-colors"
+            >
+              Set up
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

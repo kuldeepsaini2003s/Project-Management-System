@@ -8,19 +8,19 @@ const fmtDate = (v) =>
     : null;
 
 const STATUS_GRADIENTS = {
-  BACKLOG:     "linear-gradient(135deg, rgba(148,163,184,0.30) 0%, rgba(100,116,139,0.10) 100%)",
-  PLANNED:     "linear-gradient(135deg, rgba(99,102,241,0.32) 0%, rgba(139,92,246,0.12) 100%)",
-  IN_PROGRESS: "linear-gradient(135deg, rgba(245,158,11,0.35) 0%, rgba(251,191,36,0.12) 100%)",
-  COMPLETED:   "linear-gradient(135deg, rgba(34,197,94,0.32) 0%, rgba(16,185,129,0.10) 100%)",
-  CANCELLED:   "linear-gradient(135deg, rgba(239,68,68,0.32) 0%, rgba(244,63,94,0.10) 100%)",
+  BACKLOG:     "linear-gradient(135deg, rgba(148,163,184,0.55) 0%, rgba(100,116,139,0.25) 100%)",
+  PLANNED:     "linear-gradient(135deg, rgba(99,102,241,0.60) 0%, rgba(139,92,246,0.30) 100%)",
+  IN_PROGRESS: "linear-gradient(135deg, rgba(245,158,11,0.65) 0%, rgba(251,191,36,0.30) 100%)",
+  COMPLETED:   "linear-gradient(135deg, rgba(34,197,94,0.60) 0%, rgba(16,185,129,0.28) 100%)",
+  CANCELLED:   "linear-gradient(135deg, rgba(239,68,68,0.60) 0%, rgba(244,63,94,0.28) 100%)",
 };
 
 const STATUS_BORDER = {
-  BACKLOG:     "rgba(148,163,184,0.35)",
-  PLANNED:     "rgba(99,102,241,0.40)",
-  IN_PROGRESS: "rgba(245,158,11,0.45)",
-  COMPLETED:   "rgba(34,197,94,0.40)",
-  CANCELLED:   "rgba(239,68,68,0.38)",
+  BACKLOG:     "rgba(148,163,184,0.90)",
+  PLANNED:     "rgba(99,102,241,0.95)",
+  IN_PROGRESS: "rgba(245,158,11,1.00)",
+  COMPLETED:   "rgba(34,197,94,0.95)",
+  CANCELLED:   "rgba(239,68,68,0.95)",
 };
 
 export default function ProjectBoardCard({ project, onOpen, dragging = false }) {

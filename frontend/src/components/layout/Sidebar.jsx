@@ -15,6 +15,7 @@ import {
   Github,
   Slack,
   BookText,
+  Zap,
 } from "lucide-react";
 import WorkspaceSwitcher from "../workspace/WorkspaceSwitcher.jsx";
 import CreateWorkspaceModal from "../workspace/CreateWorkspaceModal.jsx";
@@ -227,6 +228,14 @@ export default function Sidebar({ onClose }) {
               >
                 <BookText className="h-4 w-4" />
                 <span className="flex-1">Notion</span>
+              </NavLink>
+              <NavLink
+                to={`/teams/${firstTeamId}/integrations/mcp`}
+                className={navItemClass}
+                onClick={onClose}
+              >
+                <Zap className="h-4 w-4 text-brand" />
+                <span className="flex-1">MCP Server</span>
               </NavLink>
             </>
           )}

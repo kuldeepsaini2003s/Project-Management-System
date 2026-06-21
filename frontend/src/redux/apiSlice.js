@@ -343,6 +343,20 @@ export const api = createApi({
       query: (teamId) => ({ url: `/teams/${teamId}/notion`, method: "DELETE" }),
       invalidatesTags: (r, e, teamId) => [{ type: "NotionConn", id: teamId }],
     }),
+
+    /* ---- API Keys ---- */
+    getApiKeys: b.query({
+      query: () => "/keys",
+      providesTags: ["ApiKey"],
+    }),
+    createApiKey: b.mutation({
+      query: (name) => ({ url: "/keys", method: "POST", body: { name } }),
+      invalidatesTags: ["ApiKey"],
+    }),
+    revokeApiKey: b.mutation({
+      query: (keyId) => ({ url: `/keys/${keyId}`, method: "DELETE" }),
+      invalidatesTags: ["ApiKey"],
+    }),
   }),
 });
 
@@ -406,4 +420,7 @@ export const {
   useGetTeamNotionQuery,
   useLazyGetTeamNotionAuthorizeQuery,
   useDisconnectTeamNotionMutation,
+  useGetApiKeysQuery,
+  useCreateApiKeyMutation,
+  useRevokeApiKeyMutation,
 } = api;

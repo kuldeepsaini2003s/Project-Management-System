@@ -184,6 +184,21 @@ export const disconnectSlack = async (userId, teamId) => {
 
 /* ---------------- Post message (internal use) ---------------- */
 
+// Low-level: post to any webhook URL directly.
+export const postToWebhook = async (webhookUrl, text) => {
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("[slack] postToWebhook failed:", err.message);
+    return false;
+  }
+};
+
 // Best-effort post to a team's Slack channel. Never throws to the caller.
 export const postToTeamSlack = async (teamId, text) => {
   try {

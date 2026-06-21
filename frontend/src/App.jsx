@@ -12,6 +12,7 @@ import IntegrationsPage from "./pages/teams/IntegrationsPage.jsx";
 import GitHubIntegrationPage from "./pages/teams/GitHubIntegrationPage.jsx";
 import SlackIntegrationPage from "./pages/teams/SlackIntegrationPage.jsx";
 import NotionIntegrationPage from "./pages/teams/NotionIntegrationPage.jsx";
+import McpApiPage from "./pages/teams/McpApiPage.jsx";
 import JoinTeamPage from "./pages/JoinTeamPage.jsx";
 import ProjectDetailPage from "./pages/projects/ProjectDetailPage.jsx";
 import WorkspaceProjectsPage from "./pages/projects/WorkspaceProjectsPage.jsx";
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/teams/:teamId/integrations/github" element={<GitHubIntegrationPage />} />
           <Route path="/teams/:teamId/integrations/slack" element={<SlackIntegrationPage />} />
           <Route path="/teams/:teamId/integrations/notion" element={<NotionIntegrationPage />} />
+          <Route path="/teams/:teamId/integrations/mcp" element={<McpApiPage />} />
           <Route path="/projects" element={<WorkspaceProjectsPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/members" element={<WorkspaceMembersPage />} />
