@@ -305,6 +305,10 @@ export const api = createApi({
     getTeamGithubAuthorize: b.query({
       query: (teamId) => `/teams/${teamId}/github/authorize`,
     }),
+    getTeamGithubRepos: b.query({
+      query: (teamId) => `/teams/${teamId}/github/repos`,
+      providesTags: (r, e, teamId) => [{ type: "GitHubConn", id: teamId }],
+    }),
     disconnectTeamGithub: b.mutation({
       query: (teamId) => ({ url: `/teams/${teamId}/github`, method: "DELETE" }),
       invalidatesTags: (r, e, teamId) => [{ type: "GitHubConn", id: teamId }],
@@ -317,6 +321,10 @@ export const api = createApi({
     }),
     getTeamSlackAuthorize: b.query({
       query: (teamId) => `/teams/${teamId}/slack/authorize`,
+    }),
+    getTeamSlackInfo: b.query({
+      query: (teamId) => `/teams/${teamId}/slack/info`,
+      providesTags: (r, e, teamId) => [{ type: "SlackConn", id: teamId }],
     }),
     disconnectTeamSlack: b.mutation({
       query: (teamId) => ({ url: `/teams/${teamId}/slack`, method: "DELETE" }),
@@ -389,9 +397,11 @@ export const {
   /* integrations */
   useGetTeamGithubQuery,
   useLazyGetTeamGithubAuthorizeQuery,
+  useGetTeamGithubReposQuery,
   useDisconnectTeamGithubMutation,
   useGetTeamSlackQuery,
   useLazyGetTeamSlackAuthorizeQuery,
+  useGetTeamSlackInfoQuery,
   useDisconnectTeamSlackMutation,
   useGetTeamNotionQuery,
   useLazyGetTeamNotionAuthorizeQuery,

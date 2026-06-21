@@ -234,7 +234,20 @@ export const listRepos = async (userId, teamId) => {
     // eslint-disable-next-line no-await-in-loop
     const data = await res.json();
     const batch = data.repositories || [];
-    repos.push(...batch.map((r) => ({ fullName: r.full_name, private: r.private })));
+    repos.push(...batch.map((r) => ({
+      fullName: r.full_name,
+      name: r.name,
+      owner: r.owner?.login || r.full_name.split("/")[0],
+      private: r.private,
+      description: r.description || null,
+      language: r.language || null,
+      stars: r.stargazers_count ?? 0,
+      forks: r.forks_count ?? 0,
+      openIssues: r.open_issues_count ?? 0,
+      defaultBranch: r.default_branch || "main",
+      htmlUrl: r.html_url,
+      updatedAt: r.updated_at || null,
+    })));
     if (batch.length < 100) break;
   }
   return repos;

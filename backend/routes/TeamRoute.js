@@ -24,6 +24,7 @@ import {
   getConnection as getSlack,
   authorize as authorizeSlack,
   disconnect as disconnectSlack,
+  getInfo as getSlackInfo,
 } from "../controllers/SlackController.js";
 import {
   getConnection as getNotion,
@@ -64,6 +65,7 @@ router.delete("/:id/github", disconnect);
 // Slack integration (OAuth)
 router.get("/:id/slack", getSlack);
 router.get("/:id/slack/authorize", authorizeSlack);
+router.get("/:id/slack/info", getSlackInfo);
 router.delete("/:id/slack", disconnectSlack);
 
 // Notion integration (OAuth)
