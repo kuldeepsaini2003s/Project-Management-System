@@ -7,20 +7,43 @@ const fmtDate = (v) =>
     ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
     : null;
 
+const STATUS_GRADIENTS = {
+  BACKLOG:     "linear-gradient(135deg, rgba(148,163,184,0.30) 0%, rgba(100,116,139,0.10) 100%)",
+  PLANNED:     "linear-gradient(135deg, rgba(99,102,241,0.32) 0%, rgba(139,92,246,0.12) 100%)",
+  IN_PROGRESS: "linear-gradient(135deg, rgba(245,158,11,0.35) 0%, rgba(251,191,36,0.12) 100%)",
+  COMPLETED:   "linear-gradient(135deg, rgba(34,197,94,0.32) 0%, rgba(16,185,129,0.10) 100%)",
+  CANCELLED:   "linear-gradient(135deg, rgba(239,68,68,0.32) 0%, rgba(244,63,94,0.10) 100%)",
+};
+
+const STATUS_BORDER = {
+  BACKLOG:     "rgba(148,163,184,0.35)",
+  PLANNED:     "rgba(99,102,241,0.40)",
+  IN_PROGRESS: "rgba(245,158,11,0.45)",
+  COMPLETED:   "rgba(34,197,94,0.40)",
+  CANCELLED:   "rgba(239,68,68,0.38)",
+};
+
 export default function ProjectBoardCard({ project, onOpen, dragging = false }) {
   const priority = PRIORITIES[project.priority] || PRIORITIES.NONE;
   const PIcon = priority.icon;
 
+  const gradient = STATUS_GRADIENTS[project.status] || STATUS_GRADIENTS.BACKLOG;
+  const borderColor = STATUS_BORDER[project.status] || STATUS_BORDER.BACKLOG;
+
+  const style = dragging
+    ? { background: gradient, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }
+    : { background: gradient, border: `1px solid ${borderColor}` };
+
   const cls = dragging
-    ? "block rounded-lg p-3 bg-surface border border-border-strong shadow-2xl cursor-grabbing"
-    : "glass-card hover-lift block cursor-grab rounded-lg p-3 hover:bg-surface-hover active:cursor-grabbing";
+    ? "block rounded-lg p-3 shadow-2xl cursor-grabbing"
+    : "hover-lift block cursor-grab rounded-lg p-3 active:cursor-grabbing transition-shadow";
 
   return (
-    <div onClick={() => onOpen?.(project)} className={cls}>
+    <div onClick={() => onOpen?.(project)} className={cls} style={style}>
       <div className="flex items-start gap-2">
         <span
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sm"
-          style={{ backgroundColor: (project.color || "#5e6ad2") + "22", color: project.color || "#5e6ad2" }}
+          style={{ backgroundColor: (project.color || "#5e6ad2") + "33", color: project.color || "#5e6ad2" }}
         >
           {project.icon ? (
             <span aria-hidden="true">{project.icon}</span>

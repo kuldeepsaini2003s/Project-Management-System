@@ -12,6 +12,9 @@ import {
   Users,
   LayoutGrid,
   Settings2,
+  Github,
+  Slack,
+  BookText,
 } from "lucide-react";
 import WorkspaceSwitcher from "../workspace/WorkspaceSwitcher.jsx";
 import CreateWorkspaceModal from "../workspace/CreateWorkspaceModal.jsx";
@@ -196,6 +199,37 @@ export default function Sidebar({ onClose }) {
               </button>
             )}
           </div>
+
+          {/* ── Integrations ── */}
+          {firstTeamId && (
+            <>
+              <SectionLabel>Integrations</SectionLabel>
+              <NavLink
+                to={`/teams/${firstTeamId}/integrations/github`}
+                className={navItemClass}
+                onClick={onClose}
+              >
+                <Github className="h-4 w-4" />
+                <span className="flex-1">GitHub</span>
+              </NavLink>
+              <NavLink
+                to={`/teams/${firstTeamId}/integrations/slack`}
+                className={navItemClass}
+                onClick={onClose}
+              >
+                <Slack className="h-4 w-4" />
+                <span className="flex-1">Slack</span>
+              </NavLink>
+              <NavLink
+                to={`/teams/${firstTeamId}/integrations/notion`}
+                className={navItemClass}
+                onClick={onClose}
+              >
+                <BookText className="h-4 w-4" />
+                <span className="flex-1">Notion</span>
+              </NavLink>
+            </>
+          )}
 
         </nav>
       </aside>

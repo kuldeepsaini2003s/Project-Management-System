@@ -24,6 +24,10 @@ export const disconnect = asyncHandler(async (req, res) => {
   res.json(await slackService.disconnectSlack(req.userId, req.params.id));
 });
 
+export const getInfo = asyncHandler(async (req, res) => {
+  res.json(await slackService.getSlackInfo(req.userId, req.params.id));
+});
+
 // Public OAuth callback — Slack redirects here after the user authorizes the app.
 export const setup = asyncHandler(async (req, res) => {
   const redirect = await slackService.handleOAuthCallback(req.query);

@@ -20,11 +20,13 @@ const buildState = (teamId, userId, origin) =>
   signToken({ sl: true, t: teamId, u: userId, c: resolveReturnOrigin(origin) });
 
 // Slack OAuth v2 authorization URL.
-// Scope: incoming-webhook — lets the user pick a channel and gives us a webhook URL.
+// scope (bot scopes): channels:read + users:read — list channels and members via API.
+// user_scope: incoming-webhook — lets user pick a channel and gives us a webhook URL.
 const slackOAuthUrl = (state) => {
   const params = new URLSearchParams({
     client_id: env.slack.clientId,
-    scope: "incoming-webhook",
+    scope: "channels:read,users:read",
+    user_scope: "incoming-webhook",
     redirect_uri: env.slack.redirectUri,
     state,
   });
@@ -98,7 +100,7 @@ export const handleOAuthCallback = async (query) => {
   }
 
   // Exchange the temporary code for an access token + webhook URL.
-  let webhookUrl, channel, slackTeamId, slackTeamName;
+  let webhookUrl, channel, channelId, slackTeamId, slackTeamName, accessToken;
   try {
     const params = new URLSearchParams({
       client_id: env.slack.clientId,
@@ -116,13 +118,18 @@ export const handleOAuthCallback = async (query) => {
 
     if (!data.ok) return fail(data.error || "Slack OAuth exchange failed");
 
-    webhookUrl = data.incoming_webhook?.url;
-    channel = data.incoming_webhook?.channel;
-    slackTeamId = data.team?.id;
+    // Bot token (xoxb-...) from bot scope: channels:read,users:read
+    accessToken = data.access_token || null;
+    // Webhook from user_scope: incoming-webhook (in authed_user or top-level)
+    const wh = data.incoming_webhook || data.authed_user?.incoming_webhook;
+    webhookUrl = wh?.url;
+    channel    = wh?.channel || null;
+    channelId  = wh?.channel_id || null;
+    slackTeamId   = data.team?.id;
     slackTeamName = data.team?.name;
 
     if (!webhookUrl) return fail("Slack did not return a webhook URL — ensure incoming-webhook scope is granted");
-    log(`setup: webhook channel=${channel} workspace=${slackTeamName} (${slackTeamId})`);
+    log(`setup: webhook channel=${channel} (${channelId}) workspace=${slackTeamName} (${slackTeamId}) botToken=${accessToken ? "yes" : "no"}`);
   } catch (e) {
     log("setup: error exchanging code:", e?.message);
     return fail("Could not reach Slack to complete the connection");
@@ -134,8 +141,8 @@ export const handleOAuthCallback = async (query) => {
 
   const after = await prisma.slackConnection.upsert({
     where: { teamId },
-    update: { webhookUrl, channel, slackTeamId, slackTeamName, active: true },
-    create: { teamId, webhookUrl, channel, slackTeamId, slackTeamName, active: true },
+    update: { webhookUrl, channel, channelId, slackTeamId, slackTeamName, accessToken, active: true },
+    create: { teamId, webhookUrl, channel, channelId, slackTeamId, slackTeamName, accessToken, active: true },
   });
   log("setup: SlackConnection AFTER  =", JSON.stringify(after));
   log(
@@ -192,4 +199,81 @@ export const postToTeamSlack = async (teamId, text) => {
     console.warn("[slack] post failed:", err.message);
     return false;
   }
+};
+
+/* ---------------- Workspace info (channels + channel members) ---------------- */
+
+const slackApi = async (token, path) => {
+  const res = await fetch(`https://slack.com/api/${path}`, {
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  });
+  return res.json();
+};
+
+export const getSlackInfo = async (userId, teamId) => {
+  await assertTeamMembership(userId, teamId);
+  const conn = await prisma.slackConnection.findUnique({ where: { teamId } });
+  if (!conn?.webhookUrl || conn.active === false) throw new ApiError(400, "Slack is not connected for this team");
+
+  // No bot token stored — return minimal info (legacy connections pre-scope-update)
+  if (!conn.accessToken) {
+    return { channel: conn.channel, channelId: null, workspace: conn.slackTeamName, members: [], channels: [], needsReconnect: true };
+  }
+
+  const token = conn.accessToken;
+  let members = [];
+  let channels = [];
+
+  // Fetch channel members for the connected channel
+  if (conn.channelId) {
+    try {
+      const membersData = await slackApi(token, `conversations.members?channel=${conn.channelId}&limit=100`);
+      if (membersData.ok && membersData.members?.length) {
+        // Fetch display info for each member (batch via users.list)
+        const usersData = await slackApi(token, "users.list?limit=200");
+        if (usersData.ok) {
+          const memberSet = new Set(membersData.members);
+          members = (usersData.members || [])
+            .filter((u) => memberSet.has(u.id) && !u.is_bot && u.id !== "USLACKBOT")
+            .map((u) => ({
+              id: u.id,
+              name: u.profile?.display_name || u.real_name || u.name,
+              realName: u.real_name || null,
+              avatar: u.profile?.image_72 || u.profile?.image_48 || null,
+              title: u.profile?.title || null,
+              isAdmin: u.is_admin || false,
+            }));
+        }
+      }
+    } catch (err) {
+      log("getSlackInfo: failed to fetch members:", err.message);
+    }
+  }
+
+  // Fetch workspace channels
+  try {
+    const chData = await slackApi(token, "conversations.list?types=public_channel&limit=100&exclude_archived=true");
+    if (chData.ok) {
+      channels = (chData.channels || []).map((ch) => ({
+        id: ch.id,
+        name: ch.name,
+        memberCount: ch.num_members ?? 0,
+        topic: ch.topic?.value || null,
+        purpose: ch.purpose?.value || null,
+        isPrivate: ch.is_private || false,
+        isMember: ch.is_member || false,
+      }));
+    }
+  } catch (err) {
+    log("getSlackInfo: failed to fetch channels:", err.message);
+  }
+
+  return {
+    channel: conn.channel,
+    channelId: conn.channelId,
+    workspace: conn.slackTeamName,
+    members,
+    channels,
+    needsReconnect: false,
+  };
 };

@@ -364,8 +364,10 @@ model SlackConnection {
   teamId        String  @unique
   webhookUrl    String
   channel       String? // e.g. "#general"
+  channelId     String? // e.g. "C123ABC" — Slack channel ID for API calls
   slackTeamId   String? // Slack workspace ID (T...)
   slackTeamName String? // Slack workspace display name
+  accessToken   String? // Slack bot token (xoxb-...) for API calls
   active        Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
 
   createdAt DateTime @default(now())
