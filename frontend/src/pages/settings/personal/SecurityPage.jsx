@@ -216,50 +216,6 @@ export default function SecurityPage() {
           </div>
         </div>
 
-        {/* ── Passkeys ── */}
-        <div>
-          <h2 className="mb-0.5 text-base font-semibold text-fg">Passkeys</h2>
-          <p className="mb-3 text-sm text-fg-muted">Passkeys are a secure way to sign in to your account</p>
-          <div className="overflow-hidden rounded-xl border border-glass-border bg-surface/40">
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <span className="text-sm text-fg-muted">No passkeys registered</span>
-              <button
-                disabled
-                className="rounded-md border border-glass-border bg-surface/60 px-3 py-1 text-xs font-medium text-fg-muted opacity-50 cursor-not-allowed"
-              >
-                New passkey
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Personal API keys ── */}
-        <div>
-          <h2 className="mb-0.5 text-base font-semibold text-fg">Personal API keys</h2>
-          <p className="mb-3 text-sm text-fg-muted">Use the API to build your own integrations</p>
-          <div className="overflow-hidden rounded-xl border border-glass-border bg-surface/40">
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <span className="text-sm text-fg-muted">No API keys created</span>
-              <button
-                disabled
-                className="rounded-md border border-glass-border bg-surface/60 px-3 py-1 text-xs font-medium text-fg-muted opacity-50 cursor-not-allowed"
-              >
-                New API key
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Authorized applications ── */}
-        <div>
-          <h2 className="mb-0.5 text-base font-semibold text-fg">Authorized applications</h2>
-          <p className="mb-3 text-sm text-fg-muted">OAuth applications you've approved</p>
-          <div className="overflow-hidden rounded-xl border border-glass-border bg-surface/40">
-            <div className="px-4 py-3.5">
-              <span className="text-sm text-fg-muted">No applications have been authorized to connect to your account.</span>
-            </div>
-          </div>
-        </div>
 
       </div>
 

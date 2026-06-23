@@ -82,9 +82,24 @@ model User {
   createdIssues   Issue[]           @relation("IssueCreator")
   comments        Comment[]
   sessions        UserSession[]
+  apiKeys         ApiKey[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  key        String    @unique  // full token — shown once on creation
+  hint       String             // last 6 chars for display (e.g. "…Xk2a9f")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  lastUsedAt DateTime?
+  revoked    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model UserSession {

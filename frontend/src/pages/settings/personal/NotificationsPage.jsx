@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Monitor, Smartphone, Mail, MessageSquare, ChevronRight } from "lucide-react";
+import { Monitor, Mail, MessageSquare, ChevronRight } from "lucide-react";
 import SettingsPageHeader from "../../../components/settings/SettingsPageHeader.jsx";
 import SettingsSection from "../../../components/settings/SettingsSection.jsx";
 import SettingsRow from "../../../components/settings/SettingsRow.jsx";
@@ -7,7 +7,6 @@ import SettingsToggle from "../../../components/settings/SettingsToggle.jsx";
 
 const channels = [
   { key: "desktop", label: "Desktop", icon: Monitor, status: "Disabled", enabled: false },
-  { key: "mobile", label: "Mobile", icon: Smartphone, status: "Enabled for all notifications", enabled: true },
   { key: "email", label: "Email", icon: Mail, status: "Enabled for all notifications", enabled: true },
   { key: "slack", label: "Slack", icon: MessageSquare, status: "Disabled", enabled: false },
 ];
@@ -15,8 +14,6 @@ const channels = [
 export default function NotificationsPage() {
   const [toggles, setToggles] = useState({
     showUpdatesInSidebar: true,
-    changelogNewsletter: false,
-    marketingAndOnboarding: false,
     inviteAccepted: true,
     newJoinRequest: true,
     memberJoined: false,
@@ -69,18 +66,6 @@ export default function NotificationsPage() {
               <SettingsSection>
                 <SettingsRow label="Show updates in sidebar" description="Highlight new features and improvements in the app sidebar.">
                   <SettingsToggle checked={toggles.showUpdatesInSidebar} onChange={() => toggle("showUpdatesInSidebar")} label="Show updates in sidebar" />
-                </SettingsRow>
-                <SettingsRow label="Changelog newsletter" description="Receive an email twice a month highlighting new features and improvements.">
-                  <SettingsToggle checked={toggles.changelogNewsletter} onChange={() => toggle("changelogNewsletter")} label="Changelog newsletter" />
-                </SettingsRow>
-              </SettingsSection>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-subtle px-1">Marketing</p>
-              <SettingsSection>
-                <SettingsRow label="Marketing and onboarding" description="Occasional updates to help you get the most out of Linear.">
-                  <SettingsToggle checked={toggles.marketingAndOnboarding} onChange={() => toggle("marketingAndOnboarding")} label="Marketing and onboarding" />
                 </SettingsRow>
               </SettingsSection>
             </div>

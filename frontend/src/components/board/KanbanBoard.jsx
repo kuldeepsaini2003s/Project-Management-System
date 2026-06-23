@@ -88,13 +88,31 @@ function Column({ status, meta, items, onCreate, addLabel, renderCard, onOpen })
           ))}
 
           {items.length === 0 && (
-            <div
-              className={`rounded-lg border border-dashed py-6 text-center text-xs transition-colors ${
-                isOver ? "border-brand/60 bg-brand/5 text-fg-muted" : "border-border text-fg-subtle"
-              }`}
-            >
-              {isOver ? "Drop here" : onCreate ? `No ${addLabel}s` : "Empty"}
-            </div>
+            onCreate ? (
+              <button
+                onClick={() => onCreate(status)}
+                className={`w-full rounded-lg border border-dashed py-6 text-center text-xs transition-colors focus:outline-none ${
+                  isOver
+                    ? "border-brand/60 bg-brand/5 text-fg-muted"
+                    : "border-border text-fg-subtle hover:border-brand/50 hover:bg-brand/5 hover:text-fg-muted"
+                }`}
+              >
+                {isOver ? "Drop here" : (
+                  <span className="flex flex-col items-center gap-1.5">
+                    <Plus className="h-4 w-4 opacity-50" />
+                    <span>Add {addLabel}</span>
+                  </span>
+                )}
+              </button>
+            ) : (
+              <div
+                className={`rounded-lg border border-dashed py-6 text-center text-xs transition-colors ${
+                  isOver ? "border-brand/60 bg-brand/5 text-fg-muted" : "border-border text-fg-subtle"
+                }`}
+              >
+                {isOver ? "Drop here" : "Empty"}
+              </div>
+            )
           )}
         </div>
       </SortableContext>
