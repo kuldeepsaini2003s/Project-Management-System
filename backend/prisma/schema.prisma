@@ -84,6 +84,7 @@ model User {
   comments        Comment[]
   sessions        UserSession[]
   apiKeys         ApiKey[]
+  gitPersonaCard  GitPersonaCard?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -403,6 +404,33 @@ model NotionConnection {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// The generated GitPersona developer identity card — cached so it isn't
+// regenerated on every view, regenerated on demand via "Regenerate". There is
+// deliberately no separate "connection" table here: GitPersona reuses the
+// existing team-level GithubConnection (installed from Settings → Connected
+// accounts) for both auth and repo data, so connecting GitHub from either
+// page reflects on both — one table, one source of truth.
+model GitPersonaCard {
+  id          String  @id @default(cuid())
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String  @unique
+  githubLogin String // the GitHub account the card was generated for (denormalized for public lookup)
+  avatarUrl   String?
+  name        String?
+  public      Boolean @default(true) // whether /dev/:login can be viewed by anyone
+
+  styleSummary String
+  strengths    Json // [{ title, evidence }]
+  growthArc    String
+  roadmap      Json // [{ title, why, resourceHint }]
+  stats        Json // { topLanguages, totalRepos, totalCommits, ... } raw evidence backing the analysis
+
+  generatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([githubLogin])
 }
 
 model PullRequestLink {

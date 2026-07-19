@@ -35,7 +35,10 @@ const appJwt = () => {
 // Cache installation access tokens (valid ~1h) to avoid re-minting on every call.
 const tokenCache = new Map(); // installationId -> { token, exp }
 
-const getInstallationToken = async (installationId) => {
+// Exported so other services (e.g. GitPersonaService) can mint installation
+// tokens for teams the current user belongs to, without duplicating the
+// GitHub App JWT-signing logic.
+export const getInstallationToken = async (installationId) => {
   const cached = tokenCache.get(installationId);
   if (cached && cached.exp - 60_000 > Date.now()) return cached.token;
 
@@ -52,15 +55,31 @@ const getInstallationToken = async (installationId) => {
 /* ---------------- Install flow ---------------- */
 
 // Whether a specific installation still exists on GitHub (not uninstalled).
+// IMPORTANT: only a confirmed 404 means "actually uninstalled". Any other
+// failure (bad/expired App private key, GitHub rate limit, network blip) must
+// NOT be treated as "gone" — doing so used to silently force the "fresh
+// install" flow even when the installation was still live on GitHub's side.
+// That's a trap: GitHub Apps skip the picker and redirect straight to the
+// installation's management page when it's already installed, which never
+// hits our Setup URL callback — so the connection could never repair itself
+// and looked "stuck" until the user fully uninstalled and reinstalled.
+// Surfacing a clear, retryable error here instead is much safer.
 const installationExists = async (installationId) => {
+  let res;
   try {
-    const res = await fetch(`${API}/app/installations/${installationId}`, {
+    res = await fetch(`${API}/app/installations/${installationId}`, {
       headers: ghHeaders(appJwt()),
     });
-    return res.ok;
-  } catch {
-    return false;
+  } catch (e) {
+    if (e instanceof ApiError) throw e; // e.g. "GitHub App is not configured on the server"
+    log(`installationExists: network error checking installation=${installationId}:`, e?.message);
+    throw new ApiError(502, "Could not reach GitHub to verify your installation — try again in a moment");
   }
+  if (res.ok) return true;
+  if (res.status === 404) return false; // confirmed: genuinely uninstalled
+  const body = await res.text().catch(() => "");
+  log(`installationExists: unexpected GitHub response ${res.status} for installation=${installationId}: ${body.slice(0, 300)}`);
+  throw new ApiError(502, "Could not verify your GitHub installation right now — try again in a moment");
 };
 
 // Validate the frontend origin that started the flow against the allow-list, so
@@ -203,6 +222,139 @@ export const handleSetupCallback = async (query) => {
       `installation=${installationId} account=${account} team=${teamId} → redirecting to ${returnOrigin}`
   );
 
+  return `${returnOrigin}/teams/${teamId}/integrations?github=connected`;
+};
+
+// GitHub redirects here instead of the Setup URL once "Request user
+// authorization (OAuth) during installation" is enabled on the App. Unlike
+// the Setup URL, GitHub reliably calls this every time — fresh install AND
+// "already installed, just reauthorize" alike — which is what actually fixes
+// the dead-end redirect to github.com/settings/installations/:id. We
+// exchange the code for a user token, then ask GitHub which installation of
+// OUR app that user can access, rather than trusting installation_id being
+// present in the query string (it sometimes isn't on the reauth path).
+export const handleOAuthCallback = async (query) => {
+  let returnOrigin = env.clientUrl;
+  const fail = (msg) => {
+    log("oauth callback FAIL:", msg);
+    return `${returnOrigin}/?github=error&message=${encodeURIComponent(msg)}`;
+  };
+
+  const { code, state, installation_id: installationIdHint, setup_action: setupAction } = query;
+  log("oauth callback HIT. query=", JSON.stringify(query));
+
+  if (setupAction === "request") {
+    return `${returnOrigin}/?github=error&message=Installation%20pending%20approval`;
+  }
+  if (!code) return fail("GitHub did not return an authorization code");
+  if (!state) return fail("Missing authorization state — please start the connect again");
+
+  let decoded;
+  try {
+    decoded = verifyToken(state);
+  } catch {
+    return fail("Invalid or expired authorization state");
+  }
+  const { t: teamId, u: userId, gh, c } = decoded || {};
+  log(`oauth callback decoded state: teamId=${teamId} userId=${userId} gh=${gh} returnOrigin(c)=${c}`);
+  if (!gh || !teamId || !userId) return fail("Invalid authorization state");
+  returnOrigin = resolveReturnOrigin(c);
+
+  try {
+    await assertTeamAdmin(userId, teamId);
+  } catch {
+    return fail("You are not authorized to connect GitHub for this team");
+  }
+
+  if (!env.github.clientId || !env.github.clientSecret) {
+    return fail("GitHub OAuth is not configured on the server");
+  }
+
+  // Exchange the code for a user access token (same token endpoint OAuth
+  // Apps use — every GitHub App has a client id/secret for this).
+  let userToken;
+  try {
+    const res = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        client_id: env.github.clientId,
+        client_secret: env.github.clientSecret,
+        code,
+        redirect_uri: env.github.callbackUri,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      log("oauth callback: token exchange error:", data.error, data.error_description);
+      return fail(data.error_description || data.error);
+    }
+    userToken = data.access_token;
+    if (!userToken) return fail("GitHub did not return an access token");
+  } catch (e) {
+    log("oauth callback: error exchanging code:", e?.message);
+    return fail("Could not reach GitHub to complete the connection");
+  }
+
+  // Ask GitHub which installation(s) of any app this user can access, then
+  // pick the one that's OUR app — this is what reliably finds the existing
+  // installation even when installation_id wasn't in the query string.
+  let installation = null;
+  try {
+    const res = await fetch("https://api.github.com/user/installations", {
+      headers: {
+        Authorization: `Bearer ${userToken}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    if (!res.ok) {
+      log(`oauth callback: GET /user/installations → HTTP ${res.status}`);
+      return fail("Could not look up your GitHub installations");
+    }
+    const data = await res.json();
+    const list = data.installations || [];
+    log(`oauth callback: user has ${list.length} installation(s) visible`);
+    installation =
+      list.find((i) => String(i.id) === String(installationIdHint)) ||
+      list.find((i) => String(i.app_id) === String(env.github.appId)) ||
+      null;
+  } catch (e) {
+    log("oauth callback: error listing installations:", e?.message);
+    return fail("Could not reach GitHub to look up your installation");
+  }
+
+  if (!installation) {
+    // Genuinely no installation yet — send them through the full install
+    // picker (this is the normal, expected first-time path, not an error).
+    log(`oauth callback: no installation of this app found for user=${userId} → sending to install picker`);
+    return `${installUrl(buildState(teamId, userId, c))}`;
+  }
+
+  const before = await prisma.githubConnection.findUnique({ where: { teamId } });
+  const isFirstConnect = !before;
+
+  await prisma.githubConnection.upsert({
+    where: { teamId },
+    update: {
+      installationId: String(installation.id),
+      account: installation.account?.login || null,
+      accountType: installation.account?.type || null,
+      active: true,
+    },
+    create: {
+      teamId,
+      installationId: String(installation.id),
+      account: installation.account?.login || null,
+      accountType: installation.account?.type || null,
+      active: true,
+    },
+  });
+
+  log(
+    `oauth callback: ${isFirstConnect ? "CONNECT" : "RECONNECT"} complete — team=${teamId} ` +
+      `installation=${installation.id} account=${installation.account?.login} → redirecting to ${returnOrigin}`
+  );
   return `${returnOrigin}/teams/${teamId}/integrations?github=connected`;
 };
 

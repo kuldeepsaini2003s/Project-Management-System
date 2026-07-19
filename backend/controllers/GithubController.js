@@ -41,8 +41,19 @@ export const disconnect = asyncHandler(async (req, res) => {
 });
 
 // Public setup callback — GitHub redirects here after the app is installed.
+// (Only used while the App still has a "Setup URL" configured — see callback below.)
 export const setup = asyncHandler(async (req, res) => {
   const redirect = await githubService.handleSetupCallback(req.query);
+  res.redirect(redirect);
+});
+
+// Public OAuth callback — GitHub redirects here once "Request user
+// authorization (OAuth) during installation" is enabled on the App. This is
+// the reliable path: it fires whether the user is installing fresh or already
+// had the app installed, fixing the dead-end redirect to GitHub's own
+// installation management page.
+export const callback = asyncHandler(async (req, res) => {
+  const redirect = await githubService.handleOAuthCallback(req.query);
   res.redirect(redirect);
 });
 

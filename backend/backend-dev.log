@@ -1,0 +1,58 @@
+
+> backend@1.0.0 dev
+> nodemon server.js
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node server.js`[39m
+[socket] Socket.IO ready
+Server running on http://localhost:5000
+[email] SMTP ready — sending as kuldeepsaini5514@gmail.com
+[0mPOST /api/auth/login [32m200[0m 195.463 ms - 496[0m
+[0mPOST /api/auth/google [32m200[0m 784.164 ms - 628[0m
+[socket] connected user=cmrqacl92000324h4qnydx7l5 id=cg1ZVKFqHDpl3NsfAAAB
+[0mGET /api/notifications [32m200[0m 81.664 ms - 2[0m
+[0mGET /api/notifications/unread-count [32m200[0m 257.196 ms - 12[0m
+[0mGET /api/workspaces [32m200[0m 341.564 ms - 154[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/teams [32m200[0m 39.098 ms - 454[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k [32m200[0m 140.366 ms - 263[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/members [32m200[0m 93.866 ms - 263[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/projects [32m200[0m 117.886 ms - 2[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/issues [32m200[0m 194.200 ms - 2[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/labels [32m200[0m 109.863 ms - 2[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/members [36m304[0m 50.930 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k [36m304[0m 57.952 ms - -[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/labels [36m304[0m 14.766 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/projects [36m304[0m 47.814 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/issues [36m304[0m 26.449 ms - -[0m
+[socket] disconnected user=cmrqacl92000324h4qnydx7l5 (transport close)
+[0mGET /api/auth/me [32m200[0m 36.562 ms - 397[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/teams [36m304[0m 79.888 ms - -[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/teams [36m304[0m 22.514 ms - -[0m
+[0mGET /api/auth/me [36m304[0m 34.819 ms - -[0m
+[0mGET /api/notifications/unread-count [36m304[0m 28.050 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/issues [36m304[0m 56.846 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k [36m304[0m 35.690 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/projects [36m304[0m 36.381 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/members [36m304[0m 19.373 ms - -[0m
+[0mGET /api/workspaces [36m304[0m 30.636 ms - -[0m
+[socket] connected user=cmrqacl92000324h4qnydx7l5 id=vqijK49vroYoVoZZAAAD
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/labels [36m304[0m 63.299 ms - -[0m
+[0mGET /api/notifications [36m304[0m 50.991 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/issues [36m304[0m 13.011 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k [36m304[0m 19.810 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/members [36m304[0m 10.683 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/projects [36m304[0m 13.956 ms - -[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/labels [36m304[0m 11.046 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/issues [36m304[0m 50.781 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k [36m304[0m 104.234 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/members [36m304[0m 25.059 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/projects [36m304[0m 27.608 ms - -[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/labels [36m304[0m 6.644 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k [36m304[0m 10.823 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/issues [36m304[0m 16.460 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/members [36m304[0m 28.438 ms - -[0m
+[0mGET /api/teams/cmrqacl98000724h44fssr29k/projects [36m304[0m 11.982 ms - -[0m
+[0mGET /api/workspaces/cmrqacl98000424h4abvkhjo7/labels [36m304[0m 11.889 ms - -[0m

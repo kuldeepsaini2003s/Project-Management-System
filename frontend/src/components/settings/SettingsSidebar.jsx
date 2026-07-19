@@ -11,6 +11,7 @@ import {
   Building2,
   LayoutGrid,
   Users,
+  Sparkles,
 } from "lucide-react";
 
 const navItemClass = ({ isActive }) =>
@@ -58,6 +59,7 @@ export default function SettingsSidebar({ onClose }) {
       <NavItem to="/settings/notifications" icon={Bell} onClose={onClose}>Notifications</NavItem>
       <NavItem to="/settings/security" icon={ShieldCheck} onClose={onClose}>Security &amp; access</NavItem>
       <NavItem to="/settings/accounts" icon={Link2} onClose={onClose}>Connected accounts</NavItem>
+      <NavItem to="/settings/developer-profile" icon={Sparkles} onClose={onClose}>Developer profile</NavItem>
 
       <SectionLabel>Issues</SectionLabel>
       <NavItem to="/settings/issues/labels" icon={Tag} onClose={onClose}>Labels</NavItem>

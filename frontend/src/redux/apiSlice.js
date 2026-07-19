@@ -39,6 +39,7 @@ export const api = createApi({
     "GitHubConn",
     "SlackConn",
     "NotionConn",
+    "GitPersonaCard",
   ],
   endpoints: (b) => ({
     /* ---- auth / user ---- */
@@ -344,6 +345,26 @@ export const api = createApi({
       invalidatesTags: (r, e, teamId) => [{ type: "NotionConn", id: teamId }],
     }),
 
+    /* ---- GitPersona (personal developer identity card) ----
+       No connect/disconnect here — it reuses the team GitHub connection
+       below (useGetTeamGithubQuery / useLazyGetTeamGithubAuthorizeQuery /
+       useDisconnectTeamGithubMutation), same as Connected accounts. */
+    getGitPersonaCard: b.query({
+      query: () => "/git-persona/card",
+      providesTags: ["GitPersonaCard"],
+    }),
+    generateGitPersonaCard: b.mutation({
+      query: () => ({ url: "/git-persona/card/generate", method: "POST" }),
+      invalidatesTags: ["GitPersonaCard"],
+    }),
+    setGitPersonaVisibility: b.mutation({
+      query: (isPublic) => ({ url: "/git-persona/card/visibility", method: "PATCH", body: { public: isPublic } }),
+      invalidatesTags: ["GitPersonaCard"],
+    }),
+    getPublicGitPersonaCard: b.query({
+      query: (login) => `/git-persona/public/${login}`,
+    }),
+
     /* ---- API Keys ---- */
     getApiKeys: b.query({
       query: () => "/keys",
@@ -423,4 +444,9 @@ export const {
   useGetApiKeysQuery,
   useCreateApiKeyMutation,
   useRevokeApiKeyMutation,
+  /* git persona */
+  useGetGitPersonaCardQuery,
+  useGenerateGitPersonaCardMutation,
+  useSetGitPersonaVisibilityMutation,
+  useGetPublicGitPersonaCardQuery,
 } = api;

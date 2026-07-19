@@ -19,6 +19,7 @@ import WorkspaceProjectsPage from "./pages/projects/WorkspaceProjectsPage.jsx";
 import IssueDetailPage from "./pages/issues/IssueDetailPage.jsx";
 import MyIssuesPage from "./pages/issues/MyIssuesPage.jsx";
 import InvitePage from "./pages/InvitePage.jsx";
+import PublicDevProfilePage from "./pages/PublicDevProfilePage.jsx";
 import InboxPage from "./pages/InboxPage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
 import WorkspaceMembersPage from "./pages/WorkspaceMembersPage.jsx";
@@ -32,6 +33,7 @@ import ProfilePage from "./pages/settings/personal/ProfilePage.jsx";
 import NotificationsPage from "./pages/settings/personal/NotificationsPage.jsx";
 import SecurityPage from "./pages/settings/personal/SecurityPage.jsx";
 import AccountsPage from "./pages/settings/personal/AccountsPage.jsx";
+import DeveloperProfilePage from "./pages/settings/personal/DeveloperProfilePage.jsx";
 import IssueLabelsPage from "./pages/settings/issues/IssueLabelsPage.jsx";
 import ProjectLabelsPage from "./pages/settings/projects/ProjectLabelsPage.jsx";
 import ProjectStatusesPage from "./pages/settings/projects/ProjectStatusesPage.jsx";
@@ -44,6 +46,8 @@ export default function App() {
     <Routes>
       {/* Public: invite links work before sign-in */}
       <Route path="/invite/:token" element={<InvitePage />} />
+      {/* Public: shareable GitPersona developer identity card */}
+      <Route path="/dev/:login" element={<PublicDevProfilePage />} />
 
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<Login />} />
@@ -82,6 +86,7 @@ export default function App() {
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="security" element={<SecurityPage />} />
           <Route path="accounts" element={<AccountsPage />} />
+          <Route path="developer-profile" element={<DeveloperProfilePage />} />
           <Route path="issues/labels" element={<IssueLabelsPage />} />
           <Route path="projects/labels" element={<ProjectLabelsPage />} />
           <Route path="projects/statuses" element={<ProjectStatusesPage />} />

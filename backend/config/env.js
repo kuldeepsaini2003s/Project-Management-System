@@ -69,9 +69,33 @@ export const env = {
   },
 
   // GitHub App (Settings → Developer settings → GitHub Apps).
+  //
+  // IMPORTANT: to fix installs silently dead-ending when the app is already
+  // installed on the user's account (GitHub skips our Setup URL entirely in
+  // that case — this is documented GitHub behavior, not something we can
+  // work around from server code alone), the App must have "Request user
+  // authorization (OAuth) during installation" checked under "Identifying
+  // and authorizing users" in the App's settings. Checking that box REMOVES
+  // the Setup URL field and replaces it with a "User authorization callback
+  // URL" field — register that as {API_URL}/api/github/callback. Once set,
+  // GitHub reliably redirects there with a `code` param every time (fresh
+  // install AND already-installed reauth alike), which we exchange for a
+  // user token to look up their installation via GET /user/installations —
+  // no more dead-end redirects to github.com/settings/installations/:id.
+  //
+  // clientId/clientSecret are on the same App settings page as appId — every
+  // GitHub App has them, separate from the private key used for server-to-
+  // server installation tokens below.
   github: {
     appId: process.env.GITHUB_APP_ID,
     appSlug: process.env.GITHUB_APP_SLUG, // the public install URL slug
+    clientId: process.env.GITHUB_APP_CLIENT_ID || "",
+    clientSecret: process.env.GITHUB_APP_CLIENT_SECRET || "",
+    // Must match exactly what's registered as the App's "User authorization
+    // callback URL" (only used/shown once OAuth-during-installation is on).
+    callbackUri:
+      process.env.GITHUB_APP_CALLBACK_URI ||
+      `${process.env.API_URL || "http://localhost:5000"}/api/github/callback`,
     // PEM private key — supports raw (with \n escapes) or base64.
     privateKey: (() => {
       const raw = process.env.GITHUB_APP_PRIVATE_KEY || "";
@@ -82,4 +106,9 @@ export const env = {
     })(),
     webhookSecret: process.env.GITHUB_WEBHOOK_SECRET || "",
   },
+
+  // Anthropic API key used to generate the GitPersona developer identity card.
+  // GitPersona itself needs no separate GitHub app/callback — it reuses the
+  // GitHub App installations above (per-team) for repo data.
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
 };
