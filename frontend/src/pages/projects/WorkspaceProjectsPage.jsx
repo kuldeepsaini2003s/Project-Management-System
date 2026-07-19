@@ -14,6 +14,7 @@ import {
   createProject,
   reorderProjects,
 } from "../../redux/actions/projectActions.js";
+import { Skeleton } from "../../components/ui/Skeleton.jsx";
 
 export default function WorkspaceProjectsPage() {
   const { onMenu } = useOutletContext() || {};
@@ -56,16 +57,14 @@ export default function WorkspaceProjectsPage() {
 
       <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
-        {loading && projects.length === 0 ? (
-          <p className="py-10 text-center text-sm text-fg-muted">Loading projects…</p>
-        ) : (
+        <Skeleton name="project-board" loading={loading && projects.length === 0}>
           <ProjectBoard
             projects={projects}
             onCreate={teams.length ? (status) => setModal({ open: true, status }) : undefined}
             onReorder={handleReorder}
             onOpen={(project) => navigate(`/projects/${project.id}`)}
           />
-        )}
+        </Skeleton>
       </div>
 
       <ProjectFormModal

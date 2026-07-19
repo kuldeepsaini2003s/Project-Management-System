@@ -13,6 +13,7 @@ import { fetchTeam, fetchTeamMembers } from "../../redux/actions/teamActions.js"
 import { fetchWorkspaceLabels } from "../../redux/actions/workspaceActions.js";
 import { fetchProject, updateProject, deleteProject } from "../../redux/actions/projectActions.js";
 import { fetchProjectIssues } from "../../redux/actions/issueActions.js";
+import { Skeleton } from "../../components/ui/Skeleton.jsx";
 
 const fmt = (v) =>
   v ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
@@ -110,7 +111,7 @@ export default function ProjectDetailPage() {
       <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
         {loading && !onThisProject ? (
-          <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>
+          <Skeleton name="project-detail" loading />
         ) : onThisProject ? (
           <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto lg:flex-row lg:overflow-hidden">
             {/* Left: overview + description */}

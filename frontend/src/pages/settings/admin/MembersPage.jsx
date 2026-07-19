@@ -8,6 +8,7 @@ import {
   useCreateTeamInvitesMutation,
 } from "../../../redux/apiSlice.js";
 import Avatar from "../../../components/ui/Avatar.jsx";
+import { Skeleton } from "../../../components/ui/Skeleton.jsx";
 
 /* ── date helpers ────────────────────────────────────────────────────────── */
 function fmtDate(dateStr) {
@@ -356,7 +357,7 @@ export default function MembersPage() {
 
       {/* ── Table ── */}
       {isLoading ? (
-        <div className="py-16 text-center text-sm text-fg-muted">Loading…</div>
+        <Skeleton name="members-settings" loading />
       ) : members.length === 0 ? (
         <div className="py-16 text-center text-sm text-fg-muted">No members yet</div>
       ) : (

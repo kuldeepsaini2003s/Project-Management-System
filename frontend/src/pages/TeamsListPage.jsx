@@ -3,6 +3,7 @@ import { Box, Check } from "lucide-react";
 import Topbar from "../components/layout/Topbar.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import { useTeams } from "../context/TeamContext.jsx";
+import { Skeleton } from "../components/ui/Skeleton.jsx";
 
 function TeamGlyph({ team }) {
   return (
@@ -20,13 +21,14 @@ const td = "whitespace-nowrap px-4 py-2.5";
 
 export default function TeamsListPage() {
   const { onMenu } = useOutletContext() || {};
-  const { teams } = useTeams();
+  const { teams, loading } = useTeams();
   const navigate = useNavigate();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar breadcrumb={["Teams"]} onMenu={onMenu} />
 
+      <Skeleton name="teams-list" loading={loading && teams.length === 0}>
       <div className="glass min-h-0 flex-1 overflow-auto rounded-lg p-4 sm:p-5">
         <p className="px-4 pb-2 text-xs text-fg-subtle">
           {teams.length} team{teams.length === 1 ? "" : "s"}
@@ -92,6 +94,7 @@ export default function TeamsListPage() {
           </tbody>
         </table>
       </div>
+      </Skeleton>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from "../../../redux/apiSlice.js";
 import Button from "../../../components/ui/Button.jsx";
 import Modal from "../../../components/ui/Modal.jsx";
+import { Skeleton } from "../../../components/ui/Skeleton.jsx";
 
 /* ── Date helper ─────────────────────────────────────────────────────────── */
 function fmtDate(dateStr) {
@@ -258,7 +259,7 @@ export default function TeamsPage() {
 
       {/* ── Table ── */}
       {isLoading ? (
-        <div className="py-16 text-center text-sm text-fg-muted">Loading…</div>
+        <Skeleton name="teams-settings" loading />
       ) : (
         <div className="overflow-hidden rounded-lg border border-glass-border bg-surface/20">
           <table className="w-full">

@@ -13,6 +13,7 @@ import {
   createProject,
   reorderProjects,
 } from "../../redux/actions/projectActions.js";
+import { Skeleton } from "../../components/ui/Skeleton.jsx";
 
 export default function TeamProjectsPage() {
   const { teamId } = useParams();
@@ -55,16 +56,14 @@ export default function TeamProjectsPage() {
 
       <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
-        {loading && projects.length === 0 ? (
-          <p className="py-10 text-center text-sm text-fg-muted">Loading projects…</p>
-        ) : (
+        <Skeleton name="project-board" loading={loading && projects.length === 0}>
           <ProjectBoard
             projects={projects}
             onCreate={(status) => setModal({ open: true, status })}
             onReorder={handleReorder}
             onOpen={(project) => navigate(`/projects/${project.id}`)}
           />
-        )}
+        </Skeleton>
       </div>
 
       {team && team.id === teamId && (

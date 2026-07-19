@@ -5,6 +5,7 @@ import Topbar from "../components/layout/Topbar.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import { useWorkspace } from "../context/WorkspaceContext.jsx";
 import { useGetWorkspaceMembersQuery } from "../redux/apiSlice.js";
+import { Skeleton } from "../components/ui/Skeleton.jsx";
 
 const ROLE_LABEL = { OWNER: "Owner", ADMIN: "Admin", MEMBER: "Member" };
 
@@ -47,6 +48,7 @@ export default function WorkspaceMembersPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Topbar breadcrumb={[`Members${members.length ? ` · ${members.length}` : ""}`]} onMenu={onMenu} />
 
+      <Skeleton name="members-list" loading={isLoading}>
       <div className="glass min-h-0 flex-1 overflow-auto rounded-lg p-4 sm:p-5">
         <table className="w-full text-sm">
           <thead>
@@ -64,14 +66,7 @@ export default function WorkspaceMembersPage() {
             </tr>
           </thead>
           <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-fg-muted">
-                  Loading…
-                </td>
-              </tr>
-            ) : (
-              sorted.map((m) => {
+            {sorted.map((m) => {
                 const seen = lastSeen(m.lastSeenAt);
                 return (
                   <tr key={m.id} className="border-b border-glass-border/60 hover:bg-surface-hover">
@@ -92,14 +87,17 @@ export default function WorkspaceMembersPage() {
                     <td className={`${td} hidden text-fg-muted md:table-cell`}>{fmtJoined(m.joinedAt)}</td>
                     <td className={`${td} hidden lg:table-cell`}>
                       <span className="flex flex-wrap gap-1">
-                        {(m.teams || []).map((k) => (
-                          <span
-                            key={k}
-                            className="inline-flex items-center rounded border border-border px-1.5 py-0.5 text-[11px] text-fg-muted"
-                          >
-                            {k}
-                          </span>
-                        ))}
+                        {(m.teams || []).map((t) => {
+                          const label = t?.key || t?.name || String(t);
+                          return (
+                            <span
+                              key={t?.id ?? label}
+                              className="inline-flex items-center rounded border border-border px-1.5 py-0.5 text-[11px] text-fg-muted"
+                            >
+                              {label}
+                            </span>
+                          );
+                        })}
                       </span>
                     </td>
                     <td className={`${td} text-right ${seen.online ? "text-success" : "text-fg-subtle"}`}>
@@ -110,11 +108,11 @@ export default function WorkspaceMembersPage() {
                     </td>
                   </tr>
                 );
-              })
-            )}
+              })}
           </tbody>
         </table>
       </div>
+      </Skeleton>
     </div>
   );
 }

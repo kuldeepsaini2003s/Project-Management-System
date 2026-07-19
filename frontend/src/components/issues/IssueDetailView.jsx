@@ -24,6 +24,7 @@ import {
 } from "../../redux/apiSlice.js";
 import { issueService } from "../../services/issueService.js";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { IssueDetailSkeleton } from "../ui/Skeleton.jsx";
 
 const timeAgo = (date) => {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -124,7 +125,7 @@ export default function IssueDetailView({ issueId }) {
   };
 
   if (isLoading) {
-    return <p className="py-10 text-center text-sm text-fg-muted">Loading…</p>;
+    return <IssueDetailSkeleton />;
   }
   if (!issue) {
     return (

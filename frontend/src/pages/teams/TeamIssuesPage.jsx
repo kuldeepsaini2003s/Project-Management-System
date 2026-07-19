@@ -15,6 +15,7 @@ import {
   createIssue,
   reorderIssues,
 } from "../../redux/actions/issueActions.js";
+import { Skeleton } from "../../components/ui/Skeleton.jsx";
 
 export default function TeamIssuesPage() {
   const { teamId } = useParams();
@@ -69,16 +70,14 @@ export default function TeamIssuesPage() {
 
       <div className="min-h-0 flex-1 overflow-hidden">
         <FormError message={error} />
-        {loading && issues.length === 0 ? (
-          <p className="py-10 text-center text-sm text-fg-muted">Loading issues…</p>
-        ) : (
+        <Skeleton name="issue-board" loading={loading && issues.length === 0}>
           <IssueBoard
             issues={issues}
             onCreate={(status) => setModal({ open: true, status })}
             onReorder={handleReorder}
             onOpen={(issue) => navigate(`/issues/${issue.id}`)}
           />
-        )}
+        </Skeleton>
       </div>
 
       {team && team.id === teamId && (

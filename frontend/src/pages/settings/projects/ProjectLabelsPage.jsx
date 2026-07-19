@@ -10,6 +10,7 @@ import {
 import SettingsPageHeader from "../../../components/settings/SettingsPageHeader.jsx";
 import Button from "../../../components/ui/Button.jsx";
 import LabelFormModal from "../../../components/settings/LabelFormModal.jsx";
+import { LabelSkeletonRows } from "../../../components/ui/Skeleton.jsx";
 
 export default function ProjectLabelsPage() {
   const { currentId } = useWorkspace();
@@ -76,7 +77,7 @@ export default function ProjectLabelsPage() {
           </thead>
           <tbody className="divide-y divide-glass-border">
             {isLoading ? (
-              <tr><td colSpan={3} className="py-10 text-center text-sm text-fg-muted">Loading…</td></tr>
+              <LabelSkeletonRows />
             ) : filtered.length === 0 ? (
               <tr><td colSpan={3} className="py-10 text-center text-sm text-fg-muted">
                 {search ? "No labels match your search" : "No labels yet — create one above"}
