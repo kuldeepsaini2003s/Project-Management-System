@@ -6,10 +6,7 @@ let transporter = null;
 const getTransporter = () => {
   if (transporter) return transporter;
   const { host, port, secure, user, pass } = env.smtp;
-  if (!host || !user || !pass) {
-    console.warn("[email] SMTP not configured — invite emails will be skipped.");
-    return null;
-  }
+  if (!host || !user || !pass) return null;
   transporter = nodemailer.createTransport({
     host,
     port,
@@ -24,10 +21,7 @@ export const verifyEmailTransport = async () => {
   if (!tx) return;
   try {
     await tx.verify();
-    console.log(`[email] SMTP ready — sending as ${env.smtp.user}`);
-  } catch (err) {
-    console.error(`[email] SMTP login FAILED: ${err.message}`);
-  }
+  } catch {}
 };
 
 const escapeHtml = (s = "") =>

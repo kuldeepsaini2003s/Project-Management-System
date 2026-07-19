@@ -4,15 +4,12 @@ import { env } from "../config/env.js";
 import { getInstallationToken } from "./GithubService.js";
 import Anthropic from "@anthropic-ai/sdk";
 
-const log = (...args) => console.log("[git-persona]", ...args);
-
 const GITHUB_API = "https://api.github.com";
 const ghHeaders = (token) => ({
   Authorization: `Bearer ${token}`,
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": "2022-11-28",
 });
-
 
 const getUserGithubConnections = async (userId) => {
   const memberships = await prisma.teamMembership.findMany({ where: { userId }, select: { teamId: true } });
@@ -34,7 +31,6 @@ const resolvePersonaIdentity = async (userId) => {
   const primary = connections.find((c) => c.accountType === "User") || connections[0];
   return { connections, username: primary.account };
 };
-
 
 const MAX_REPOS = 20;
 
@@ -186,7 +182,6 @@ const fetchProfile = async (username, token) => {
   }
 };
 
-
 let anthropicClient = null;
 const getAnthropic = () => {
   if (!env.anthropicApiKey) throw new ApiError(500, "AI analysis is not configured on the server");
@@ -240,7 +235,6 @@ const parseAnalysis = (text) => {
   }
 };
 
-
 const GENERATION_STALE_MS = 3 * 60 * 1000;
 
 export const startGenerateCard = async (userId) => {
@@ -256,7 +250,6 @@ export const startGenerateCard = async (userId) => {
   });
 
   runGeneration(userId).catch((err) => {
-    log(`runGeneration: user=${userId} → uncaught error:`, err?.message);
   });
 
   return { status: "pending", startedAt: gen.startedAt };
@@ -310,7 +303,6 @@ const runGeneration = async (userId) => {
     });
     await prisma.gitPersonaGeneration.delete({ where: { userId } }).catch(() => {});
   } catch (err) {
-    log(`runGeneration: user=${userId} → failed:`, err?.message);
     await prisma.gitPersonaGeneration
       .update({
         where: { userId },

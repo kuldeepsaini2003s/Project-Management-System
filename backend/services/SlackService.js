@@ -4,9 +4,6 @@ import { assertTeamMembership, assertTeamAdmin } from "../utils/membership.js";
 import { signToken, verifyToken } from "../utils/jwt.js";
 import { env } from "../config/env.js";
 
-const log = (...args) => console.log("[slack]", ...args);
-
-
 const resolveReturnOrigin = (origin) => {
   const clean = (origin || "").replace(/\/$/, "");
   return env.clientUrls.includes(clean) ? clean : env.clientUrl;
@@ -29,45 +26,27 @@ const slackOAuthUrl = (state) => {
   return `https://slack.com/oauth/v2/authorize?${params}`;
 };
 
-
 export const buildAuthorizeUrl = async (userId, teamId, { origin, returnPath } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.slack.clientId) throw new ApiError(500, "Slack App is not configured on the server");
 
   const existing = await prisma.slackConnection.findUnique({ where: { teamId } });
 
-  if (existing) {
-    log(
-      `authorize reconnect attempt: team=${teamId} user=${userId} ` +
-        `channel=${existing.channel} active=${existing.active}`
-    );
-    if (existing.webhookUrl) {
-      await prisma.slackConnection.update({ where: { teamId }, data: { active: true } });
-      log(
-        `authorize reconnect SUCCESS: team=${teamId} channel=${existing.channel} ` +
-          `workspace=${existing.slackTeamName} → active=true`
-      );
-      return { reconnected: true, channel: existing.channel, slackTeamName: existing.slackTeamName };
-    }
-    log(`authorize: team=${teamId} existing record has no webhookUrl → fresh OAuth flow`);
-  } else {
-    log(`authorize connect: team=${teamId} user=${userId} no existing connection → fresh OAuth flow`);
+  if (existing?.webhookUrl) {
+    await prisma.slackConnection.update({ where: { teamId }, data: { active: true } });
+    return { reconnected: true, channel: existing.channel, slackTeamName: existing.slackTeamName };
   }
 
-  log(`authorize: team=${teamId} user=${userId} → redirecting to Slack OAuth`);
   return { url: slackOAuthUrl(buildState(teamId, userId, origin, returnPath)) };
 };
-
 
 export const handleOAuthCallback = async (query) => {
   let returnOrigin = env.clientUrl;
   const fail = (msg) => {
-    log("setup FAIL:", msg);
     return `${returnOrigin}/?slack=error&message=${encodeURIComponent(msg)}`;
   };
 
   const { code, state, error: slackError } = query;
-  log("setup callback HIT. query=", JSON.stringify(query));
 
   if (slackError) return fail(`Slack returned an error: ${slackError}`);
   if (!code) return fail("Slack did not return an authorization code");
@@ -80,7 +59,6 @@ export const handleOAuthCallback = async (query) => {
     return fail("Invalid or expired authorization state");
   }
   const { t: teamId, u: userId, sl, c, p } = decoded || {};
-  log(`setup decoded state: teamId=${teamId} userId=${userId} sl=${sl} returnOrigin(c)=${c}`);
   if (!sl || !teamId || !userId) return fail("Invalid authorization state");
   returnOrigin = resolveReturnOrigin(c);
 
@@ -104,7 +82,6 @@ export const handleOAuthCallback = async (query) => {
       body: params,
     });
     const data = await res.json();
-    log("slack oauth.v2.access response:", JSON.stringify(data));
 
     if (!data.ok) return fail(data.error || "Slack OAuth exchange failed");
 
@@ -117,14 +94,11 @@ export const handleOAuthCallback = async (query) => {
     slackTeamName = data.team?.name;
 
     if (!webhookUrl) return fail("Slack did not return a webhook URL — ensure incoming-webhook scope is granted");
-    log(`setup: webhook channel=${channel} (${channelId}) workspace=${slackTeamName} (${slackTeamId}) botToken=${accessToken ? "yes" : "no"}`);
   } catch (e) {
-    log("setup: error exchanging code:", e?.message);
     return fail("Could not reach Slack to complete the connection");
   }
 
   const before = await prisma.slackConnection.findUnique({ where: { teamId } });
-  log("setup: SlackConnection BEFORE =", JSON.stringify(before));
   const isFirstConnect = !before;
 
   const after = await prisma.slackConnection.upsert({
@@ -132,21 +106,14 @@ export const handleOAuthCallback = async (query) => {
     update: { webhookUrl, channel, channelId, slackTeamId, slackTeamName, accessToken, active: true },
     create: { teamId, webhookUrl, channel, channelId, slackTeamId, slackTeamName, accessToken, active: true },
   });
-  log("setup: SlackConnection AFTER  =", JSON.stringify(after));
-  log(
-    `setup: ${isFirstConnect ? "CONNECT" : "RECONNECT"} complete — ` +
-      `channel=${channel} workspace=${slackTeamName} team=${teamId} → redirecting to ${returnOrigin}`
-  );
 
   return `${returnOrigin}${p || `/teams/${teamId}/integrations/slack`}?slack=connected`;
 };
-
 
 export const getConnection = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
   const conn = await prisma.slackConnection.findUnique({ where: { teamId } });
   const connected = !!conn?.webhookUrl && conn.active !== false;
-  log(`getConnection team=${teamId} → connected=${connected} channel=${connected ? conn.channel : "-"}`);
   return {
     connected,
     channel: connected ? conn.channel || null : null,
@@ -154,19 +121,15 @@ export const getConnection = async (userId, teamId) => {
   };
 };
 
-
 export const disconnectSlack = async (userId, teamId) => {
   await assertTeamAdmin(userId, teamId);
   const conn = await prisma.slackConnection.findUnique({ where: { teamId } });
   if (!conn) {
-    log(`disconnect team=${teamId} → no connection record found`);
     return { ok: true };
   }
   await prisma.slackConnection.update({ where: { teamId }, data: { active: false } });
-  log(`disconnect team=${teamId} channel=${conn.channel} workspace=${conn.slackTeamName} → active=false`);
   return { ok: true };
 };
-
 
 export const postToWebhook = async (webhookUrl, text) => {
   try {
@@ -176,8 +139,7 @@ export const postToWebhook = async (webhookUrl, text) => {
       body: JSON.stringify({ text }),
     });
     return res.ok;
-  } catch (err) {
-    console.warn("[slack] postToWebhook failed:", err.message);
+  } catch {
     return false;
   }
 };
@@ -192,12 +154,10 @@ export const postToTeamSlack = async (teamId, text) => {
       body: JSON.stringify({ text }),
     });
     return res.ok;
-  } catch (err) {
-    console.warn("[slack] post failed:", err.message);
+  } catch {
     return false;
   }
 };
-
 
 const slackApi = async (token, path) => {
   const res = await fetch(`https://slack.com/api/${path}`, {
@@ -239,7 +199,6 @@ export const getSlackInfo = async (userId, teamId) => {
         }
       }
     } catch (err) {
-      log("getSlackInfo: failed to fetch members:", err.message);
     }
   }
 
@@ -257,7 +216,6 @@ export const getSlackInfo = async (userId, teamId) => {
       }));
     }
   } catch (err) {
-    log("getSlackInfo: failed to fetch channels:", err.message);
   }
 
   return {

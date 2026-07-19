@@ -65,7 +65,6 @@ export const deleteUser = async (id) => {
   await prisma.user.delete({ where: { id } });
 };
 
-
 const resolveLocation = async (ip) => {
   try {
     if (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10.")) {

@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import prisma from "../db/index.js";
 
 async function main() {
-  console.log("Seeding database...");
 
   const password = await bcrypt.hash("password123", 10);
 
@@ -14,7 +13,6 @@ async function main() {
 
   const existing = await prisma.membership.findFirst({ where: { userId: user.id } });
   if (existing) {
-    console.log("Demo data already present.");
     return;
   }
 
@@ -60,12 +58,10 @@ async function main() {
   });
   await prisma.team.update({ where: { id: team.id }, data: { issueCounter: 1 } });
 
-  console.log("Seeded demo@linear.app / password123 with workspace + team.");
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch(() => {
     process.exit(1);
   })
   .finally(async () => {

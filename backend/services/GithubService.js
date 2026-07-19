@@ -14,9 +14,6 @@ const ghHeaders = (token) => ({
   "X-GitHub-Api-Version": "2022-11-28",
 });
 
-const log = (...args) => console.log("[github]", ...args);
-
-
 const appJwt = () => {
   if (!env.github.appId || !env.github.privateKey) {
     throw new ApiError(500, "GitHub App is not configured on the server");
@@ -45,7 +42,6 @@ export const getInstallationToken = async (installationId) => {
   return data.token;
 };
 
-
 const installationExists = async (installationId) => {
   let res;
   try {
@@ -54,13 +50,11 @@ const installationExists = async (installationId) => {
     });
   } catch (e) {
     if (e instanceof ApiError) throw e;
-    log(`installationExists: network error checking installation=${installationId}:`, e?.message);
     throw new ApiError(502, "Could not reach GitHub to verify your installation — try again in a moment");
   }
   if (res.ok) return true;
   if (res.status === 404) return false;
   const body = await res.text().catch(() => "");
-  log(`installationExists: unexpected GitHub response ${res.status} for installation=${installationId}: ${body.slice(0, 300)}`);
   throw new ApiError(502, "Could not verify your GitHub installation right now — try again in a moment");
 };
 
@@ -97,17 +91,14 @@ export const buildAuthorizeUrl = async (userId, teamId, { origin, returnPath } =
     const exists = await installationExists(existing.installationId);
     if (exists) {
       await prisma.githubConnection.update({ where: { teamId }, data: { active: true } });
-      log(`authorize reconnect: team=${teamId} installation=${existing.installationId} → active=true`);
       return { reconnected: true, account: existing.account };
     }
-    log(`authorize reconnect: team=${teamId} installation=${existing.installationId} no longer exists → fresh flow`);
   }
 
   if (!env.github.clientId) {
     throw new ApiError(500, "GitHub OAuth is not configured on the server (missing client id)");
   }
   const url = oauthAuthorizeUrl(buildState(teamId, userId, origin, returnPath));
-  log(`authorize: team=${teamId} user=${userId} → ${url}`);
   return { url };
 };
 
@@ -264,10 +255,8 @@ export const handleOAuthCallback = async (query) => {
     },
   });
 
-  log(`oauth callback: connected team=${teamId} installation=${installation.id} account=${installation.account?.login}`);
   return `${returnOrigin}${p || `/teams/${teamId}/integrations/github`}?github=connected`;
 };
-
 
 export const getConnection = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
@@ -321,7 +310,6 @@ export const disconnectGithub = async (userId, teamId) => {
   return { ok: true };
 };
 
-
 export const linkPullRequest = async (userId, issueId, url) => {
   await getIssueOrThrow(userId, issueId);
   const clean = String(url || "").trim();
@@ -344,7 +332,6 @@ export const unlinkPullRequest = async (userId, linkId) => {
   await prisma.pullRequestLink.delete({ where: { id: linkId } });
   return { ok: true };
 };
-
 
 const verifySignature = (rawBody, signature) => {
   const secret = env.github.webhookSecret;

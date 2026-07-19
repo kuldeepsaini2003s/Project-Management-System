@@ -65,7 +65,6 @@ export const updateTeamMemberRole = async (userId, teamId, targetUserId, role) =
   return getTeamMembers(userId, teamId);
 };
 
-
 export const createJoinRequest = async (userId, teamId) => {
   const team = await prisma.team.findUnique({ where: { id: teamId } });
   if (!team) throw new ApiError(404, "Team not found");

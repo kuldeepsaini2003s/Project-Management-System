@@ -23,15 +23,8 @@ export const initSocket = (httpServer) => {
 
   io.on("connection", (socket) => {
     socket.join(`user:${socket.userId}`);
-    console.log(`[socket] connected user=${socket.userId} id=${socket.id}`);
-    socket.on("disconnect", (reason) =>
-      console.log(`[socket] disconnected user=${socket.userId} (${reason})`)
-    );
   });
 
-  io.on("connection_error", (err) => console.warn("[socket] connection_error:", err.message));
-
-  console.log("[socket] Socket.IO ready");
   return io;
 };
 
@@ -40,5 +33,4 @@ export const emitToUser = (userId, event, payload) => {
   const room = `user:${userId}`;
   const clients = io.sockets.adapter.rooms.get(room)?.size || 0;
   io.to(room).emit(event, payload);
-  console.log(`[socket] emit "${event}" -> ${room} (online clients: ${clients})`);
 };

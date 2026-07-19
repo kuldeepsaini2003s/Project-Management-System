@@ -61,9 +61,7 @@ export const createTeamInvites = async (userId, teamId, emails, role = "MEMBER")
         inviterName: inviter?.name,
         expiresAt,
       });
-    } catch (err) {
-      console.error("[email] Failed to send invite to", email, err.message);
-    }
+    } catch {}
 
     results.push({ email, status: "invited", url, expiresAt, emailSent });
   }

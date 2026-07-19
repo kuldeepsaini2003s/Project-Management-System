@@ -26,7 +26,6 @@ export const deleteUser = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-
 export const getSessions = asyncHandler(async (req, res) => {
   if (req.params.id !== req.userId) throw new ApiError(403, "Forbidden");
   const sessions = await userService.getUserSessions(req.userId);

@@ -7,6 +7,7 @@ import Button from "../../../components/ui/Button.jsx";
 import IntegrationRow, { GitHubIcon } from "../../../components/settings/IntegrationRow.jsx";
 import GitPersonaCard from "../../../components/git-persona/GitPersonaCard.jsx";
 import { useWorkspace } from "../../../context/WorkspaceContext.jsx";
+import { PUBLIC_URL } from "../../../utils/constants.js";
 import {
   useGetWorkspaceTeamsQuery,
   useGetTeamGithubQuery,
@@ -68,7 +69,7 @@ export default function DeveloperProfilePage() {
     }
   };
 
-  const publicUrl = card?.githubLogin ? `${window.location.origin}/dev/${card.githubLogin}` : "";
+  const publicUrl = card?.githubLogin ? `${PUBLIC_URL}/dev/${card.githubLogin}` : "";
 
   const handleCopyLink = async () => {
     if (!publicUrl) return;

@@ -5,7 +5,6 @@ import * as issueService from "../services/IssueService.js";
 import * as projectService from "../services/ProjectService.js";
 import * as slackService from "../services/SlackService.js";
 
-
 const teamOf = async (userId, teamId) => {
   if (!teamId) throw new ApiError(400, "teamId is required");
   await assertTeamMembership(userId, teamId);
@@ -13,7 +12,6 @@ const teamOf = async (userId, teamId) => {
 };
 
 const fmt = (obj) => JSON.stringify(obj, null, 2);
-
 
 export async function list_teams(args, userId) {
   const memberships = await prisma.teamMembership.findMany({

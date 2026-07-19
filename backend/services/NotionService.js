@@ -4,9 +4,6 @@ import { assertTeamMembership, assertTeamAdmin } from "../utils/membership.js";
 import { signToken, verifyToken } from "../utils/jwt.js";
 import { env } from "../config/env.js";
 
-const log = (...args) => console.log("[notion]", ...args);
-
-
 const resolveReturnOrigin = (origin) => {
   const clean = (origin || "").replace(/\/$/, "");
   return env.clientUrls.includes(clean) ? clean : env.clientUrl;
@@ -29,48 +26,31 @@ const notionOAuthUrl = (state) => {
   return `https://api.notion.com/v1/oauth/authorize?${params}`;
 };
 
-
 export const buildAuthorizeUrl = async (userId, teamId, { origin, returnPath } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.notion.clientId) throw new ApiError(500, "Notion App is not configured on the server");
 
   const existing = await prisma.notionConnection.findUnique({ where: { teamId } });
 
-  if (existing) {
-    log(
-      `authorize reconnect attempt: team=${teamId} user=${userId} ` +
-        `workspace=${existing.workspaceName} active=${existing.active}`
-    );
-    if (existing.accessToken) {
-      await prisma.notionConnection.update({ where: { teamId }, data: { active: true } });
-      log(
-        `authorize reconnect SUCCESS: team=${teamId} workspace=${existing.workspaceName} → active=true`
-      );
-      return {
-        reconnected: true,
-        workspaceName: existing.workspaceName,
-        workspaceIcon: existing.workspaceIcon,
-      };
-    }
-    log(`authorize: team=${teamId} existing record has no accessToken → fresh OAuth flow`);
-  } else {
-    log(`authorize connect: team=${teamId} user=${userId} no existing connection → fresh OAuth flow`);
+  if (existing?.accessToken) {
+    await prisma.notionConnection.update({ where: { teamId }, data: { active: true } });
+    return {
+      reconnected: true,
+      workspaceName: existing.workspaceName,
+      workspaceIcon: existing.workspaceIcon,
+    };
   }
 
-  log(`authorize: team=${teamId} user=${userId} → redirecting to Notion OAuth`);
   return { url: notionOAuthUrl(buildState(teamId, userId, origin, returnPath)) };
 };
-
 
 export const handleOAuthCallback = async (query) => {
   let returnOrigin = env.clientUrl;
   const fail = (msg) => {
-    log("setup FAIL:", msg);
     return `${returnOrigin}/?notion=error&message=${encodeURIComponent(msg)}`;
   };
 
   const { code, state, error: notionError } = query;
-  log("setup callback HIT. query=", JSON.stringify(query));
 
   if (notionError) return fail(`Notion returned an error: ${notionError}`);
   if (!code) return fail("Notion did not return an authorization code");
@@ -83,7 +63,6 @@ export const handleOAuthCallback = async (query) => {
     return fail("Invalid or expired authorization state");
   }
   const { t: teamId, u: userId, no, c, p } = decoded || {};
-  log(`setup decoded state: teamId=${teamId} userId=${userId} no=${no} returnOrigin(c)=${c}`);
   if (!no || !teamId || !userId) return fail("Invalid authorization state");
   returnOrigin = resolveReturnOrigin(c);
 
@@ -113,7 +92,6 @@ export const handleOAuthCallback = async (query) => {
     });
 
     const data = await res.json();
-    log("notion oauth/token response:", JSON.stringify(data));
 
     if (!res.ok || data.error) {
       return fail(data.error_description || data.error || "Notion OAuth token exchange failed");
@@ -126,14 +104,11 @@ export const handleOAuthCallback = async (query) => {
     botId         = data.bot_id || null;
 
     if (!accessToken) return fail("Notion did not return an access token");
-    log(`setup: workspace=${workspaceName} (${workspaceId}) botId=${botId}`);
   } catch (e) {
-    log("setup: error exchanging code:", e?.message);
     return fail("Could not reach Notion to complete the connection");
   }
 
   const before = await prisma.notionConnection.findUnique({ where: { teamId } });
-  log("setup: NotionConnection BEFORE =", JSON.stringify(before));
   const isFirstConnect = !before;
 
   const after = await prisma.notionConnection.upsert({
@@ -141,21 +116,14 @@ export const handleOAuthCallback = async (query) => {
     update: { accessToken, workspaceId, workspaceName, workspaceIcon, botId, active: true },
     create: { teamId, accessToken, workspaceId, workspaceName, workspaceIcon, botId, active: true },
   });
-  log("setup: NotionConnection AFTER  =", JSON.stringify({ ...after, accessToken: "[redacted]" }));
-  log(
-    `setup: ${isFirstConnect ? "CONNECT" : "RECONNECT"} complete — ` +
-      `workspace=${workspaceName} team=${teamId} → redirecting to ${returnOrigin}`
-  );
 
   return `${returnOrigin}${p || `/teams/${teamId}/integrations/notion`}?notion=connected`;
 };
-
 
 export const getConnection = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
   const conn = await prisma.notionConnection.findUnique({ where: { teamId } });
   const connected = !!conn?.accessToken && conn.active !== false;
-  log(`getConnection team=${teamId} → connected=${connected} workspace=${connected ? conn.workspaceName : "-"}`);
   return {
     connected,
     workspaceName: connected ? conn.workspaceName || null : null,
@@ -163,15 +131,12 @@ export const getConnection = async (userId, teamId) => {
   };
 };
 
-
 export const disconnectNotion = async (userId, teamId) => {
   await assertTeamAdmin(userId, teamId);
   const conn = await prisma.notionConnection.findUnique({ where: { teamId } });
   if (!conn) {
-    log(`disconnect team=${teamId} → no connection record found`);
     return { ok: true };
   }
   await prisma.notionConnection.update({ where: { teamId }, data: { active: false } });
-  log(`disconnect team=${teamId} workspace=${conn.workspaceName} → active=false`);
   return { ok: true };
 };

@@ -16,9 +16,6 @@ export const uploadToCloudinary = async (localFilePath) => {
   };
 
   if (!configure()) {
-    console.log(
-      "[cloudinary] Missing CLOUDINARY_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET_KEY in backend/.env"
-    );
     cleanup();
     return null;
   }
@@ -30,7 +27,6 @@ export const uploadToCloudinary = async (localFilePath) => {
     cleanup();
     return response.secure_url;
   } catch (error) {
-    console.log("[cloudinary] Upload failed:", error?.message || error);
     cleanup();
     return null;
   }

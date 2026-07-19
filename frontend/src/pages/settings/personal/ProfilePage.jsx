@@ -9,7 +9,6 @@ import Button from "../../../components/ui/Button.jsx";
 import Avatar from "../../../components/ui/Avatar.jsx";
 import Modal from "../../../components/ui/Modal.jsx";
 
-
 function SaveRow({ dirty, saving, onSave }) {
   const [saved, setSaved] = useState(false);
   const handleSave = async () => {
@@ -33,7 +32,6 @@ function SaveRow({ dirty, saving, onSave }) {
     </div>
   );
 }
-
 
 function ChangeEmailModal({ open, onClose, userId, currentEmail }) {
   const [email, setEmail] = useState("");
@@ -95,7 +93,6 @@ function ChangeEmailModal({ open, onClose, userId, currentEmail }) {
     </Modal>
   );
 }
-
 
 export default function ProfilePage() {
   const { user } = useAuth();

@@ -2,13 +2,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const required = (key) => {
-  const value = process.env[key];
-  if (!value) {
-    console.warn(`[env] Missing ${key} — some features may not work.`);
-  }
-  return value;
-};
+const required = (key) => process.env[key];
 
 const clientUrls = (process.env.CLIENT_URLS || process.env.CLIENT_URL || "http://localhost:5173")
   .split(",")

@@ -53,9 +53,7 @@ export const protect = async (req, res, next) => {
       if (!session) {
         return next(new ApiError(401, "This session has been signed out — please sign in again"));
       }
-    } catch (e) {
-      console.error("[auth] session lookup failed, allowing request through:", e?.message);
-    }
+    } catch {}
   }
 
   touchLastSeen(req.userId);

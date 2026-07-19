@@ -16,10 +16,6 @@ export const connectSocket = () => {
     withCredentials: true,
     transports: ["websocket", "polling"],
   });
-  socket.on("connect", () => console.log("[socket] connected", socket.id));
-  socket.on("connect_error", (err) =>
-    console.warn("[socket] connect_error:", err.message, "(url:", SOCKET_URL, ")")
-  );
   return socket;
 };
 
