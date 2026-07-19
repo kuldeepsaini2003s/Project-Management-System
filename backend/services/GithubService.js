@@ -99,6 +99,32 @@ const buildState = (teamId, userId, origin) =>
 const installUrl = (state) =>
   `https://github.com/apps/${env.github.appSlug}/installations/new?state=${encodeURIComponent(state)}`;
 
+// IMPORTANT — why this is the PRIMARY entry point, not installUrl():
+// GitHub's install-picker URL (installUrl, above) has an undocumented-until-you-
+// hit-it quirk: when the app is ALREADY installed for the user's account, GitHub
+// doesn't show a picker at all — it short-circuits straight to
+// github.com/settings/installations/:id (its own management page) with ZERO
+// click required from the user. Confirmed via GitHub's own community forum:
+// that "instant, nothing to click" redirect fires NO callback whatsoever,
+// regardless of Setup URL / OAuth-callback-URL configuration — it's a platform
+// limitation, not something our server code or App settings can work around.
+// That's the exact dead-end this user kept hitting even after enabling
+// "Request user authorization (OAuth) during installation."
+//
+// The plain OAuth "Authorize" screen below is a DIFFERENT GitHub entry point
+// that only ever identifies/authorizes the user — it always requires an
+// explicit "Authorize <App>" click (or is instantly approved for a
+// previously-authorized user, but still always completes a real redirect with
+// a `code`) and therefore ALWAYS calls our callback, installed-or-not. We use
+// it to find out (via GET /user/installations in the callback) whether an
+// installation already exists; only when it genuinely doesn't do we send the
+// user on to installUrl() — which is safe in that case because there's no
+// "already installed" short-circuit to dead-end on.
+const oauthAuthorizeUrl = (state) => {
+  const params = new URLSearchParams({ client_id: env.github.clientId, state });
+  return `https://github.com/login/oauth/authorize?${params.toString()}`;
+};
+
 export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
@@ -123,15 +149,28 @@ export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
     }
     log(
       `authorize reconnect: team=${teamId} installation=${existing.installationId} ` +
-        `no longer exists on GitHub → starting fresh installation flow`
+        `no longer exists on GitHub → starting fresh authorization flow`
     );
   } else {
-    log(`authorize connect: team=${teamId} user=${userId} no existing connection → fresh installation flow`);
+    log(`authorize connect: team=${teamId} user=${userId} no existing connection → fresh authorization flow`);
   }
 
-  // No valid stored installation — send the user through GitHub's install flow.
-  log(`authorize: team=${teamId} user=${userId} → redirecting to GitHub installation flow`);
-  return { url: installUrl(buildState(teamId, userId, origin)) };
+  // No valid stored installation locally. Rather than gambling on
+  // installUrl() (which dead-ends silently if the app turns out to already be
+  // installed on GitHub's side — e.g. install exists but our DB row was lost,
+  // or a prior connect never finished), always go through the OAuth authorize
+  // screen first. It's a real GitHub App OAuth client, so this reliably
+  // redirects back to our callback either way, and the callback itself
+  // decides whether to attach an existing installation or send the user on to
+  // the install picker for a genuine first-time install.
+  if (!env.github.clientId) {
+    throw new ApiError(
+      500,
+      "GitHub OAuth is not configured on the server (missing client id) — see backend/config/env.js"
+    );
+  }
+  log(`authorize: team=${teamId} user=${userId} → redirecting to GitHub OAuth authorize`);
+  return { url: oauthAuthorizeUrl(buildState(teamId, userId, origin)) };
 };
 
 // GitHub's page to manage which repositories the installation can access.

@@ -70,22 +70,41 @@ export const env = {
 
   // GitHub App (Settings → Developer settings → GitHub Apps).
   //
-  // IMPORTANT: to fix installs silently dead-ending when the app is already
-  // installed on the user's account (GitHub skips our Setup URL entirely in
-  // that case — this is documented GitHub behavior, not something we can
-  // work around from server code alone), the App must have "Request user
-  // authorization (OAuth) during installation" checked under "Identifying
-  // and authorizing users" in the App's settings. Checking that box REMOVES
-  // the Setup URL field and replaces it with a "User authorization callback
-  // URL" field — register that as {API_URL}/api/github/callback. Once set,
-  // GitHub reliably redirects there with a `code` param every time (fresh
-  // install AND already-installed reauth alike), which we exchange for a
-  // user token to look up their installation via GET /user/installations —
-  // no more dead-end redirects to github.com/settings/installations/:id.
+  // IMPORTANT — required App settings, and why:
+  // 1. Check "Request user authorization (OAuth) during installation" under
+  //    "Identifying and authorizing users" in the App's settings. This
+  //    REMOVES the Setup URL field and replaces it with a "User authorization
+  //    callback URL" field — register that as EXACTLY {API_URL}/api/github/callback
+  //    (must match byte-for-byte: same protocol, no trailing slash, same host
+  //    as the deployed backend's API_URL — a mismatch here fails silently on
+  //    GitHub's side with no error shown to the user).
+  // 2. We do NOT send users to GitHub's install-picker URL
+  //    (github.com/apps/:slug/installations/new) as the first step anymore.
+  //    That URL has a platform quirk, confirmed on GitHub's own community
+  //    forum: when the app is already installed for the user, GitHub skips
+  //    the picker entirely and redirects straight to its OWN management page
+  //    (github.com/settings/installations/:id) with nothing for the user to
+  //    click — and that specific "instant, zero-click" redirect fires NO
+  //    callback at all, Setup URL or OAuth callback URL alike. This is a
+  //    GitHub limitation, not a config bug — enabling OAuth-during-install
+  //    does not fix this particular case, only the "one click to reauthorize"
+  //    case.
+  //    Instead, buildAuthorizeUrl() in GithubService.js sends users to the
+  //    plain OAuth authorize screen (github.com/login/oauth/authorize) FIRST.
+  //    That endpoint always completes with a real redirect back to our
+  //    callback (installed or not), so we reliably land in
+  //    handleOAuthCallback(), which calls GET /user/installations to check
+  //    for an existing installation and only falls through to the
+  //    install-picker URL when the user genuinely has none yet (a real
+  //    first-time install, which has no "already installed" short-circuit to
+  //    dead-end on).
   //
   // clientId/clientSecret are on the same App settings page as appId — every
   // GitHub App has them, separate from the private key used for server-to-
-  // server installation tokens below.
+  // server installation tokens below. Both MUST be set as env vars on the
+  // deployed backend (not just locally) — if either is missing, authorize()
+  // now throws a clear 500 instead of silently falling back to the broken
+  // install-picker path.
   github: {
     appId: process.env.GITHUB_APP_ID,
     appSlug: process.env.GITHUB_APP_SLUG, // the public install URL slug
