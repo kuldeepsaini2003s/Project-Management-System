@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BACKEND_URL, TOKEN_KEY } from "../utils/constants.js";
 
-const baseQuery = fetchBaseQuery({
+const rawBaseQuery = fetchBaseQuery({
   baseUrl: BACKEND_URL,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -9,6 +9,23 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
+
+// If this device's session was revoked (Security page "Revoke", or signed
+// out from itself in another tab), the backend now rejects every subsequent
+// request with 401 (see backend/middleware/authMiddleware.js). Previously
+// nothing here reacted to that — the token would just keep failing silently
+// request after request instead of actually signing the device out. Any 401
+// past this point means the token is dead for good (revoked or expired), so
+// clear it and send them to login rather than leaving a broken session
+// limping along in the UI.
+const baseQuery = async (args, api, extraOptions) => {
+  const result = await rawBaseQuery(args, api, extraOptions);
+  if (result.error?.status === 401 && localStorage.getItem(TOKEN_KEY)) {
+    localStorage.removeItem(TOKEN_KEY);
+    window.location.href = "/login";
+  }
+  return result;
+};
 
 // Unwrap RTK Query errors into a readable message.
 export const errMsg = (err) =>
@@ -40,6 +57,7 @@ export const api = createApi({
     "SlackConn",
     "NotionConn",
     "GitPersonaCard",
+    "GitPersonaGeneration",
   ],
   endpoints: (b) => ({
     /* ---- auth / user ---- */
@@ -353,9 +371,22 @@ export const api = createApi({
       query: () => "/git-persona/card",
       providesTags: ["GitPersonaCard"],
     }),
+    // Kicks off generation server-side (idempotent — a no-op if one's already
+    // running) and returns immediately. Doesn't invalidate GitPersonaCard
+    // itself since the card isn't ready yet; the frontend polls
+    // getGitPersonaGenerationStatus instead and refetches the card once that
+    // flips back to "idle".
     generateGitPersonaCard: b.mutation({
       query: () => ({ url: "/git-persona/card/generate", method: "POST" }),
-      invalidatesTags: ["GitPersonaCard"],
+      invalidatesTags: ["GitPersonaGeneration"],
+    }),
+    // Cheap polling endpoint — lets the UI resume "generating…" correctly
+    // even after the user navigates away and comes back, instead of losing
+    // that state and showing a plain "Generate" button over an already-
+    // in-flight generation (which used to let you kick off duplicates).
+    getGitPersonaGenerationStatus: b.query({
+      query: () => "/git-persona/card/status",
+      providesTags: ["GitPersonaGeneration"],
     }),
     setGitPersonaVisibility: b.mutation({
       query: (isPublic) => ({ url: "/git-persona/card/visibility", method: "PATCH", body: { public: isPublic } }),
@@ -447,6 +478,7 @@ export const {
   /* git persona */
   useGetGitPersonaCardQuery,
   useGenerateGitPersonaCardMutation,
+  useGetGitPersonaGenerationStatusQuery,
   useSetGitPersonaVisibilityMutation,
   useGetPublicGitPersonaCardQuery,
 } = api;

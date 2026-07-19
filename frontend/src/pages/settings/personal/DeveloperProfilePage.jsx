@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, RefreshCw, Copy, Check, AlertCircle, Sparkles } from "lucide-react";
 import SettingsPageHeader from "../../../components/settings/SettingsPageHeader.jsx";
 import SettingsSection from "../../../components/settings/SettingsSection.jsx";
@@ -14,6 +14,7 @@ import {
   useDisconnectTeamGithubMutation,
   useGetGitPersonaCardQuery,
   useGenerateGitPersonaCardMutation,
+  useGetGitPersonaGenerationStatusQuery,
   useSetGitPersonaVisibilityMutation,
 } from "../../../redux/apiSlice.js";
 
@@ -33,7 +34,35 @@ export default function DeveloperProfilePage() {
     error: cardError,
     refetch: refetchCard,
   } = useGetGitPersonaCardQuery(undefined, { skip: !conn?.connected });
-  const [generateCard, { isLoading: generating }] = useGenerateGitPersonaCardMutation();
+
+  // Generation runs in the background on the server (15-30s), so the source
+  // of truth for "is a generation running" lives server-side, not in local
+  // component state — that's what makes this survive the user navigating
+  // away and coming back: on remount this query just re-fetches the real
+  // status instead of defaulting to "not generating" and showing a plain
+  // Generate button over a run that's still actually in flight.
+  const [pollMs, setPollMs] = useState(0);
+  const { data: genStatus, refetch: refetchStatus } = useGetGitPersonaGenerationStatusQuery(undefined, {
+    skip: !conn?.connected,
+    pollingInterval: pollMs,
+  });
+  const isPending = genStatus?.status === "pending";
+  const isFailed = genStatus?.status === "failed";
+
+  useEffect(() => {
+    setPollMs(isPending ? 3000 : 0);
+  }, [isPending]);
+
+  // The moment the backend reports the generation is no longer pending, pull
+  // the finished card in.
+  const [wasPending, setWasPending] = useState(false);
+  useEffect(() => {
+    if (wasPending && !isPending) refetchCard();
+    setWasPending(isPending);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPending]);
+
+  const [generateCard, { isLoading: kickingOff }] = useGenerateGitPersonaCardMutation();
   const [setVisibility, { isLoading: togglingVisibility }] = useSetGitPersonaVisibilityMutation();
 
   const [generateError, setGenerateError] = useState("");
@@ -42,10 +71,14 @@ export default function DeveloperProfilePage() {
   const handleGenerate = async () => {
     setGenerateError("");
     try {
+      // Kicks off the background job (or reports one's already running —
+      // either way this is idempotent, so a stray double-click or a stale
+      // page coming back to life can't start a duplicate). Doesn't return
+      // the card itself; polling picks up the result.
       await generateCard().unwrap();
-      refetchCard();
+      refetchStatus();
     } catch (err) {
-      setGenerateError(err?.data?.message || "Failed to generate your developer card");
+      setGenerateError(err?.data?.message || "Failed to start generating your developer card");
     }
   };
 
@@ -114,7 +147,7 @@ export default function DeveloperProfilePage() {
                   disabled={togglingVisibility}
                   className="rounded-md border border-glass-border bg-surface/60 px-3 py-1.5 text-xs font-medium text-fg hover:bg-surface-hover disabled:opacity-60 transition-colors"
                 >
-                  {card.public ? "Public" : "Private"}
+                  {!card.public ? "Public" : "Private"}
                 </button>
                 {card.public && (
                   <button
@@ -141,13 +174,13 @@ export default function DeveloperProfilePage() {
             </p>
           )}
 
-          {generating ? (
+          {isPending ? (
             <div className="glass-card flex flex-col items-center gap-3 rounded-xl px-6 py-14 text-center">
               <Loader2 className="h-6 w-6 animate-spin text-brand" />
               <p className="text-sm font-medium text-fg">Analyzing your GitHub activity…</p>
               <p className="max-w-xs text-xs text-fg-muted">
                 Reading commits, languages, and repo history across your team's connected repos. This takes
-                about 15–30 seconds.
+                about 15–30 seconds — feel free to navigate away, it'll keep running and be here when you're back.
               </p>
             </div>
           ) : cardLoading ? (
@@ -157,23 +190,40 @@ export default function DeveloperProfilePage() {
           ) : noCardYet || !card ? (
             <div className="glass-card flex flex-col items-center gap-3 rounded-xl px-6 py-14 text-center">
               <Sparkles className="h-6 w-6 text-brand" />
-              <p className="text-sm font-medium text-fg">You haven't generated a card yet</p>
-              <p className="max-w-xs text-xs text-fg-muted">
-                We'll analyze the commits you've authored across your team's connected repositories.
+              <p className="text-sm font-medium text-fg">
+                {isFailed ? "Generation failed" : "You haven't generated a card yet"}
               </p>
-              <Button className="!w-auto px-5" onClick={handleGenerate}>
-                Generate my developer card
+              <p className="max-w-xs text-xs text-fg-muted">
+                {isFailed
+                  ? genStatus?.error || "Something went wrong generating your card."
+                  : "We'll analyze the commits you've authored across your team's connected repositories."}
+              </p>
+              <Button className="!w-auto px-5" onClick={handleGenerate} disabled={kickingOff}>
+                {kickingOff ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isFailed ? (
+                  "Try again"
+                ) : (
+                  "Generate my developer card"
+                )}
               </Button>
             </div>
           ) : (
             <>
               <GitPersonaCard card={card} avatarUrl={card.avatarUrl} name={card.name || card.githubLogin} />
+              {isFailed && (
+                <p className="flex items-center gap-1.5 text-xs text-danger">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  Last regeneration failed: {genStatus?.error || "unknown error"}
+                </p>
+              )}
               <div className="flex justify-end">
                 <button
                   onClick={handleGenerate}
-                  className="flex items-center gap-1.5 rounded-md border border-glass-border bg-surface/60 px-3 py-1.5 text-xs font-medium text-fg hover:bg-surface-hover transition-colors"
+                  disabled={kickingOff}
+                  className="flex items-center gap-1.5 rounded-md border border-glass-border bg-surface/60 px-3 py-1.5 text-xs font-medium text-fg hover:bg-surface-hover disabled:opacity-60 transition-colors"
                 >
-                  <RefreshCw className="h-3.5 w-3.5" />
+                  {kickingOff ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                   Regenerate
                 </button>
               </div>

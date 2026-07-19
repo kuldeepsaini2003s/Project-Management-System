@@ -4,6 +4,7 @@ import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { signToken } from "../utils/jwt.js";
 import { verifyGoogleAccessToken } from "../utils/googleClient.js";
+import { createSession } from "./UserService.js";
 
 const SALT_ROUNDS = 10;
 
@@ -11,11 +12,21 @@ const SALT_ROUNDS = 10;
 const sanitizeUser = ({ password, ...user }) => user;
 
 const buildAuthResponse = async (user, { userAgent, ipAddress } = {}) => {
-  const sessionId = randomUUID();
-  // Fire-and-forget: create the session record
-  prisma.userSession
-    .create({ data: { userId: user.id, sessionId, userAgent, ipAddress } })
-    .catch(() => {});
+  // Routed through UserService.createSession (not a direct prisma.create)
+  // so this gets the same-device dedup + expiresAt + background location
+  // resolution as every other session-creating path — previously this used
+  // its own bare prisma.userSession.create() that skipped ALL of that,
+  // which is why sessions never had a resolved location. createSession may
+  // return an EXISTING row's sessionId (reused for this same browser), so
+  // the token must be signed with whatever it actually returns, not the
+  // locally-generated placeholder.
+  let sessionId = randomUUID();
+  try {
+    const session = await createSession({ userId: user.id, sessionId, userAgent, ipAddress });
+    sessionId = session.sessionId;
+  } catch {
+    /* non-fatal — user still gets a token, just without a session record */
+  }
   return {
     user: sanitizeUser(user),
     token: signToken({ sub: user.id, sid: sessionId }),
@@ -146,4 +157,9 @@ export const getCurrentUserProfile = async (userId) => {
   if (!user) throw new ApiError(404, "User not found");
   await ensureWorkspaceSetup(user);
   return sanitizeUser(user);
+};
+
+export const logoutSession = async (sessionId) => {
+  if (!sessionId) return;
+  await prisma.userSession.delete({ where: { sessionId } }).catch(() => {});
 };

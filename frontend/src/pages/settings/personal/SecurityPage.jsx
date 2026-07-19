@@ -35,19 +35,6 @@ function parseDevice(ua = "") {
   return { label: `${browser} on ${os}`, Icon };
 }
 
-function timeAgo(dateStr) {
-  if (!dateStr) return "—";
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins  = Math.floor(diff / 60_000);
-  const hours = Math.floor(diff / 3_600_000);
-  const days  = Math.floor(diff / 86_400_000);
-  if (mins < 1)   return "Just now";
-  if (mins < 60)  return `${mins} minute${mins > 1 ? "s" : ""} ago`;
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-  if (days < 30)  return `${days} day${days > 1 ? "s" : ""} ago`;
-  return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-
 /* ── Confirm dialog (portal so it covers the full screen) ────────────────── */
 function ConfirmDialog({ message, onConfirm, onCancel }) {
   return createPortal(
@@ -72,8 +59,10 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
 /* ── Session card ────────────────────────────────────────────────────────── */
 function SessionCard({ session, onRevoke, revoking }) {
   const { label, Icon } = parseDevice(session.userAgent || "");
-  const locationParts = [session.location, session.ipAddress].filter(Boolean);
-  const locationStr = session.location || session.ipAddress || null;
+  // Location only — never fall back to showing the raw IP (::1,
+  // ::ffff:127.0.0.1, etc. aren't meaningful to a user). On localhost this
+  // will legitimately be empty since there's no public IP to geolocate.
+  const locationStr = session.location || null;
 
   return (
     <div className="flex items-start gap-3 px-4 py-3.5">
@@ -86,26 +75,14 @@ function SessionCard({ session, onRevoke, revoking }) {
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-sm font-medium text-fg leading-tight">{label}</span>
         <div className="flex flex-wrap items-center gap-x-1 text-xs text-fg-muted">
-          {session.isCurrent ? (
-            <>
-              <span className="flex items-center gap-1 font-medium text-green-400">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-400" />
-                Current session
-              </span>
-              {locationStr && (
-                <>
-                  <span className="text-fg-subtle">·</span>
-                  <span>{locationStr}</span>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {locationStr && <span>{locationStr}</span>}
-              {locationStr && <span className="text-fg-subtle">·</span>}
-              <span>Last seen {timeAgo(session.lastActiveAt)}</span>
-            </>
+          {session.isCurrent && (
+            <span className="flex items-center gap-1 font-medium text-green-400">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-400" />
+              Current session
+            </span>
           )}
+          {session.isCurrent && locationStr && <span className="text-fg-subtle">·</span>}
+          {locationStr && <span>{locationStr}</span>}
         </div>
       </div>
 
@@ -132,7 +109,15 @@ import { useState } from "react";
 
 export default function SecurityPage() {
   const { user } = useAuth();
-  const { data: sessions = [], isLoading, refetch } = useGetUserSessionsQuery(user?.id, { skip: !user?.id });
+  // refetchOnMountOrArgChange forces a fresh fetch every time this page is
+  // opened — without it RTK Query was happily serving a stale cached list
+  // from a previous visit (e.g. showing a device that's since been signed
+  // out) since nothing invalidates the "Sessions" tag on its own passage of
+  // time or on another device's activity.
+  const { data: sessions = [], isLoading, refetch } = useGetUserSessionsQuery(user?.id, {
+    skip: !user?.id,
+    refetchOnMountOrArgChange: true,
+  });
   const [revokeSession] = useRevokeSessionMutation();
   const [revokeAllOther] = useRevokeAllOtherSessionsMutation();
 

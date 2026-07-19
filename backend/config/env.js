@@ -73,11 +73,20 @@ export const env = {
   // IMPORTANT — required App settings, and why:
   // 1. Check "Request user authorization (OAuth) during installation" under
   //    "Identifying and authorizing users" in the App's settings. This
-  //    REMOVES the Setup URL field and replaces it with a "User authorization
-  //    callback URL" field — register that as EXACTLY {API_URL}/api/github/callback
-  //    (must match byte-for-byte: same protocol, no trailing slash, same host
-  //    as the deployed backend's API_URL — a mismatch here fails silently on
-  //    GitHub's side with no error shown to the user).
+  //    REMOVES the single Setup URL field and replaces it with a "User
+  //    authorization callback URL" section that accepts UP TO 10 URLs — add
+  //    ONE ENTRY PER ENVIRONMENT you test against, e.g. both
+  //    http://localhost:5000/api/github/callback (local dev) AND
+  //    https://<your-deployed-backend>/api/github/callback (production).
+  //    Each entry must match its environment's callbackUri byte-for-byte
+  //    (protocol, no trailing slash, exact host).
+  //    IMPORTANT: our code always sends redirect_uri explicitly (see
+  //    oauthAuthorizeUrl in GithubService.js) so GitHub redirects back to
+  //    THIS environment specifically. If redirect_uri were ever omitted,
+  //    GitHub silently falls back to whichever callback URL is listed FIRST
+  //    on the App's settings page regardless of which environment started
+  //    the flow — which is exactly what caused local dev connects to
+  //    transparently complete against production with zero local log output.
   // 2. We do NOT send users to GitHub's install-picker URL
   //    (github.com/apps/:slug/installations/new) as the first step anymore.
   //    That URL has a platform quirk, confirmed on GitHub's own community

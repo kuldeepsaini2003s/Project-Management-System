@@ -263,57 +263,132 @@ const parseAnalysis = (text) => {
 
 /* ---------------- Card ---------------- */
 
-export const generateCard = async (userId) => {
-  const { connections, username } = await resolvePersonaIdentity(userId);
-  log(`generateCard: user=${userId} github=${username} → fetching GitHub stats`);
-  const stats = await fetchGithubStats(connections, username);
+// Generation takes 15-30s (GitHub pagination + a Claude call) — far longer
+// than a typical request a user will patiently sit and wait on. If they
+// navigate away, the ORIGINAL fetch is aborted client-side but Node keeps
+// running the handler to completion server-side; the problem was purely that
+// nothing recorded "a generation is already running for this user", so
+// coming back later (or clicking Generate again while it's still running)
+// showed a plain "Generate" button and would happily kick off a second,
+// fully duplicate GitHub+Claude pipeline. GitPersonaGeneration below fixes
+// that: it's written BEFORE any slow work starts, checked before starting
+// new work, and is what the frontend polls to resume the correct UI state
+// after a remount. If a row is somehow left "pending" forever (e.g. the
+// server crashed/restarted mid-run), treat it as stale after this long so
+// the user isn't locked out indefinitely.
+const GENERATION_STALE_MS = 3 * 60 * 1000;
 
-  const profile = await fetchProfile(username, stats.anyToken);
+// Idempotent kickoff — returns immediately, the actual work happens in the
+// background via runGeneration(). Safe to call repeatedly: if a generation
+// is already genuinely in flight for this user, this just reports that
+// instead of starting a duplicate one.
+export const startGenerateCard = async (userId) => {
+  const existing = await prisma.gitPersonaGeneration.findUnique({ where: { userId } });
+  if (existing?.status === "pending" && Date.now() - existing.startedAt.getTime() < GENERATION_STALE_MS) {
+    log(
+      `startGenerateCard: user=${userId} → generation already in flight ` +
+        `(started ${Math.round((Date.now() - existing.startedAt.getTime()) / 1000)}s ago), not starting a duplicate`
+    );
+    return { status: "pending", startedAt: existing.startedAt };
+  }
 
-  log(`generateCard: user=${userId} → calling Claude for analysis`);
-  const client = getAnthropic();
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-5",
-    max_tokens: 2000,
-    messages: [{ role: "user", content: buildPrompt(username, stats) }],
-  });
-  const text = message.content?.find((b) => b.type === "text")?.text || "";
-  const analysis = parseAnalysis(text);
-
-  const statsSnapshot = {
-    reposAnalyzed: stats.reposAnalyzed,
-    totalStars: stats.totalStars,
-    topLanguages: stats.topLanguages,
-  };
-
-  const card = await prisma.gitPersonaCard.upsert({
+  const gen = await prisma.gitPersonaGeneration.upsert({
     where: { userId },
-    update: {
-      githubLogin: username,
-      avatarUrl: profile.avatarUrl,
-      name: profile.name,
-      styleSummary: analysis.styleSummary,
-      strengths: analysis.strengths,
-      growthArc: analysis.growthArc,
-      roadmap: analysis.roadmap,
-      stats: statsSnapshot,
-      generatedAt: new Date(),
-    },
-    create: {
-      userId,
-      githubLogin: username,
-      avatarUrl: profile.avatarUrl,
-      name: profile.name,
-      styleSummary: analysis.styleSummary,
-      strengths: analysis.strengths,
-      growthArc: analysis.growthArc,
-      roadmap: analysis.roadmap,
-      stats: statsSnapshot,
-    },
+    update: { status: "pending", startedAt: new Date(), error: null },
+    create: { userId, status: "pending" },
+  });
+  log(`startGenerateCard: user=${userId} → starting background generation`);
+
+  // Intentionally NOT awaited — the HTTP response should return immediately
+  // (202-style "pending") so the client isn't stuck blocking on a 15-30s
+  // request. runGeneration continues running on the server regardless of
+  // whether the client is still connected, and persists its own outcome.
+  runGeneration(userId).catch((err) => {
+    log(`runGeneration: user=${userId} → uncaught error escaped runGeneration:`, err?.message);
   });
 
-  log(`generateCard: user=${userId} → card generated (${stats.reposAnalyzed} repos analyzed)`);
-  return card;
+  return { status: "pending", startedAt: gen.startedAt };
+};
+
+const runGeneration = async (userId) => {
+  try {
+    const { connections, username } = await resolvePersonaIdentity(userId);
+    log(`runGeneration: user=${userId} github=${username} → fetching GitHub stats`);
+    const stats = await fetchGithubStats(connections, username);
+
+    const profile = await fetchProfile(username, stats.anyToken);
+
+    log(`runGeneration: user=${userId} → calling Claude for analysis`);
+    const client = getAnthropic();
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 2000,
+      messages: [{ role: "user", content: buildPrompt(username, stats) }],
+    });
+    const text = message.content?.find((b) => b.type === "text")?.text || "";
+    const analysis = parseAnalysis(text);
+
+    const statsSnapshot = {
+      reposAnalyzed: stats.reposAnalyzed,
+      totalStars: stats.totalStars,
+      topLanguages: stats.topLanguages,
+    };
+
+    await prisma.gitPersonaCard.upsert({
+      where: { userId },
+      update: {
+        githubLogin: username,
+        avatarUrl: profile.avatarUrl,
+        name: profile.name,
+        styleSummary: analysis.styleSummary,
+        strengths: analysis.strengths,
+        growthArc: analysis.growthArc,
+        roadmap: analysis.roadmap,
+        stats: statsSnapshot,
+        generatedAt: new Date(),
+      },
+      create: {
+        userId,
+        githubLogin: username,
+        avatarUrl: profile.avatarUrl,
+        name: profile.name,
+        styleSummary: analysis.styleSummary,
+        strengths: analysis.strengths,
+        growthArc: analysis.growthArc,
+        roadmap: analysis.roadmap,
+        stats: statsSnapshot,
+      },
+    });
+    // Success — clear the tracking row so status flips back to "idle" and the
+    // frontend knows to stop polling and fetch the finished card.
+    await prisma.gitPersonaGeneration.delete({ where: { userId } }).catch(() => {});
+
+    log(`runGeneration: user=${userId} → card generated (${stats.reposAnalyzed} repos analyzed)`);
+  } catch (err) {
+    log(`runGeneration: user=${userId} → FAILED:`, err?.message);
+    await prisma.gitPersonaGeneration
+      .update({
+        where: { userId },
+        data: { status: "failed", error: err?.message || "Card generation failed" },
+      })
+      .catch(() => {});
+  }
+};
+
+// Polled by the frontend — cheap, no GitHub/AI calls. Tells the UI whether to
+// show "generating…", a failure with retry, or nothing (idle: either no
+// generation has ever run, or the last one already succeeded and getCard has
+// the result).
+export const getGenerationStatus = async (userId) => {
+  const gen = await prisma.gitPersonaGeneration.findUnique({ where: { userId } });
+  if (!gen) return { status: "idle" };
+
+  if (gen.status === "pending" && Date.now() - gen.startedAt.getTime() > GENERATION_STALE_MS) {
+    // Stuck/crashed mid-run (e.g. server restarted) — don't leave the user
+    // staring at "generating…" forever.
+    return { status: "failed", error: "Generation timed out — please try again", startedAt: gen.startedAt };
+  }
+  return { status: gen.status, error: gen.error || null, startedAt: gen.startedAt };
 };
 
 export const getCard = async (userId) => {

@@ -85,6 +85,7 @@ model User {
   sessions        UserSession[]
   apiKeys         ApiKey[]
   gitPersonaCard  GitPersonaCard?
+  gitPersonaGeneration GitPersonaGeneration?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -105,15 +106,20 @@ model ApiKey {
 }
 
 model UserSession {
-  id           String   @id @default(cuid())
-  sessionId    String   @unique @default(cuid())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  sessionId    String    @unique @default(cuid())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
   userAgent    String?
   ipAddress    String?
   location     String?
-  lastActiveAt DateTime @default(now())
-  createdAt    DateTime @default(now())
+  // Nullable and only ever set going forward (see UserService.createSession) —
+  // this is what lets the Security page show only genuinely active sessions:
+  // pre-existing rows have expiresAt = null and are simply filtered out,
+  // rather than needing a manual data migration to purge old ghost entries.
+  expiresAt    DateTime?
+  lastActiveAt DateTime  @default(now())
+  createdAt    DateTime  @default(now())
 
   @@index([userId])
 }
@@ -431,6 +437,22 @@ model GitPersonaCard {
   updatedAt   DateTime @updatedAt
 
   @@index([githubLogin])
+}
+
+// Tracks an in-flight (or last-failed) card generation, separate from
+// GitPersonaCard itself. Generation is kicked off in the background and
+// survives the client disconnecting/navigating away (see
+// GitPersonaService.startGenerateCard) — this row is what lets the frontend
+// resume showing "generating…" if the user comes back mid-run, and is also
+// what makes clicking Generate twice a no-op instead of starting a second,
+// wasteful, racing AI/GitHub pipeline for the same user.
+model GitPersonaGeneration {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  status    String // "pending" | "failed" — row is deleted entirely on success
+  error     String? // set when status = "failed"
+  startedAt DateTime @default(now())
 }
 
 model PullRequestLink {

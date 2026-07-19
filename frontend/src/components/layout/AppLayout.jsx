@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Background from "./Background.jsx";
 import Sidebar from "./Sidebar.jsx";
+import GithubStatusBanner from "./GithubStatusBanner.jsx";
 import { useWorkspace } from "../../context/WorkspaceContext.jsx";
 import FullScreenLoader from "../common/FullScreenLoader.jsx";
 
@@ -13,6 +14,7 @@ export default function AppLayout() {
     return (
       <>
         <Background />
+        <GithubStatusBanner />
         <FullScreenLoader />
       </>
     );
@@ -21,6 +23,7 @@ export default function AppLayout() {
   return (
     <>
       <Background />
+      <GithubStatusBanner />
       <div className="flex h-screen gap-2 p-2">
         {/* Desktop sidebar */}
         <div className="hidden md:block">

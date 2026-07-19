@@ -39,7 +39,13 @@ export const loginWithGoogle = (accessToken) => async (dispatch) => {
   return persistSession(dispatch, data);
 };
 
-export const logout = () => (dispatch) => {
+export const logout = () => async (dispatch) => {
+  // Tell the server to delete this session BEFORE clearing the local token —
+  // the request needs the still-present token to identify which session to
+  // remove. Previously this only cleared localStorage, so the session kept
+  // showing as "active" on the Security page (and the token itself stayed
+  // technically valid) until it naturally expired 7 days later.
+  await authService.logout();
   localStorage.removeItem(TOKEN_KEY);
   dispatch(clearUser());
 };

@@ -121,11 +121,26 @@ const installUrl = (state) =>
 // user on to installUrl() — which is safe in that case because there's no
 // "already installed" short-circuit to dead-end on.
 const oauthAuthorizeUrl = (state) => {
-  const params = new URLSearchParams({ client_id: env.github.clientId, state });
+  // IMPORTANT: GitHub Apps support up to 10 registered callback URLs (e.g. one
+  // for local dev, one for production), but if redirect_uri is omitted here,
+  // GitHub silently falls back to whichever one is listed FIRST on the App's
+  // settings page — regardless of which environment actually started this
+  // flow. That caused local dev attempts to transparently complete against
+  // the production callback URL instead (same App, same client id/secret —
+  // only the destination differs), so nothing ever showed up in local logs
+  // even though the connection was actually being written via prod. Always
+  // pass this environment's own callbackUri explicitly so GitHub redirects
+  // back to THIS server, and register it as one of the App's callback URLs.
+  const params = new URLSearchParams({
+    client_id: env.github.clientId,
+    state,
+    redirect_uri: env.github.callbackUri,
+  });
   return `https://github.com/login/oauth/authorize?${params.toString()}`;
 };
 
 export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
+  log(`authorize: ENTRY user=${userId} team=${teamId}`);
   await assertTeamAdmin(userId, teamId);
   if (!env.github.appSlug) throw new ApiError(500, "GitHub App slug is not configured");
 
@@ -169,8 +184,14 @@ export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
       "GitHub OAuth is not configured on the server (missing client id) — see backend/config/env.js"
     );
   }
-  log(`authorize: team=${teamId} user=${userId} → redirecting to GitHub OAuth authorize`);
-  return { url: oauthAuthorizeUrl(buildState(teamId, userId, origin)) };
+  const url = oauthAuthorizeUrl(buildState(teamId, userId, origin));
+  // Log the FULL generated URL — every previous attempt shows buildAuthorizeUrl
+  // completing successfully but handleOAuthCallback never firing at all, which
+  // means the browser never made it back to us. Printing the exact URL we send
+  // the browser to lets us see directly whether client_id/redirect_uri look
+  // correct rather than continuing to infer it indirectly.
+  log(`authorize: team=${teamId} user=${userId} → redirecting to: ${url}`);
+  return { url };
 };
 
 // GitHub's page to manage which repositories the installation can access.
@@ -299,10 +320,36 @@ export const handleOAuthCallback = async (query) => {
   if (!gh || !teamId || !userId) return fail("Invalid authorization state");
   returnOrigin = resolveReturnOrigin(c);
 
+  // Raw lookup BEFORE the assert, purely for diagnostics — shows exactly what
+  // (if anything) exists for this teamId/userId pair, independent of whatever
+  // assertTeamAdmin's own error message says.
+  try {
+    const rawMembership = await prisma.teamMembership.findUnique({
+      where: { teamId_userId: { teamId, userId } },
+    });
+    log(`oauth callback: raw teamMembership lookup team=${teamId} user=${userId} →`, JSON.stringify(rawMembership));
+  } catch (e) {
+    log(`oauth callback: raw teamMembership lookup THREW:`, e?.name, e?.message);
+  }
+
   try {
     await assertTeamAdmin(userId, teamId);
-  } catch {
-    return fail("You are not authorized to connect GitHub for this team");
+  } catch (e) {
+    // Surface the REAL reason (e.g. "You're not a member of this team" vs
+    // "Only team admins can do this") instead of a generic message — this
+    // check uses the SAME userId/teamId that buildAuthorizeUrl() already
+    // validated seconds earlier before ever redirecting to GitHub, so if it
+    // fails here, something changed between those two checks (team
+    // membership was removed/role changed mid-flow, or — if this keeps
+    // happening on every attempt — the state's decoded ids don't actually
+    // match what buildAuthorizeUrl validated, which points at a JWT
+    // encode/decode or DB inconsistency worth logging closely).
+    log(
+      `oauth callback: assertTeamAdmin REJECTED user=${userId} team=${teamId} ` +
+        `name=${e?.name} statusCode=${e?.statusCode} message=${JSON.stringify(e?.message)} ` +
+        `stack=${e?.stack?.split("\n").slice(0, 3).join(" | ")}`
+    );
+    return fail(e?.message || "You are not authorized to connect GitHub for this team");
   }
 
   if (!env.github.clientId || !env.github.clientSecret) {
