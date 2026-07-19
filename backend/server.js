@@ -28,6 +28,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyEmailTransport } from "./services/EmailService.js";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(
   cors({
