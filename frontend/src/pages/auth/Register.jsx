@@ -44,7 +44,7 @@ export default function Register() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Start building with your team on Algofolks."
+      subtitle="Start building with your team on Up To Date."
     >
       <div className="flex flex-col gap-4">
         <FormError message={error} />

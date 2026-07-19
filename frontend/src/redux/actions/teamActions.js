@@ -9,11 +9,16 @@ import {
 } from "../teamSlice.js";
 
 export const fetchTeams = (workspaceId) => async (dispatch) => {
+  if (!workspaceId) return [];
   dispatch(setTeamLoading(true));
   try {
     const data = await teamService.listForWorkspace(workspaceId);
     dispatch(setTeams(data));
     return data;
+  } catch (err) {
+    dispatch(setTeams([]));
+    console.error("Failed to fetch teams:", err);
+    return [];
   } finally {
     dispatch(setTeamLoading(false));
   }

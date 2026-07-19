@@ -202,7 +202,7 @@ function InviteModal({ open, onClose, teamId }) {
           onChange={(e) => setText(e.target.value)}
           rows={3}
           autoFocus
-          placeholder="email@algofolks.com, email2@algofolks.com…"
+          placeholder="email@uptodate.com, email2@uptodate.com…"
           className="w-full resize-none rounded-lg border border-input-border bg-input px-3 py-2.5 text-sm text-fg placeholder:text-fg-subtle focus:outline-none"
         />
         <div className="mt-1 flex items-center gap-2">

@@ -31,7 +31,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
       </main>
 
       <footer className="px-5 py-6 text-center text-xs text-fg-subtle font-semibold">
-        Made with ❤️ by Algofolks{" "}
+        Made with ❤️ by Up To Date{" "}
         <br />
         <p
           href="#"

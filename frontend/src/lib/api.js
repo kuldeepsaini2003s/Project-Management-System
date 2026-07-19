@@ -13,7 +13,20 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If baseURL is misconfigured (e.g. VITE_API_URL missing), the dev server's
+    // SPA fallback returns index.html with a 200. Fail loudly instead of letting
+    // an HTML string flow into the store as if it were JSON.
+    const ct = response.headers?.["content-type"] || "";
+    if (typeof response.data === "string" && ct.includes("text/html")) {
+      return Promise.reject(
+        new Error(
+          `Expected JSON from ${response.config?.url} but received HTML. Check VITE_API_URL.`
+        )
+      );
+    }
+    return response;
+  },
   (error) => {
     const message =
       error.response?.data?.message ||

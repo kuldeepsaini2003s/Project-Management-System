@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useWorkspace } from "./WorkspaceContext.jsx";
 import { fetchTeams, createTeam as createTeamThunk } from "../redux/actions/teamActions.js";
@@ -9,8 +9,10 @@ export function TeamProvider({ children }) {
   const dispatch = useDispatch();
   const { currentId: workspaceId } = useWorkspace();
 
-  const teams = useSelector((state) => state.team.items);
+  const rawTeams = useSelector((state) => state.team.items);
   const loading = useSelector((state) => state.team.loading);
+
+  const teams = useMemo(() => (Array.isArray(rawTeams) ? rawTeams : []), [rawTeams]);
 
   useEffect(() => {
     if (workspaceId) dispatch(fetchTeams(workspaceId));

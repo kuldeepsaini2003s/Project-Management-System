@@ -18,11 +18,11 @@ async function main() {
 
   const workspace = await prisma.workspace.create({
     data: {
-      name: "Algofolks",
+      name: "Uptodate",
       memberships: { create: { userId: user.id, role: "OWNER" } },
       teams: {
         create: {
-          name: "Algofolks",
+          name: "Uptodate",
           key: "ALG",
           icon: "⚡",
           color: "#5e6ad2",

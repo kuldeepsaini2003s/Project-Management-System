@@ -48,7 +48,8 @@ function SectionLabel({ children, action }) {
 }
 
 export default function Sidebar({ onClose }) {
-  const { teams } = useTeams();
+  const { teams: teamsFromContext } = useTeams();
+  const teams = Array.isArray(teamsFromContext) ? teamsFromContext : [];
   const navigate = useNavigate();
   const prefs = useSelector((s) => s.ui.sidebarPrefs);
 
