@@ -10,7 +10,6 @@ const PRIORITIES = ["NONE", "URGENT", "HIGH", "MEDIUM", "LOW"];
 
 const userSel = { select: { id: true, name: true, avatarUrl: true } };
 
-// Light shape for board/list views.
 const include = {
   assignee: userSel,
   labels: true,
@@ -18,7 +17,6 @@ const include = {
   team: { select: { key: true } },
 };
 
-// Rich shape for the issue detail page.
 const detailInclude = {
   assignee: userSel,
   createdBy: userSel,
@@ -86,7 +84,6 @@ export const getTeamIssues = async (userId, teamId) => {
   return issues.map(shapeIssue);
 };
 
-// Issues created by the current user, across all their teams.
 export const getIssuesCreatedByUser = async (userId) => {
   const issues = await prisma.issue.findMany({
     where: { createdById: userId },
@@ -169,7 +166,6 @@ export const updateIssue = async (userId, id, data) => {
 
   await prisma.issue.update({ where: { id }, data: patch });
 
-  // Notify a newly-assigned user.
   if (
     data.assigneeId &&
     data.assigneeId !== before.assigneeId &&
@@ -193,7 +189,6 @@ export const deleteIssue = async (userId, id) => {
   await prisma.issue.delete({ where: { id } });
 };
 
-// Persist a column's order (and the dropped card's status) after drag-and-drop.
 export const reorderIssues = async (userId, status, orderedIds) => {
   if (!Array.isArray(orderedIds) || orderedIds.length === 0) return { ok: true };
   if (status && !STATUSES.includes(status)) throw new ApiError(400, "Invalid status");
@@ -209,7 +204,6 @@ export const reorderIssues = async (userId, status, orderedIds) => {
   return { ok: true };
 };
 
-/* ----- sub-issues ----- */
 export const createSubIssue = async (userId, parentId, data) => {
   const parent = await getIssueOrThrow(userId, parentId);
   return createIssue(userId, parent.teamId, {
@@ -219,7 +213,6 @@ export const createSubIssue = async (userId, parentId, data) => {
   });
 };
 
-/* ----- comments ----- */
 export const addCommentToIssue = async (userId, issueId, body, mentionIds = []) => {
   await getIssueOrThrow(userId, issueId);
   if (!body?.trim()) throw new ApiError(400, "Comment cannot be empty");
@@ -242,7 +235,6 @@ export const addCommentToIssue = async (userId, issueId, body, mentionIds = []) 
   if (issue) {
     const identifier = buildIdentifier(issue.team.key, issue.number);
 
-    // Creator + assignee get a "new comment" notification (not the commenter).
     const commentRecipients = [...new Set([issue.createdById, issue.assigneeId])].filter(
       (uid) => uid && uid !== userId
     );
@@ -255,7 +247,6 @@ export const addCommentToIssue = async (userId, issueId, body, mentionIds = []) 
       });
     }
 
-    // Mentioned team members get a "mention" notification (deduped).
     const mentionRecipients = [...new Set(mentionIds || [])].filter(
       (uid) => uid && uid !== userId && !commentRecipients.includes(uid)
     );
@@ -276,7 +267,6 @@ export const addCommentToIssue = async (userId, issueId, body, mentionIds = []) 
         });
       }
 
-      // Also push the mention to the team's Slack channel (best-effort).
       if (validUsers.length) {
         const names = validUsers.map((u) => u.name).join(", ");
         const link = `${env.clientUrl}/issues/${issueId}`;
@@ -303,7 +293,6 @@ export const deleteComment = async (userId, commentId) => {
   await prisma.comment.delete({ where: { id: commentId } });
 };
 
-/* ----- image attachments ----- */
 export const addIssueImages = async (userId, issueId, urls) => {
   await getIssueOrThrow(userId, issueId);
   if (!urls?.length) throw new ApiError(400, "No image was uploaded");

@@ -7,11 +7,9 @@ import {
   useRevokeAllOtherSessionsMutation,
 } from "../../../redux/apiSlice.js";
 
-/* ── Helpers ─────────────────────────────────────────────────────────────── */
 function parseDevice(ua = "") {
   const s = ua.toLowerCase();
 
-  // Browser
   let browser = "Browser";
   if (s.includes("edg/") || s.includes("edge/"))   browser = "Edge";
   else if (s.includes("opr/") || s.includes("opera")) browser = "Opera";
@@ -19,7 +17,6 @@ function parseDevice(ua = "") {
   else if (s.includes("firefox")) browser = "Firefox";
   else if (s.includes("safari"))  browser = "Safari";
 
-  // OS
   let os = "Unknown OS";
   if (s.includes("windows"))                            os = "Windows";
   else if (s.includes("android"))                       os = "Android";
@@ -27,7 +24,6 @@ function parseDevice(ua = "") {
   else if (s.includes("mac os"))                        os = "macOS";
   else if (s.includes("linux"))                         os = "Linux";
 
-  // Icon
   let Icon = Monitor;
   if (s.includes("mobile") || s.includes("android") || s.includes("iphone")) Icon = Smartphone;
   else if (s.includes("ipad") || s.includes("tablet")) Icon = Tablet;
@@ -35,7 +31,6 @@ function parseDevice(ua = "") {
   return { label: `${browser} on ${os}`, Icon };
 }
 
-/* ── Confirm dialog (portal so it covers the full screen) ────────────────── */
 function ConfirmDialog({ message, onConfirm, onCancel }) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -56,22 +51,16 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
   );
 }
 
-/* ── Session card ────────────────────────────────────────────────────────── */
 function SessionCard({ session, onRevoke, revoking }) {
   const { label, Icon } = parseDevice(session.userAgent || "");
-  // Location only — never fall back to showing the raw IP (::1,
-  // ::ffff:127.0.0.1, etc. aren't meaningful to a user). On localhost this
-  // will legitimately be empty since there's no public IP to geolocate.
   const locationStr = session.location || null;
 
   return (
     <div className="flex items-start gap-3 px-4 py-3.5">
-      {/* Device icon */}
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-hover">
         <Icon className="h-4 w-4 text-fg-muted" />
       </div>
 
-      {/* Info */}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-sm font-medium text-fg leading-tight">{label}</span>
         <div className="flex flex-wrap items-center gap-x-1 text-xs text-fg-muted">
@@ -86,7 +75,6 @@ function SessionCard({ session, onRevoke, revoking }) {
         </div>
       </div>
 
-      {/* Revoke button (only for non-current) */}
       {!session.isCurrent && (
         <button
           onClick={() => onRevoke(session.sessionId)}
@@ -104,16 +92,10 @@ function SessionCard({ session, onRevoke, revoking }) {
   );
 }
 
-/* ── Page ────────────────────────────────────────────────────────────────── */
 import { useState } from "react";
 
 export default function SecurityPage() {
   const { user } = useAuth();
-  // refetchOnMountOrArgChange forces a fresh fetch every time this page is
-  // opened — without it RTK Query was happily serving a stale cached list
-  // from a previous visit (e.g. showing a device that's since been signed
-  // out) since nothing invalidates the "Sessions" tag on its own passage of
-  // time or on another device's activity.
   const { data: sessions = [], isLoading, refetch } = useGetUserSessionsQuery(user?.id, {
     skip: !user?.id,
     refetchOnMountOrArgChange: true,
@@ -121,8 +103,8 @@ export default function SecurityPage() {
   const [revokeSession] = useRevokeSessionMutation();
   const [revokeAllOther] = useRevokeAllOtherSessionsMutation();
 
-  const [revoking, setRevoking]   = useState(null);   // sessionId being revoked
-  const [confirm, setConfirm]     = useState(null);   // { type: "one"|"all", sessionId? }
+  const [revoking, setRevoking]   = useState(null);
+  const [confirm, setConfirm]     = useState(null);
 
   const currentSession = sessions.find((s) => s.isCurrent);
   const otherSessions  = sessions.filter((s) => !s.isCurrent);
@@ -136,12 +118,12 @@ export default function SecurityPage() {
     if (c.type === "one") {
       setRevoking(c.sessionId);
       try { await revokeSession({ userId: user.id, sessionId: c.sessionId }).unwrap(); }
-      catch { /* ignore */ }
+      catch {  }
       setRevoking(null);
     } else {
       setRevoking("all");
       try { await revokeAllOther({ userId: user.id }).unwrap(); }
-      catch { /* ignore */ }
+      catch {  }
       setRevoking(null);
     }
     refetch();
@@ -153,7 +135,6 @@ export default function SecurityPage() {
 
       <div className="flex flex-col gap-6">
 
-        {/* ── Sessions ── */}
         <div>
           <h2 className="mb-0.5 text-base font-semibold text-fg">Sessions</h2>
           <p className="mb-3 text-sm text-fg-muted">Devices logged into your account</p>
@@ -165,12 +146,10 @@ export default function SecurityPage() {
               </div>
             ) : (
               <>
-                {/* Current session */}
                 {currentSession && (
                   <SessionCard session={currentSession} onRevoke={handleRevoke} revoking={revoking} />
                 )}
 
-                {/* Other sessions */}
                 {otherSessions.length > 0 && (
                   <>
                     <div className="flex items-center justify-between border-t border-glass-border px-4 py-2">
@@ -204,7 +183,6 @@ export default function SecurityPage() {
 
       </div>
 
-      {/* ── Confirm dialog ── */}
       {confirm && (
         <ConfirmDialog
           message={

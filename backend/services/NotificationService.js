@@ -1,14 +1,12 @@
 import prisma from "../db/index.js";
 import { emitToUser } from "../config/socket.js";
 
-// Create a notification, persist it, and push it in real time to the recipient.
 export const createNotification = async (userId, { type, title, body = null, link = null }) => {
   if (!userId) return null;
   const notification = await prisma.notification.create({
     data: { userId, type, title, body, link },
   });
   emitToUser(userId, "notification:new", notification);
-  // Also push the fresh unread count so badges update instantly.
   const unread = await prisma.notification.count({ where: { userId, read: false } });
   emitToUser(userId, "notification:count", { unread });
   return notification;

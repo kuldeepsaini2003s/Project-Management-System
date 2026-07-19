@@ -1,4 +1,3 @@
-/** Page title + subtitle + optional action button used at the top of every settings page */
 export default function SettingsPageHeader({ title, description, action }) {
   return (
     <div className="mb-6 flex items-start justify-between gap-4">

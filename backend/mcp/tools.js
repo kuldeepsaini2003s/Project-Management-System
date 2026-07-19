@@ -1,7 +1,3 @@
-/**
- * MCP tool definitions — each entry describes one callable tool.
- * JSON Schema in `inputSchema` is shown to the LLM so it knows what args to pass.
- */
 export const TOOLS = [
   {
     name: "list_teams",

@@ -5,7 +5,6 @@ const MIN = 0.25;
 const MAX = 5;
 const clamp = (v) => Math.min(MAX, Math.max(MIN, v));
 
-// Full-screen image viewer with zoom in/out (buttons + scroll wheel).
 export default function ImageLightbox({ src, onClose }) {
   const [scale, setScale] = useState(1);
 
@@ -35,7 +34,6 @@ export default function ImageLightbox({ src, onClose }) {
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Toolbar */}
       <div
         className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-lg bg-black/50 p-1 text-white"
         onClick={(e) => e.stopPropagation()}
@@ -55,7 +53,6 @@ export default function ImageLightbox({ src, onClose }) {
         </button>
       </div>
 
-      {/* Image (scrollable when zoomed) */}
       <div
         className="flex h-full w-full items-center justify-center overflow-auto p-8"
         onClick={(e) => e.stopPropagation()}

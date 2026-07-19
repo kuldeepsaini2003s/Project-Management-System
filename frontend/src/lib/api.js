@@ -6,14 +6,12 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach the JWT to every request if present.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Normalize errors to a readable message for the UI.
 api.interceptors.response.use(
   (response) => response,
   (error) => {

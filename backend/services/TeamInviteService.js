@@ -9,8 +9,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const buildInviteUrl = (token) => `${env.clientUrl}/invite/${token}`;
 
-// Admins invite one or more people to a team by email. Each gets a unique,
-// expiring token + link, and an email (if SMTP is configured).
 export const createTeamInvites = async (userId, teamId, emails, role = "MEMBER") => {
   await assertTeamAdmin(userId, teamId);
 
@@ -37,7 +35,6 @@ export const createTeamInvites = async (userId, teamId, emails, role = "MEMBER")
   const results = [];
 
   for (const email of cleaned) {
-    // Skip people who already belong to the team.
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       const membership = await prisma.teamMembership.findUnique({
@@ -74,7 +71,6 @@ export const createTeamInvites = async (userId, teamId, emails, role = "MEMBER")
   return { invites: results };
 };
 
-// Public: look up an invite by token (used by the accept page before login).
 export const getInviteByToken = async (token) => {
   const invite = await prisma.teamInvite.findUnique({
     where: { token },
@@ -97,7 +93,6 @@ export const getInviteByToken = async (token) => {
   };
 };
 
-// Authenticated: accept an invite and join the team (+ workspace). Idempotent.
 export const acceptInvite = async (userId, token) => {
   const invite = await prisma.teamInvite.findUnique({
     where: { token },

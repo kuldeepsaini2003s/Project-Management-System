@@ -50,7 +50,7 @@ export default function ProjectFormModal({
   teamId,
   teamKey = "TEAM",
   workspaceId,
-  teams = [], // when no fixed teamId, let the user pick a team
+  teams = [],
   defaultStatus,
 }) {
   const [form, setForm] = useState(EMPTY);
@@ -58,11 +58,9 @@ export default function ProjectFormModal({
   const [loading, setLoading] = useState(false);
   const [activeTeamId, setActiveTeamId] = useState(teamId || null);
 
-  // The workspace owning the selected team (labels are workspace-scoped).
   const activeWorkspaceId =
     workspaceId || teams.find((t) => t.id === activeTeamId)?.workspaceId;
 
-  // Cached picker data.
   const skip = { skip: !open || !activeTeamId };
   const { data: members = [] } = useGetTeamMembersQuery(activeTeamId, skip);
   const { data: labels = [] } = useGetWorkspaceLabelsQuery(activeWorkspaceId, {
@@ -103,7 +101,6 @@ export default function ProjectFormModal({
     );
   }, [open, initial, teamId, defaultStatus]);
 
-  // GitHub repos for the active team (only if connected).
   const [repos, setRepos] = useState([]);
   const [githubConnected, setGithubConnected] = useState(false);
 
@@ -218,7 +215,6 @@ export default function ProjectFormModal({
           </div>
         )}
 
-        {/* Icon (own row) + name + summary */}
         <div>
           <input
             value={form.icon}
@@ -243,7 +239,6 @@ export default function ProjectFormModal({
           />
         </div>
 
-        {/* Property pills */}
         <div className="flex flex-wrap gap-1.5">
           <EnumPicker
             value={form.status}
@@ -276,7 +271,6 @@ export default function ProjectFormModal({
           />
         </div>
 
-        {/* GitHub repository link */}
         {githubConnected && (
           <div className="flex items-center gap-2">
             <Github className="h-4 w-4 shrink-0 text-fg-muted" />
@@ -298,7 +292,6 @@ export default function ProjectFormModal({
 
         <div className="h-px bg-glass-border" />
 
-        {/* Description */}
         <textarea
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
@@ -307,7 +300,6 @@ export default function ProjectFormModal({
           className="min-h-[160px] w-full resize-none bg-transparent text-sm leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none sm:min-h-[300px]"
         />
 
-        {/* Milestones — full-width bar */}
         <div className="border-t border-glass-border pt-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-fg">Milestones</span>

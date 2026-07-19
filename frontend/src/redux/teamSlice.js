@@ -3,10 +3,10 @@ import { createSlice } from "@reduxjs/toolkit";
 const teamSlice = createSlice({
   name: "team",
   initialState: {
-    items: [], // teams in the sidebar (current workspace)
-    current: null, // team being viewed
-    members: [], // members of the current team
-    requests: [], // pending join requests of the current team
+    items: [],
+    current: null,
+    members: [],
+    requests: [],
     loading: false,
   },
   reducers: {

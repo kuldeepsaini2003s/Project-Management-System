@@ -24,7 +24,6 @@ const shapeTeam = (team) => ({
   createdAt: team.createdAt,
 });
 
-// Teams in the workspace that the user is actually a member of (rich shape for lists).
 export const getWorkspaceTeams = async (userId, workspaceId) => {
   await assertMembership(userId, workspaceId);
   const teams = await prisma.team.findMany({
@@ -106,7 +105,6 @@ export const deleteTeam = async (userId, id) => {
   await prisma.team.delete({ where: { id } });
 };
 
-// Minimal public info for the "request to join" page (no membership required).
 export const getTeamPublicInfo = async (id) => {
   const team = await prisma.team.findUnique({
     where: { id },

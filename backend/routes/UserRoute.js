@@ -20,7 +20,6 @@ router.put("/:id", updateUser);
 router.patch("/:id/email", changeEmail);
 router.delete("/:id", deleteUser);
 
-// Sessions
 router.get("/:id/sessions", getSessions);
 router.delete("/:id/sessions/:sessionId", revokeSession);
 router.delete("/:id/sessions", revokeAllOtherSessions);

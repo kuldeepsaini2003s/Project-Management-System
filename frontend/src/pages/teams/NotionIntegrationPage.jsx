@@ -64,13 +64,10 @@ export default function NotionIntegrationPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {/* Full-width navbar with notification bell */}
       <Topbar breadcrumb={["Notion"]} onMenu={onMenu} />
 
-      {/* Centered content */}
       <div className="flex flex-1 flex-col items-center px-4 py-10">
         <div className="w-full max-w-lg">
-          {/* Header */}
           <div className="mb-5 flex gap-4">
             <div className="flex flex-col h-fit w-fit p-2 items-center rounded-2xl bg-surface-hover">
               <NotionIcon />
@@ -83,7 +80,6 @@ export default function NotionIntegrationPage() {
             </div>
           </div>
 
-          {/* Content */}
           {isLoading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="h-5 w-5 animate-spin text-fg-muted" />

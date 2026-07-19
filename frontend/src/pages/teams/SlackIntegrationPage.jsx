@@ -129,7 +129,6 @@ export default function SlackIntegrationPage() {
 
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 py-8">
         <div className="w-full max-w-2xl">
-          {/* Header */}
           <div className="mb-5 flex gap-4">
             <div className="flex h-fit w-fit shrink-0 items-center rounded-2xl bg-surface-hover p-2">
               <SlackIcon />
@@ -148,7 +147,6 @@ export default function SlackIntegrationPage() {
             </div>
           ) : connected ? (
             <div className="flex flex-col gap-4">
-              {/* Connection status card */}
               <div className="rounded-xl border border-glass-border bg-surface/40 overflow-hidden">
                 <div className="flex items-start gap-3 px-5 py-4">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
@@ -184,7 +182,6 @@ export default function SlackIntegrationPage() {
 
               {error && <ErrorMsg msg={error} />}
 
-              {/* Info section */}
               {infoLoading ? (
                 <div className="flex items-center justify-center rounded-xl border border-glass-border bg-surface/40 py-10">
                   <Loader2 className="h-5 w-5 animate-spin text-fg-muted" />
@@ -195,7 +192,6 @@ export default function SlackIntegrationPage() {
                 </div>
               ) : (
                 <>
-                  {/* Channel members */}
                   {info?.members?.length > 0 && (
                     <div>
                       <div className="mb-3 flex items-center justify-between">
@@ -214,7 +210,6 @@ export default function SlackIntegrationPage() {
                     </div>
                   )}
 
-                  {/* Workspace channels */}
                   {info?.channels?.length > 0 && (
                     <div>
                       <div className="mb-3 flex items-center justify-between">
@@ -249,7 +244,6 @@ export default function SlackIntegrationPage() {
               )}
             </div>
           ) : (
-            /* Disconnected */
             <div className="rounded-xl border border-glass-border bg-surface/40 p-5">
               <p className="mb-4 text-sm font-medium text-fg">What you get with Slack</p>
               <ul className="mb-5 flex flex-col gap-2.5">

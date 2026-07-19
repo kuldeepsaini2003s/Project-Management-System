@@ -17,7 +17,6 @@ export const getTeamMembers = async (userId, teamId) => {
   return members.map(shapeMember);
 };
 
-// Add an existing workspace member to the team.
 export const addTeamMember = async (userId, teamId, targetUserId, role = "MEMBER") => {
   await assertTeamAdmin(userId, teamId);
   const team = await prisma.team.findUnique({ where: { id: teamId } });
@@ -66,9 +65,7 @@ export const updateTeamMemberRole = async (userId, teamId, targetUserId, role) =
   return getTeamMembers(userId, teamId);
 };
 
-/* ---------------- Join requests ---------------- */
 
-// Any authenticated user can request to join a team via its share link.
 export const createJoinRequest = async (userId, teamId) => {
   const team = await prisma.team.findUnique({ where: { id: teamId } });
   if (!team) throw new ApiError(404, "Team not found");
@@ -84,7 +81,6 @@ export const createJoinRequest = async (userId, teamId) => {
     create: { teamId, userId },
   });
 
-  // Notify the team's admins/owners.
   const [requester, admins] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
     prisma.teamMembership.findMany({
@@ -125,7 +121,6 @@ export const respondToJoinRequest = async (userId, requestId, accept) => {
 
   if (accept) {
     await prisma.$transaction([
-      // Ensure workspace membership so they can load the workspace.
       prisma.membership.upsert({
         where: {
           userId_workspaceId: { userId: request.userId, workspaceId: request.team.workspaceId },
@@ -153,7 +148,6 @@ export const respondToJoinRequest = async (userId, requestId, accept) => {
   return { status: accept ? "ACCEPTED" : "REJECTED" };
 };
 
-// Current user's own request status for a team (for the join page).
 export const getMyJoinRequestStatus = async (userId, teamId) => {
   const membership = await prisma.teamMembership.findUnique({
     where: { teamId_userId: { teamId, userId } },

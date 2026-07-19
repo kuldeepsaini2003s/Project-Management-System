@@ -16,7 +16,6 @@ export const createApiKey = async (userId, name) => {
     data: { name: name.trim(), key, hint, userId },
     select: { id: true, name: true, hint: true, createdAt: true },
   });
-  // Return the raw key only on creation — never exposed again
   return { ...record, key };
 };
 
@@ -35,12 +34,10 @@ export const revokeApiKey = async (userId, keyId) => {
   return { ok: true };
 };
 
-/** Validate a raw key from an incoming request. Returns the userId or throws. */
 export const validateApiKey = async (rawKey) => {
   if (!rawKey?.startsWith(PREFIX)) throw new ApiError(401, "Invalid API key");
   const record = await prisma.apiKey.findUnique({ where: { key: rawKey } });
   if (!record || record.revoked) throw new ApiError(401, "Invalid or revoked API key");
-  // Update last-used async — don't await so it doesn't slow down requests
   prisma.apiKey.update({ where: { id: record.id }, data: { lastUsedAt: new Date() } }).catch(() => {});
   return record.userId;
 };

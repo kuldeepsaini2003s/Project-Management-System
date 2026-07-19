@@ -1,4 +1,3 @@
-/** A single row inside a SettingsSection — label + optional description on the left, control on the right */
 export default function SettingsRow({ label, description, children, className = "" }) {
   return (
     <div className={`flex items-center justify-between gap-4 px-5 py-4 ${className}`}>

@@ -201,7 +201,6 @@ export default function Sidebar({ onClose }) {
             )}
           </div>
 
-          {/* ── Integrations ── */}
           {firstTeamId && (
             <>
               <SectionLabel>Integrations</SectionLabel>

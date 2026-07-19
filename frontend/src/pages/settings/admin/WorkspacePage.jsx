@@ -46,7 +46,6 @@ export default function WorkspacePage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      // handled by RTK Query
     }
   };
 
@@ -56,7 +55,6 @@ export default function WorkspacePage() {
 
       <div className="flex flex-col gap-4">
         <SettingsSection>
-          {/* Logo */}
           <SettingsRow label="Logo" description="Click to change. Recommended size 256×256px.">
             <div
               className="relative cursor-pointer group"
@@ -81,7 +79,6 @@ export default function WorkspacePage() {
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
           </SettingsRow>
 
-          {/* Name */}
           <SettingsRow label="Name">
             <input
               value={name}
@@ -92,7 +89,6 @@ export default function WorkspacePage() {
             />
           </SettingsRow>
 
-          {/* URL */}
           <SettingsRow label="URL">
             <div className="flex items-center">
               <span className="flex h-8 items-center rounded-l-md border border-r-0 border-input-border bg-surface-hover px-2.5 text-sm text-fg-muted">
@@ -105,7 +101,6 @@ export default function WorkspacePage() {
           </SettingsRow>
         </SettingsSection>
 
-        {/* Save */}
         <div className="flex items-center justify-end gap-2">
           {saved && (
             <span className="flex items-center gap-1 text-xs text-success">
@@ -122,7 +117,6 @@ export default function WorkspacePage() {
           </Button>
         </div>
 
-        {/* Time & Region */}
         <SettingsSection title="Time &amp; region">
           <SettingsRow
             label="First month of the fiscal year"
@@ -139,7 +133,6 @@ export default function WorkspacePage() {
           </SettingsRow>
         </SettingsSection>
 
-        {/* Danger zone */}
         <SettingsSection title="Danger zone">
           <SettingsRow label="Delete workspace" description="Schedule workspace to be permanently deleted">
             <Button variant="ghost" className="!w-auto px-3 text-sm !text-danger hover:!text-danger">

@@ -1,4 +1,3 @@
-/** A titled card section on a settings page */
 export default function SettingsSection({ title, description, children, className = "" }) {
   return (
     <div className={`rounded-xl border border-glass-border bg-surface/40 ${className}`}>

@@ -12,7 +12,6 @@ export function TeamProvider({ children }) {
   const teams = useSelector((state) => state.team.items);
   const loading = useSelector((state) => state.team.loading);
 
-  // Reload the sidebar teams whenever the workspace changes.
   useEffect(() => {
     if (workspaceId) dispatch(fetchTeams(workspaceId));
   }, [workspaceId, dispatch]);

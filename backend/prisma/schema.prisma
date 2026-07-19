@@ -72,19 +72,19 @@ model User {
   googleId   String?      @unique
   lastSeenAt DateTime?
 
-  memberships     Membership[]
-  teamMemberships TeamMembership[]
-  joinRequests    TeamJoinRequest[]
-  sentInvites     TeamInvite[]      @relation("InviteInviter")
-  notifications   Notification[]
-  ledProjects     Project[]         @relation("ProjectLead")
-  projectMembers  ProjectMember[]
-  assignedIssues  Issue[]           @relation("IssueAssignee")
-  createdIssues   Issue[]           @relation("IssueCreator")
-  comments        Comment[]
-  sessions        UserSession[]
-  apiKeys         ApiKey[]
-  gitPersonaCard  GitPersonaCard?
+  memberships          Membership[]
+  teamMemberships      TeamMembership[]
+  joinRequests         TeamJoinRequest[]
+  sentInvites          TeamInvite[]      @relation("InviteInviter")
+  notifications        Notification[]
+  ledProjects          Project[]         @relation("ProjectLead")
+  projectMembers       ProjectMember[]
+  assignedIssues       Issue[]           @relation("IssueAssignee")
+  createdIssues        Issue[]           @relation("IssueCreator")
+  comments             Comment[]
+  sessions             UserSession[]
+  apiKeys              ApiKey[]
+  gitPersonaCard       GitPersonaCard?
   gitPersonaGeneration GitPersonaGeneration?
 
   createdAt DateTime @default(now())
@@ -94,8 +94,8 @@ model User {
 model ApiKey {
   id         String    @id @default(cuid())
   name       String
-  key        String    @unique  // full token — shown once on creation
-  hint       String             // last 6 chars for display (e.g. "…Xk2a9f")
+  key        String    @unique
+  hint       String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
   lastUsedAt DateTime?
@@ -113,10 +113,6 @@ model UserSession {
   userAgent    String?
   ipAddress    String?
   location     String?
-  // Nullable and only ever set going forward (see UserService.createSession) —
-  // this is what lets the Security page show only genuinely active sessions:
-  // pre-existing rows have expiresAt = null and are simply filtered out,
-  // rather than needing a manual data migration to purge old ghost entries.
   expiresAt    DateTime?
   lastActiveAt DateTime  @default(now())
   createdAt    DateTime  @default(now())
@@ -154,7 +150,7 @@ model Membership {
 model Team {
   id          String  @id @default(cuid())
   name        String
-  key         String // short prefix, e.g. ALG
+  key         String
   icon        String?
   color       String?
   description String?
@@ -237,7 +233,7 @@ model Project {
   status      ProjectStatus @default(BACKLOG)
   priority    Priority      @default(NONE)
   sortOrder   Int           @default(0)
-  repoFullName String?      // linked GitHub repository (owner/name)
+  repoFullName String?
   startDate   DateTime?
   targetDate  DateTime?
 
@@ -357,10 +353,10 @@ model Notification {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  type  String // ISSUE_ASSIGNED, ISSUE_COMMENT, JOIN_REQUEST, JOIN_ACCEPTED, ...
+  type  String
   title String
   body  String?
-  link  String? // in-app route to open
+  link  String?
 
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -372,11 +368,11 @@ model GithubConnection {
   id             String  @id @default(cuid())
   team           Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId         String  @unique
-  installationId String? // GitHub App installation id
-  account        String? // login of the org/user the app was installed on
-  accountType    String? // "User" or "Organization"
-  repoFullName   String? // optional default repo (repos are linked per project)
-  active         Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
+  installationId String?
+  account        String?
+  accountType    String?
+  repoFullName   String?
+  active         Boolean @default(true)
 
   createdAt DateTime @default(now())
 }
@@ -386,12 +382,12 @@ model SlackConnection {
   team          Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId        String  @unique
   webhookUrl    String
-  channel       String? // e.g. "#general"
-  channelId     String? // e.g. "C123ABC" — Slack channel ID for API calls
-  slackTeamId   String? // Slack workspace ID (T...)
-  slackTeamName String? // Slack workspace display name
-  accessToken   String? // Slack bot token (xoxb-...) for API calls
-  active        Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
+  channel       String?
+  channelId     String?
+  slackTeamId   String?
+  slackTeamName String?
+  accessToken   String?
+  active        Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -401,37 +397,31 @@ model NotionConnection {
   id            String  @id @default(cuid())
   team          Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId        String  @unique
-  accessToken   String  // Notion bot access token
-  workspaceId   String  // Notion workspace ID
-  workspaceName String? // Notion workspace display name
-  workspaceIcon String? // Notion workspace icon URL
-  botId         String? // Notion bot ID
-  active        Boolean @default(true) // false = disconnected in-app (record kept to allow reconnect)
+  accessToken   String
+  workspaceId   String
+  workspaceName String?
+  workspaceIcon String?
+  botId         String?
+  active        Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// The generated GitPersona developer identity card — cached so it isn't
-// regenerated on every view, regenerated on demand via "Regenerate". There is
-// deliberately no separate "connection" table here: GitPersona reuses the
-// existing team-level GithubConnection (installed from Settings → Connected
-// accounts) for both auth and repo data, so connecting GitHub from either
-// page reflects on both — one table, one source of truth.
 model GitPersonaCard {
   id          String  @id @default(cuid())
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String  @unique
-  githubLogin String // the GitHub account the card was generated for (denormalized for public lookup)
+  githubLogin String
   avatarUrl   String?
   name        String?
-  public      Boolean @default(true) // whether /dev/:login can be viewed by anyone
+  public      Boolean @default(true)
 
   styleSummary String
-  strengths    Json // [{ title, evidence }]
+  strengths    Json
   growthArc    String
-  roadmap      Json // [{ title, why, resourceHint }]
-  stats        Json // { topLanguages, totalRepos, totalCommits, ... } raw evidence backing the analysis
+  roadmap      Json
+  stats        Json
 
   generatedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -439,19 +429,12 @@ model GitPersonaCard {
   @@index([githubLogin])
 }
 
-// Tracks an in-flight (or last-failed) card generation, separate from
-// GitPersonaCard itself. Generation is kicked off in the background and
-// survives the client disconnecting/navigating away (see
-// GitPersonaService.startGenerateCard) — this row is what lets the frontend
-// resume showing "generating…" if the user comes back mid-run, and is also
-// what makes clicking Generate twice a no-op instead of starting a second,
-// wasteful, racing AI/GitHub pipeline for the same user.
 model GitPersonaGeneration {
   id        String   @id @default(cuid())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String   @unique
-  status    String // "pending" | "failed" — row is deleted entirely on success
-  error     String? // set when status = "failed"
+  status    String
+  error     String?
   startedAt DateTime @default(now())
 }
 
@@ -463,7 +446,7 @@ model PullRequestLink {
   number Int?
   title  String?
   url    String
-  state  String  @default("open") // open, closed, merged
+  state  String  @default("open")
   author String?
 
   createdAt DateTime @default(now())

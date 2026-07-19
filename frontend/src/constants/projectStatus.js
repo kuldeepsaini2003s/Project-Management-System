@@ -6,7 +6,6 @@ import {
   XCircle,
 } from "lucide-react";
 
-// status key -> label, color token, icons
 export const PROJECT_STATUSES = {
   BACKLOG: { label: "Backlog", color: "var(--fg-subtle)", icon: CircleDashed },
   PLANNED: { label: "Planned", color: "#9ca0a8", icon: Circle },

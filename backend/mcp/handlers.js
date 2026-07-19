@@ -1,8 +1,3 @@
-/**
- * MCP tool handlers — each function maps to a tool name.
- * They receive (args, userId) and return a plain object/string.
- * Errors thrown here become JSON-RPC error responses.
- */
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { assertTeamMembership } from "../utils/membership.js";
@@ -10,7 +5,6 @@ import * as issueService from "../services/IssueService.js";
 import * as projectService from "../services/ProjectService.js";
 import * as slackService from "../services/SlackService.js";
 
-/* ── helpers ─────────────────────────────────────────────────────────────── */
 
 const teamOf = async (userId, teamId) => {
   if (!teamId) throw new ApiError(400, "teamId is required");
@@ -20,7 +14,6 @@ const teamOf = async (userId, teamId) => {
 
 const fmt = (obj) => JSON.stringify(obj, null, 2);
 
-/* ── handlers ────────────────────────────────────────────────────────────── */
 
 export async function list_teams(args, userId) {
   const memberships = await prisma.teamMembership.findMany({

@@ -13,14 +13,7 @@ const ghHeaders = (token) => ({
   "X-GitHub-Api-Version": "2022-11-28",
 });
 
-/* ---------------- Identity ----------------
-   GitPersona has no connection table of its own — it reuses the existing
-   team-level GithubConnection (Settings → Connected accounts). Connecting
-   GitHub from either page writes/reads the same row, so both pages always
-   agree on whether GitHub is connected. */
 
-// Every active GitHub installation visible to this user, across every team
-// they belong to.
 const getUserGithubConnections = async (userId) => {
   const memberships = await prisma.teamMembership.findMany({ where: { userId }, select: { teamId: true } });
   const teamIds = memberships.map((m) => m.teamId);
@@ -30,9 +23,6 @@ const getUserGithubConnections = async (userId) => {
   });
 };
 
-// The GitHub identity to build the card for and to filter commits by.
-// Prefers an installation on a personal ("User") account over an
-// organization install, since orgs don't author commits themselves.
 const resolvePersonaIdentity = async (userId) => {
   const connections = await getUserGithubConnections(userId);
   if (connections.length === 0) {
@@ -45,13 +35,9 @@ const resolvePersonaIdentity = async (userId) => {
   return { connections, username: primary.account };
 };
 
-/* ---------------- GitHub data pipeline ---------------- */
 
-// Cap analysis to the most recently active repos across all connected teams —
-// keeps the pipeline fast and avoids GitHub rate limits.
 const MAX_REPOS = 20;
 
-// List every repo visible to a single installation (paginated).
 const listInstallationRepos = async (installationId) => {
   const token = await getInstallationToken(installationId);
   const headers = ghHeaders(token);
@@ -69,8 +55,6 @@ const listInstallationRepos = async (installationId) => {
   return repos;
 };
 
-// Gather repos across every connected installation, dedupe by full_name,
-// and cap to the most recently pushed.
 const collectRepos = async (connections) => {
   const byFullName = new Map();
   for (const conn of connections) {
@@ -135,8 +119,6 @@ const fetchGithubStats = async (connections, githubUsername) => {
       }
     }
 
-    // Skip repos this user never actually committed to — the card should
-    // reflect their own work, not everything the team happens to have connected.
     if (commitCount === 0) continue;
 
     repoSummaries.push({
@@ -191,8 +173,6 @@ const fetchGithubStats = async (connections, githubUsername) => {
   };
 };
 
-// Best-effort profile lookup (avatar/name) for display — uses an installation
-// token we already have for a higher rate limit, falls back to unauthenticated.
 const fetchProfile = async (username, token) => {
   try {
     const res = await fetch(`${GITHUB_API}/users/${username}`, {
@@ -206,7 +186,6 @@ const fetchProfile = async (username, token) => {
   }
 };
 
-/* ---------------- AI analysis ---------------- */
 
 let anthropicClient = null;
 const getAnthropic = () => {
@@ -261,34 +240,12 @@ const parseAnalysis = (text) => {
   }
 };
 
-/* ---------------- Card ---------------- */
 
-// Generation takes 15-30s (GitHub pagination + a Claude call) — far longer
-// than a typical request a user will patiently sit and wait on. If they
-// navigate away, the ORIGINAL fetch is aborted client-side but Node keeps
-// running the handler to completion server-side; the problem was purely that
-// nothing recorded "a generation is already running for this user", so
-// coming back later (or clicking Generate again while it's still running)
-// showed a plain "Generate" button and would happily kick off a second,
-// fully duplicate GitHub+Claude pipeline. GitPersonaGeneration below fixes
-// that: it's written BEFORE any slow work starts, checked before starting
-// new work, and is what the frontend polls to resume the correct UI state
-// after a remount. If a row is somehow left "pending" forever (e.g. the
-// server crashed/restarted mid-run), treat it as stale after this long so
-// the user isn't locked out indefinitely.
 const GENERATION_STALE_MS = 3 * 60 * 1000;
 
-// Idempotent kickoff — returns immediately, the actual work happens in the
-// background via runGeneration(). Safe to call repeatedly: if a generation
-// is already genuinely in flight for this user, this just reports that
-// instead of starting a duplicate one.
 export const startGenerateCard = async (userId) => {
   const existing = await prisma.gitPersonaGeneration.findUnique({ where: { userId } });
   if (existing?.status === "pending" && Date.now() - existing.startedAt.getTime() < GENERATION_STALE_MS) {
-    log(
-      `startGenerateCard: user=${userId} → generation already in flight ` +
-        `(started ${Math.round((Date.now() - existing.startedAt.getTime()) / 1000)}s ago), not starting a duplicate`
-    );
     return { status: "pending", startedAt: existing.startedAt };
   }
 
@@ -297,14 +254,9 @@ export const startGenerateCard = async (userId) => {
     update: { status: "pending", startedAt: new Date(), error: null },
     create: { userId, status: "pending" },
   });
-  log(`startGenerateCard: user=${userId} → starting background generation`);
 
-  // Intentionally NOT awaited — the HTTP response should return immediately
-  // (202-style "pending") so the client isn't stuck blocking on a 15-30s
-  // request. runGeneration continues running on the server regardless of
-  // whether the client is still connected, and persists its own outcome.
   runGeneration(userId).catch((err) => {
-    log(`runGeneration: user=${userId} → uncaught error escaped runGeneration:`, err?.message);
+    log(`runGeneration: user=${userId} → uncaught error:`, err?.message);
   });
 
   return { status: "pending", startedAt: gen.startedAt };
@@ -313,12 +265,9 @@ export const startGenerateCard = async (userId) => {
 const runGeneration = async (userId) => {
   try {
     const { connections, username } = await resolvePersonaIdentity(userId);
-    log(`runGeneration: user=${userId} github=${username} → fetching GitHub stats`);
     const stats = await fetchGithubStats(connections, username);
-
     const profile = await fetchProfile(username, stats.anyToken);
 
-    log(`runGeneration: user=${userId} → calling Claude for analysis`);
     const client = getAnthropic();
     const message = await client.messages.create({
       model: "claude-sonnet-4-5",
@@ -359,13 +308,9 @@ const runGeneration = async (userId) => {
         stats: statsSnapshot,
       },
     });
-    // Success — clear the tracking row so status flips back to "idle" and the
-    // frontend knows to stop polling and fetch the finished card.
     await prisma.gitPersonaGeneration.delete({ where: { userId } }).catch(() => {});
-
-    log(`runGeneration: user=${userId} → card generated (${stats.reposAnalyzed} repos analyzed)`);
   } catch (err) {
-    log(`runGeneration: user=${userId} → FAILED:`, err?.message);
+    log(`runGeneration: user=${userId} → failed:`, err?.message);
     await prisma.gitPersonaGeneration
       .update({
         where: { userId },
@@ -375,17 +320,11 @@ const runGeneration = async (userId) => {
   }
 };
 
-// Polled by the frontend — cheap, no GitHub/AI calls. Tells the UI whether to
-// show "generating…", a failure with retry, or nothing (idle: either no
-// generation has ever run, or the last one already succeeded and getCard has
-// the result).
 export const getGenerationStatus = async (userId) => {
   const gen = await prisma.gitPersonaGeneration.findUnique({ where: { userId } });
   if (!gen) return { status: "idle" };
 
   if (gen.status === "pending" && Date.now() - gen.startedAt.getTime() > GENERATION_STALE_MS) {
-    // Stuck/crashed mid-run (e.g. server restarted) — don't leave the user
-    // staring at "generating…" forever.
     return { status: "failed", error: "Generation timed out — please try again", startedAt: gen.startedAt };
   }
   return { status: gen.status, error: gen.error || null, startedAt: gen.startedAt };
@@ -403,7 +342,6 @@ export const setCardVisibility = async (userId, isPublic) => {
   return prisma.gitPersonaCard.update({ where: { userId }, data: { public: !!isPublic } });
 };
 
-// Public, unauthenticated lookup by GitHub username for the shareable /dev/:login page.
 export const getPublicCard = async (login) => {
   const card = await prisma.gitPersonaCard.findFirst({
     where: { githubLogin: { equals: login, mode: "insensitive" }, public: true },

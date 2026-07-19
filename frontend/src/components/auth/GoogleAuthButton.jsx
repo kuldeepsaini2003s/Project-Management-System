@@ -22,10 +22,6 @@ const GoogleIcon = () => (
   </svg>
 );
 
-/**
- * Linear-styled Google button. Uses the implicit flow to get an access
- * token, which the backend validates (audience-checked) at /api/auth/google.
- */
 export default function GoogleAuthButton({
   children = "Continue with Google",
   onToken,

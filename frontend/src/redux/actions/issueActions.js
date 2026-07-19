@@ -69,7 +69,6 @@ export const updateIssue = (id, payload) => async (dispatch) => {
   return issue;
 };
 
-// Optimistic board drag — move the card now, persist in the background, roll back on failure.
 export const moveIssueStatus = (id, status) => async (dispatch, getState) => {
   const { teamIssues, projectIssues, myIssues } = getState().issue;
   const previousStatus = [...teamIssues, ...projectIssues, ...myIssues].find((i) => i.id === id)?.status;
@@ -83,7 +82,6 @@ export const moveIssueStatus = (id, status) => async (dispatch, getState) => {
   }
 };
 
-// Optimistic board reorder (within or across columns): update now, persist, roll back on failure.
 export const reorderIssues =
   (board, status, orderedIds) => async (dispatch, getState) => {
     const snapshot = getState().issue[board];

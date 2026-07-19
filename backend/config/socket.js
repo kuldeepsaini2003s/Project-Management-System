@@ -4,7 +4,6 @@ import { env } from "./env.js";
 
 let io = null;
 
-// Attach Socket.IO to the HTTP server and authenticate each connection via JWT.
 export const initSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: { origin: env.clientUrl, credentials: true },
@@ -23,7 +22,6 @@ export const initSocket = (httpServer) => {
   });
 
   io.on("connection", (socket) => {
-    // Each user gets a private room so we can push notifications to them.
     socket.join(`user:${socket.userId}`);
     console.log(`[socket] connected user=${socket.userId} id=${socket.id}`);
     socket.on("disconnect", (reason) =>
@@ -37,7 +35,6 @@ export const initSocket = (httpServer) => {
   return io;
 };
 
-// Push an event to a single user across all their open tabs.
 export const emitToUser = (userId, event, payload) => {
   if (!io || !userId) return;
   const room = `user:${userId}`;

@@ -3,9 +3,9 @@ import { createSlice } from "@reduxjs/toolkit";
 const projectSlice = createSlice({
   name: "project",
   initialState: {
-    teamProjects: [], // projects of the current team
-    workspaceProjects: [], // projects across the whole workspace
-    current: null, // project being viewed
+    teamProjects: [],
+    workspaceProjects: [],
+    current: null,
     loading: false,
   },
   reducers: {
@@ -33,7 +33,6 @@ const projectSlice = createSlice({
       state.teamProjects = state.teamProjects.filter((p) => p.id !== id);
       state.workspaceProjects = state.workspaceProjects.filter((p) => p.id !== id);
     },
-    // Optimistic board drag — change just the status of one project.
     patchProjectStatus: (state, action) => {
       const { id, status } = action.payload;
       const apply = (list) => {
@@ -44,7 +43,6 @@ const projectSlice = createSlice({
       apply(state.workspaceProjects);
       if (state.current?.id === id) state.current.status = status;
     },
-    // Optimistic board reorder: set status + order of a column from an id list.
     reorderBoard: (state, action) => {
       const { board, status, orderedIds } = action.payload;
       const list = state[board];

@@ -134,7 +134,6 @@ export default function KanbanBoard({
   const [cols, setCols] = useState(() => group(items, statusOrder));
   const [activeId, setActiveId] = useState(null);
 
-  // Resync from the store when not actively dragging.
   useEffect(() => {
     if (!activeId) setCols(group(items, statusOrder));
   }, [items, statusOrder, activeId]);
@@ -148,8 +147,6 @@ export default function KanbanBoard({
     return statusOrder.find((s) => cols[s]?.some((i) => i.id === id));
   };
 
-  // Multi-column collision: the column under the pointer wins; if it has cards,
-  // refine to the nearest card so we get an accurate insertion index.
   const collisionDetection = (args) => {
     const pointer = pointerWithin(args);
     const intersections = pointer.length ? pointer : rectIntersection(args);
@@ -196,7 +193,7 @@ export default function KanbanBoard({
 
       let newIndex;
       if (over.id in prev) {
-        newIndex = toItems.length; // dropped over empty column area
+        newIndex = toItems.length;
       } else {
         const overIndex = toItems.findIndex((i) => i.id === over.id);
         newIndex = overIndex >= 0 ? overIndex : toItems.length;

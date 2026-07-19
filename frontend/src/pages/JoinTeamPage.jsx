@@ -19,14 +19,12 @@ export default function JoinTeamPage() {
 
   const { data: team, error: teamErr } = useGetTeamPublicQuery(teamId);
   const { data: mine } = useGetMyRequestQuery(teamId, {
-    // Poll while the request is pending so acceptance reflects automatically.
     pollingInterval: 6000,
   });
   const [requestJoin, { isLoading: busy, error: reqErr }] = useRequestJoinMutation();
 
   const state = mine?.state || "LOADING";
 
-  // When accepted, refresh the sidebar team list so it appears.
   useEffect(() => {
     if (state === "MEMBER") refresh();
   }, [state, refresh]);

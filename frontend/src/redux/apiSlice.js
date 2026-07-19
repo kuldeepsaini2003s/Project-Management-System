@@ -10,14 +10,6 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
-// If this device's session was revoked (Security page "Revoke", or signed
-// out from itself in another tab), the backend now rejects every subsequent
-// request with 401 (see backend/middleware/authMiddleware.js). Previously
-// nothing here reacted to that — the token would just keep failing silently
-// request after request instead of actually signing the device out. Any 401
-// past this point means the token is dead for good (revoked or expired), so
-// clear it and send them to login rather than leaving a broken session
-// limping along in the UI.
 const baseQuery = async (args, api, extraOptions) => {
   const result = await rawBaseQuery(args, api, extraOptions);
   if (result.error?.status === 401 && localStorage.getItem(TOKEN_KEY)) {
@@ -27,7 +19,6 @@ const baseQuery = async (args, api, extraOptions) => {
   return result;
 };
 
-// Unwrap RTK Query errors into a readable message.
 export const errMsg = (err) =>
   err?.data?.message || err?.error || "Something went wrong. Please try again.";
 
@@ -60,7 +51,6 @@ export const api = createApi({
     "GitPersonaGeneration",
   ],
   endpoints: (b) => ({
-    /* ---- auth / user ---- */
     getMe: b.query({ query: () => "/auth/me", providesTags: ["Me"] }),
     updateUser: b.mutation({
       query: ({ id, ...body }) => ({ url: `/users/${id}`, method: "PUT", body }),
@@ -83,7 +73,6 @@ export const api = createApi({
       invalidatesTags: (r, e, { userId }) => [{ type: "Sessions", id: userId }],
     }),
 
-    /* ---- workspaces ---- */
     getWorkspaces: b.query({ query: () => "/workspaces", providesTags: ["Workspaces"] }),
     createWorkspace: b.mutation({
       query: (body) => ({ url: "/workspaces", method: "POST", body }),
@@ -102,7 +91,6 @@ export const api = createApi({
       providesTags: (r, e, id) => [{ type: "WsMembers", id }],
     }),
 
-    /* ---- teams ---- */
     getWorkspaceTeams: b.query({
       query: (workspaceId) => `/workspaces/${workspaceId}/teams`,
       providesTags: (r, e, workspaceId) => [{ type: "Teams", id: workspaceId }],
@@ -128,7 +116,6 @@ export const api = createApi({
       invalidatesTags: (r, e, { workspaceId }) => [{ type: "Teams", id: workspaceId }],
     }),
 
-    /* ---- team members ---- */
     getTeamMembers: b.query({
       query: (teamId) => `/teams/${teamId}/members`,
       providesTags: (r, e, teamId) => [{ type: "Members", id: teamId }],
@@ -149,7 +136,6 @@ export const api = createApi({
       invalidatesTags: (r, e, { teamId }) => [{ type: "Members", id: teamId }],
     }),
 
-    /* ---- join requests ---- */
     getTeamRequests: b.query({
       query: (teamId) => `/teams/${teamId}/requests`,
       providesTags: (r, e, teamId) => [{ type: "Requests", id: teamId }],
@@ -175,7 +161,6 @@ export const api = createApi({
       ],
     }),
 
-    /* ---- email invites ---- */
     createTeamInvites: b.mutation({
       query: ({ teamId, emails, role }) => ({
         url: `/teams/${teamId}/invites`,
@@ -190,7 +175,6 @@ export const api = createApi({
       invalidatesTags: ["Teams", "Workspaces"],
     }),
 
-    /* ---- labels (workspace-scoped) ---- */
     getWorkspaceLabels: b.query({
       query: (workspaceId) => `/workspaces/${workspaceId}/labels`,
       providesTags: (r, e, workspaceId) => [{ type: "Labels", id: workspaceId }],
@@ -212,7 +196,6 @@ export const api = createApi({
       invalidatesTags: (r, e, { workspaceId }) => [{ type: "Labels", id: workspaceId }],
     }),
 
-    /* ---- projects ---- */
     getTeamProjects: b.query({
       query: (teamId) => `/teams/${teamId}/projects`,
       providesTags: (r, e, teamId) => [{ type: "Projects", id: teamId }],
@@ -246,7 +229,6 @@ export const api = createApi({
       invalidatesTags: (r, e, { teamId }) => [{ type: "Projects", id: teamId }, "WsProjects"],
     }),
 
-    /* ---- issues ---- */
     getTeamIssues: b.query({
       query: (teamId) => `/teams/${teamId}/issues`,
       providesTags: (r, e, teamId) => [{ type: "TeamIssues", id: teamId }],
@@ -316,13 +298,12 @@ export const api = createApi({
       invalidatesTags: (r, e, { issueId }) => [{ type: "Issue", id: issueId }],
     }),
 
-    /* ---- team integrations: GitHub ---- */
     getTeamGithub: b.query({
       query: (teamId) => `/teams/${teamId}/github`,
       providesTags: (r, e, teamId) => [{ type: "GitHubConn", id: teamId }],
     }),
     getTeamGithubAuthorize: b.query({
-      query: (teamId) => `/teams/${teamId}/github/authorize`,
+      query: (teamId) => `/teams/${teamId}/github/authorize?returnPath=${encodeURIComponent(window.location.pathname)}`,
     }),
     getTeamGithubRepos: b.query({
       query: (teamId) => `/teams/${teamId}/github/repos`,
@@ -333,13 +314,12 @@ export const api = createApi({
       invalidatesTags: (r, e, teamId) => [{ type: "GitHubConn", id: teamId }],
     }),
 
-    /* ---- team integrations: Slack ---- */
     getTeamSlack: b.query({
       query: (teamId) => `/teams/${teamId}/slack`,
       providesTags: (r, e, teamId) => [{ type: "SlackConn", id: teamId }],
     }),
     getTeamSlackAuthorize: b.query({
-      query: (teamId) => `/teams/${teamId}/slack/authorize`,
+      query: (teamId) => `/teams/${teamId}/slack/authorize?returnPath=${encodeURIComponent(window.location.pathname)}`,
     }),
     getTeamSlackInfo: b.query({
       query: (teamId) => `/teams/${teamId}/slack/info`,
@@ -350,40 +330,26 @@ export const api = createApi({
       invalidatesTags: (r, e, teamId) => [{ type: "SlackConn", id: teamId }],
     }),
 
-    /* ---- team integrations: Notion ---- */
     getTeamNotion: b.query({
       query: (teamId) => `/teams/${teamId}/notion`,
       providesTags: (r, e, teamId) => [{ type: "NotionConn", id: teamId }],
     }),
     getTeamNotionAuthorize: b.query({
-      query: (teamId) => `/teams/${teamId}/notion/authorize`,
+      query: (teamId) => `/teams/${teamId}/notion/authorize?returnPath=${encodeURIComponent(window.location.pathname)}`,
     }),
     disconnectTeamNotion: b.mutation({
       query: (teamId) => ({ url: `/teams/${teamId}/notion`, method: "DELETE" }),
       invalidatesTags: (r, e, teamId) => [{ type: "NotionConn", id: teamId }],
     }),
 
-    /* ---- GitPersona (personal developer identity card) ----
-       No connect/disconnect here — it reuses the team GitHub connection
-       below (useGetTeamGithubQuery / useLazyGetTeamGithubAuthorizeQuery /
-       useDisconnectTeamGithubMutation), same as Connected accounts. */
     getGitPersonaCard: b.query({
       query: () => "/git-persona/card",
       providesTags: ["GitPersonaCard"],
     }),
-    // Kicks off generation server-side (idempotent — a no-op if one's already
-    // running) and returns immediately. Doesn't invalidate GitPersonaCard
-    // itself since the card isn't ready yet; the frontend polls
-    // getGitPersonaGenerationStatus instead and refetches the card once that
-    // flips back to "idle".
     generateGitPersonaCard: b.mutation({
       query: () => ({ url: "/git-persona/card/generate", method: "POST" }),
       invalidatesTags: ["GitPersonaGeneration"],
     }),
-    // Cheap polling endpoint — lets the UI resume "generating…" correctly
-    // even after the user navigates away and comes back, instead of losing
-    // that state and showing a plain "Generate" button over an already-
-    // in-flight generation (which used to let you kick off duplicates).
     getGitPersonaGenerationStatus: b.query({
       query: () => "/git-persona/card/status",
       providesTags: ["GitPersonaGeneration"],
@@ -396,7 +362,6 @@ export const api = createApi({
       query: (login) => `/git-persona/public/${login}`,
     }),
 
-    /* ---- API Keys ---- */
     getApiKeys: b.query({
       query: () => "/keys",
       providesTags: ["ApiKey"],
@@ -460,7 +425,6 @@ export const {
   useCreateSubIssueMutation,
   useAddCommentMutation,
   useDeleteCommentMutation,
-  /* integrations */
   useGetTeamGithubQuery,
   useLazyGetTeamGithubAuthorizeQuery,
   useGetTeamGithubReposQuery,
@@ -475,7 +439,6 @@ export const {
   useGetApiKeysQuery,
   useCreateApiKeyMutation,
   useRevokeApiKeyMutation,
-  /* git persona */
   useGetGitPersonaCardQuery,
   useGenerateGitPersonaCardMutation,
   useGetGitPersonaGenerationStatusQuery,

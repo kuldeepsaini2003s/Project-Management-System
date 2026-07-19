@@ -78,7 +78,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Progress derived from the project's issues.
   const total = issues.length;
   const started = issues.filter((i) => i.status === "IN_PROGRESS").length;
   const completed = issues.filter((i) => i.status === "DONE").length;
@@ -114,7 +113,6 @@ export default function ProjectDetailPage() {
           <Skeleton name="project-detail" loading />
         ) : onThisProject ? (
           <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto lg:flex-row lg:overflow-hidden">
-            {/* Left: overview + description */}
             <div className="glass rounded-lg p-5 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
               <div className="mx-auto max-w-2xl">
                 <div className="flex items-start gap-3">
@@ -152,7 +150,6 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            {/* Right: properties + progress (stacks below on small screens) */}
             <aside className="glass w-full shrink-0 rounded-lg p-4 lg:w-80 lg:overflow-y-auto">
               <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                 Properties
@@ -228,7 +225,6 @@ export default function ProjectDetailPage() {
                 )}
               </div>
 
-              {/* Progress */}
               <div className="mt-5 border-t border-glass-border pt-4">
                 <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                   Progress
@@ -256,7 +252,6 @@ export default function ProjectDetailPage() {
                 </p>
               </div>
 
-              {/* Milestones */}
               {project.milestones?.length > 0 && (
                 <div className="mt-5 border-t border-glass-border pt-4">
                   <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-subtle">

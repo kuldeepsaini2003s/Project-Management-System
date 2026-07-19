@@ -3,10 +3,10 @@ import { createSlice } from "@reduxjs/toolkit";
 const issueSlice = createSlice({
   name: "issue",
   initialState: {
-    teamIssues: [], // board issues for the current team
-    projectIssues: [], // board issues for the current project
-    myIssues: [], // issues created by the current user
-    current: null, // issue being viewed (detail)
+    teamIssues: [],
+    projectIssues: [],
+    myIssues: [],
+    current: null,
     loading: false,
   },
   reducers: {
@@ -23,7 +23,6 @@ const issueSlice = createSlice({
       state.teamIssues.unshift(action.payload);
       if (action.payload.project) state.projectIssues.unshift(action.payload);
     },
-    // Optimistic status change while dragging on the board.
     patchIssueStatus: (state, action) => {
       const { id, status } = action.payload;
       const apply = (list) => {
@@ -34,7 +33,6 @@ const issueSlice = createSlice({
       apply(state.projectIssues);
       apply(state.myIssues);
     },
-    // Optimistic board reorder: set status + order of a column from an id list.
     reorderBoard: (state, action) => {
       const { board, status, orderedIds } = action.payload;
       const list = state[board];

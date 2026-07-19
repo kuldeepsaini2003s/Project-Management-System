@@ -8,5 +8,4 @@ export const ISSUE_STATUSES = {
   CANCELLED: { label: "Cancelled", icon: XCircle, color: "var(--fg-subtle)" },
 };
 
-// Column order for the board.
 export const ISSUE_STATUS_ORDER = ["BACKLOG", "TODO", "IN_PROGRESS", "DONE", "CANCELLED"];

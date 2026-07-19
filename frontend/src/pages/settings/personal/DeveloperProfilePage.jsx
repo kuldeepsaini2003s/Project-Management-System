@@ -24,8 +24,6 @@ export default function DeveloperProfilePage() {
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const teamId = selectedTeamId || teams[0]?.id || "";
 
-  // Same query as Connected accounts, same cache tag — connecting from either
-  // page updates both instantly.
   const { data: conn } = useGetTeamGithubQuery(teamId, { skip: !teamId });
 
   const {
@@ -35,12 +33,6 @@ export default function DeveloperProfilePage() {
     refetch: refetchCard,
   } = useGetGitPersonaCardQuery(undefined, { skip: !conn?.connected });
 
-  // Generation runs in the background on the server (15-30s), so the source
-  // of truth for "is a generation running" lives server-side, not in local
-  // component state — that's what makes this survive the user navigating
-  // away and coming back: on remount this query just re-fetches the real
-  // status instead of defaulting to "not generating" and showing a plain
-  // Generate button over a run that's still actually in flight.
   const [pollMs, setPollMs] = useState(0);
   const { data: genStatus, refetch: refetchStatus } = useGetGitPersonaGenerationStatusQuery(undefined, {
     skip: !conn?.connected,
@@ -53,8 +45,6 @@ export default function DeveloperProfilePage() {
     setPollMs(isPending ? 3000 : 0);
   }, [isPending]);
 
-  // The moment the backend reports the generation is no longer pending, pull
-  // the finished card in.
   const [wasPending, setWasPending] = useState(false);
   useEffect(() => {
     if (wasPending && !isPending) refetchCard();
@@ -71,10 +61,6 @@ export default function DeveloperProfilePage() {
   const handleGenerate = async () => {
     setGenerateError("");
     try {
-      // Kicks off the background job (or reports one's already running —
-      // either way this is idempotent, so a stray double-click or a stale
-      // page coming back to life can't start a duplicate). Doesn't return
-      // the card itself; polling picks up the result.
       await generateCard().unwrap();
       refetchStatus();
     } catch (err) {
@@ -100,7 +86,6 @@ export default function DeveloperProfilePage() {
         description="Generate an AI-built developer identity card — your coding style, strengths, growth arc, and a personalized 6-month roadmap — from your team's connected GitHub repos."
       />
 
-      {/* Team picker — only shown when user is in multiple teams, same as Connected accounts */}
       {teams.length > 1 && (
         <div className="mb-5 flex items-center gap-3">
           <span className="shrink-0 text-sm text-fg-muted">Team</span>
@@ -164,7 +149,6 @@ export default function DeveloperProfilePage() {
         </SettingsSection>
       )}
 
-      {/* Generate / regenerate + card */}
       {conn?.connected && (
         <div className="mt-5 flex flex-col gap-4">
           {generateError && (

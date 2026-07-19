@@ -28,7 +28,7 @@ export default function SearchPage() {
   const [tab, setTab] = useState("All");
   const [results, setResults] = useState({ issues: [], projects: [] });
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState(null); // { type, id, project? }
+  const [selected, setSelected] = useState(null);
   const [history, setHistory] = useState(loadHistory);
   const inputRef = useRef(null);
 
@@ -36,13 +36,11 @@ export default function SearchPage() {
     inputRef.current?.focus();
   }, []);
 
-  // Debounce the query (300ms).
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q.trim()), 300);
     return () => clearTimeout(t);
   }, [q]);
 
-  // Fetch when the debounced query changes.
   useEffect(() => {
     if (!debounced || !currentId) {
       setResults({ issues: [], projects: [] });
@@ -92,7 +90,6 @@ export default function SearchPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {/* Header: search input + tabs */}
       <div className="glass relative z-40 flex shrink-0 flex-col gap-2 rounded-lg px-3 py-2">
         <div className="flex items-center gap-2">
           <button
@@ -136,13 +133,11 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Body */}
       <div className="glass flex min-h-0 flex-1 overflow-hidden rounded-lg">
         {!hasQuery ? (
           <RecentOrEmpty history={history} onPick={(h) => setQ(h)} onClear={clearHistory} />
         ) : (
           <>
-            {/* Results list — full width until a result is selected, then a left column */}
             <div
               className={`min-h-0 overflow-y-auto border-glass-border ${
                 selected
@@ -172,7 +167,6 @@ export default function SearchPage() {
               )}
             </div>
 
-            {/* Right: detail — only shown once a result is selected */}
             {selected && (
               <div className="flex min-w-0 flex-1 flex-col">
                 {selected.type === "issue" ? (

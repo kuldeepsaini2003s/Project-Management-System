@@ -6,7 +6,6 @@ const sizes = {
   xl: "h-14 w-14 text-lg",
 };
 
-// Deterministic accent color from a string.
 const palette = ["#5e6ad2", "#26a269", "#d9920a", "#d64545", "#9046c0", "#2a8fbd"];
 const colorFor = (str = "") => {
   let hash = 0;

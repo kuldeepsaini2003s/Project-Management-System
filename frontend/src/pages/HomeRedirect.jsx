@@ -6,7 +6,7 @@ import FullScreenLoader from "../components/common/FullScreenLoader.jsx";
 
 export default function HomeRedirect() {
   const { teams, loading } = useTeams();
-  useOutletContext(); // ensure inside layout
+  useOutletContext();
 
   if (loading) return <FullScreenLoader />;
   if (teams.length > 0) {

@@ -20,7 +20,6 @@ function MenuItem({ children, onClick, selected }) {
 const fmtDate = (v) =>
   v ? new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : null;
 
-/* ----- generic status / priority (enum maps) ----- */
 export function EnumPicker({ value, onChange, map, order, fallback }) {
   const meta = map[value] || map[fallback];
   const Icon = meta.icon;
@@ -55,7 +54,6 @@ export function EnumPicker({ value, onChange, map, order, fallback }) {
   );
 }
 
-/* ----- single user (lead / assignee) ----- */
 export function UserPicker({ value, onChange, users, label = "Lead", icon: Icon = UserCircle2 }) {
   const selected = users.find((u) => u.id === value);
   return (
@@ -104,7 +102,6 @@ export function UserPicker({ value, onChange, users, label = "Lead", icon: Icon 
   );
 }
 
-/* ----- multi user (members) ----- */
 export function MembersPicker({ value = [], onChange, users }) {
   const toggle = (id) =>
     onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
@@ -139,7 +136,6 @@ export function MembersPicker({ value = [], onChange, users }) {
   );
 }
 
-/* ----- date pill ----- */
 export function DatePicker({ value, onChange, label }) {
   return (
     <Popover
@@ -175,7 +171,6 @@ export function DatePicker({ value, onChange, label }) {
   );
 }
 
-/* ----- labels (multi + create) ----- */
 export function LabelPicker({ value = [], onChange, labels, onCreateLabel }) {
   const [name, setName] = useState("");
   const toggle = (id) =>
@@ -232,7 +227,6 @@ export function LabelPicker({ value = [], onChange, labels, onCreateLabel }) {
   );
 }
 
-/* ----- dependencies (multi projects) ----- */
 export function DependencyPicker({ value = [], onChange, projects }) {
   const toggle = (id) =>
     onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);

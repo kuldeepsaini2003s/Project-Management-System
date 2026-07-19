@@ -6,17 +6,18 @@ import { env } from "../config/env.js";
 
 const log = (...args) => console.log("[notion]", ...args);
 
-/* ---------------- OAuth helpers ---------------- */
 
 const resolveReturnOrigin = (origin) => {
   const clean = (origin || "").replace(/\/$/, "");
   return env.clientUrls.includes(clean) ? clean : env.clientUrl;
 };
 
-const buildState = (teamId, userId, origin) =>
-  signToken({ no: true, t: teamId, u: userId, c: resolveReturnOrigin(origin) });
+const SAFE_PATH = /^\/[a-zA-Z0-9\-_/]*$/;
+const resolveReturnPath = (path) => (typeof path === "string" && path.length < 200 && SAFE_PATH.test(path) ? path : null);
 
-// Notion OAuth v2 authorization URL.
+const buildState = (teamId, userId, origin, returnPath) =>
+  signToken({ no: true, t: teamId, u: userId, c: resolveReturnOrigin(origin), p: resolveReturnPath(returnPath) });
+
 const notionOAuthUrl = (state) => {
   const params = new URLSearchParams({
     client_id: env.notion.clientId,
@@ -28,9 +29,8 @@ const notionOAuthUrl = (state) => {
   return `https://api.notion.com/v1/oauth/authorize?${params}`;
 };
 
-/* ---------------- Connect / reconnect ---------------- */
 
-export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
+export const buildAuthorizeUrl = async (userId, teamId, { origin, returnPath } = {}) => {
   await assertTeamAdmin(userId, teamId);
   if (!env.notion.clientId) throw new ApiError(500, "Notion App is not configured on the server");
 
@@ -41,8 +41,6 @@ export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
       `authorize reconnect attempt: team=${teamId} user=${userId} ` +
         `workspace=${existing.workspaceName} active=${existing.active}`
     );
-    // Notion access tokens do not expire, so we can reconnect instantly
-    // if a stored token exists — no need to go through OAuth again.
     if (existing.accessToken) {
       await prisma.notionConnection.update({ where: { teamId }, data: { active: true } });
       log(
@@ -60,10 +58,9 @@ export const buildAuthorizeUrl = async (userId, teamId, { origin } = {}) => {
   }
 
   log(`authorize: team=${teamId} user=${userId} → redirecting to Notion OAuth`);
-  return { url: notionOAuthUrl(buildState(teamId, userId, origin)) };
+  return { url: notionOAuthUrl(buildState(teamId, userId, origin, returnPath)) };
 };
 
-/* ---------------- OAuth callback ---------------- */
 
 export const handleOAuthCallback = async (query) => {
   let returnOrigin = env.clientUrl;
@@ -85,7 +82,7 @@ export const handleOAuthCallback = async (query) => {
   } catch {
     return fail("Invalid or expired authorization state");
   }
-  const { t: teamId, u: userId, no, c } = decoded || {};
+  const { t: teamId, u: userId, no, c, p } = decoded || {};
   log(`setup decoded state: teamId=${teamId} userId=${userId} no=${no} returnOrigin(c)=${c}`);
   if (!no || !teamId || !userId) return fail("Invalid authorization state");
   returnOrigin = resolveReturnOrigin(c);
@@ -96,7 +93,6 @@ export const handleOAuthCallback = async (query) => {
     return fail("You are not authorized to connect Notion for this team");
   }
 
-  // Exchange the temporary code for an access token.
   let accessToken, workspaceId, workspaceName, workspaceIcon, botId;
   try {
     const credentials = Buffer.from(
@@ -151,10 +147,9 @@ export const handleOAuthCallback = async (query) => {
       `workspace=${workspaceName} team=${teamId} → redirecting to ${returnOrigin}`
   );
 
-  return `${returnOrigin}/teams/${teamId}/integrations/notion?notion=connected`;
+  return `${returnOrigin}${p || `/teams/${teamId}/integrations/notion`}?notion=connected`;
 };
 
-/* ---------------- Status ---------------- */
 
 export const getConnection = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
@@ -168,7 +163,6 @@ export const getConnection = async (userId, teamId) => {
   };
 };
 
-/* ---------------- Disconnect ---------------- */
 
 export const disconnectNotion = async (userId, teamId) => {
   await assertTeamAdmin(userId, teamId);

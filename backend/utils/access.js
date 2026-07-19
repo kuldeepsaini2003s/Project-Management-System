@@ -2,7 +2,6 @@ import prisma from "../db/index.js";
 import { ApiError } from "./ApiError.js";
 import { assertTeamMembership } from "./membership.js";
 
-// Load a team and ensure the user is a member of it.
 export const getTeamOrThrow = async (userId, teamId) => {
   const team = await prisma.team.findUnique({ where: { id: teamId } });
   if (!team) throw new ApiError(404, "Team not found");
@@ -10,7 +9,6 @@ export const getTeamOrThrow = async (userId, teamId) => {
   return team;
 };
 
-// Load a project and ensure the user is a member of its team.
 export const getProjectOrThrow = async (userId, projectId) => {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) throw new ApiError(404, "Project not found");
@@ -18,7 +16,6 @@ export const getProjectOrThrow = async (userId, projectId) => {
   return project;
 };
 
-// Load an issue and ensure the user is a member of its team.
 export const getIssueOrThrow = async (userId, issueId) => {
   const issue = await prisma.issue.findUnique({ where: { id: issueId } });
   if (!issue) throw new ApiError(404, "Issue not found");

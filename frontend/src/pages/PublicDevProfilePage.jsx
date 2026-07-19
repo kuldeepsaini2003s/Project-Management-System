@@ -5,10 +5,6 @@ import ThemeToggle from "../components/ui/ThemeToggle.jsx";
 import GitPersonaCard from "../components/git-persona/GitPersonaCard.jsx";
 import { useGetPublicGitPersonaCardQuery } from "../redux/apiSlice.js";
 
-/**
- * Public, unauthenticated shareable page for a GitPersona developer card —
- * e.g. https://app.example.com/dev/octocat. Anyone with the link can view it.
- */
 export default function PublicDevProfilePage() {
   const { login } = useParams();
   const { data: card, isLoading, error } = useGetPublicGitPersonaCardQuery(login);

@@ -1,10 +1,6 @@
 import { useRef, useState } from "react";
 import useClickOutside from "../../hooks/useClickOutside.js";
 
-/**
- * Lightweight popover. `trigger` is a render-prop given { open, toggle }.
- * Children render inside the floating panel.
- */
 export default function Popover({ trigger, children, align = "left", className = "" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

@@ -21,7 +21,6 @@ export const teamService = {
   createLabel: (id, payload) =>
     api.post(`/teams/${id}/labels`, payload).then((r) => r.data),
 
-  // Members
   listMembers: (id) => api.get(`/teams/${id}/members`).then((r) => r.data),
   addMember: (id, userId, role) =>
     api.post(`/teams/${id}/members`, { userId, role }).then((r) => r.data),
@@ -30,7 +29,6 @@ export const teamService = {
   removeMember: (id, userId) =>
     api.delete(`/teams/${id}/members/${userId}`).then((r) => r.data),
 
-  // Join flow
   getPublic: (id) => api.get(`/teams/${id}/public`).then((r) => r.data),
   myRequest: (id) => api.get(`/teams/${id}/my-request`).then((r) => r.data),
   requestJoin: (id) => api.post(`/teams/${id}/join`).then((r) => r.data),
@@ -38,19 +36,16 @@ export const teamService = {
   respondRequest: (requestId, accept) =>
     api.post(`/join-requests/${requestId}/respond`, { accept }).then((r) => r.data),
 
-  // GitHub integration
   getGithub: (id) => api.get(`/teams/${id}/github`).then((r) => r.data),
   githubAuthorizeUrl: (id) => api.get(`/teams/${id}/github/authorize`).then((r) => r.data),
   githubManageUrl: (id) => api.get(`/teams/${id}/github/manage`).then((r) => r.data),
   listRepos: (id) => api.get(`/teams/${id}/github/repos`).then((r) => r.data),
   disconnectGithub: (id) => api.delete(`/teams/${id}/github`).then((r) => r.data),
 
-  // Slack integration (OAuth)
   getSlack: (id) => api.get(`/teams/${id}/slack`).then((r) => r.data),
   slackAuthorizeUrl: (id) => api.get(`/teams/${id}/slack/authorize`).then((r) => r.data),
   disconnectSlack: (id) => api.delete(`/teams/${id}/slack`).then((r) => r.data),
 
-  // Notion integration (OAuth)
   getNotion: (id) => api.get(`/teams/${id}/notion`).then((r) => r.data),
   notionAuthorizeUrl: (id) => api.get(`/teams/${id}/notion/authorize`).then((r) => r.data),
   disconnectNotion: (id) => api.delete(`/teams/${id}/notion`).then((r) => r.data),

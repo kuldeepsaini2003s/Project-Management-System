@@ -41,7 +41,6 @@ app.use(
 );
 app.use(morgan("dev"));
 
-// Webhooks need the raw body for signature verification — mount BEFORE express.json.
 app.use("/api/webhooks", express.raw({ type: "*/*" }), WebhookRoute);
 
 app.use(express.json());

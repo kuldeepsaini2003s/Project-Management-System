@@ -8,24 +8,14 @@ import { createSession } from "./UserService.js";
 
 const SALT_ROUNDS = 10;
 
-// Strip sensitive fields before returning a user to the client.
 const sanitizeUser = ({ password, ...user }) => user;
 
 const buildAuthResponse = async (user, { userAgent, ipAddress } = {}) => {
-  // Routed through UserService.createSession (not a direct prisma.create)
-  // so this gets the same-device dedup + expiresAt + background location
-  // resolution as every other session-creating path — previously this used
-  // its own bare prisma.userSession.create() that skipped ALL of that,
-  // which is why sessions never had a resolved location. createSession may
-  // return an EXISTING row's sessionId (reused for this same browser), so
-  // the token must be signed with whatever it actually returns, not the
-  // locally-generated placeholder.
   let sessionId = randomUUID();
   try {
     const session = await createSession({ userId: user.id, sessionId, userAgent, ipAddress });
     sessionId = session.sessionId;
   } catch {
-    /* non-fatal — user still gets a token, just without a session record */
   }
   return {
     user: sanitizeUser(user),
@@ -33,13 +23,10 @@ const buildAuthResponse = async (user, { userAgent, ipAddress } = {}) => {
   };
 };
 
-// Ensure the user has a workspace + proper team memberships. Runs on login,
-// google auth, and /auth/me so data always loads (no refresh needed).
 const ensureWorkspaceSetup = async (user) => {
   const count = await prisma.membership.count({ where: { userId: user.id } });
   if (count === 0) await createDefaultWorkspaceForUser(user);
 
-  // Backfill legacy teams in the user's workspaces that have no members.
   const orphanTeams = await prisma.team.findMany({
     where: {
       workspace: { memberships: { some: { userId: user.id } } },
@@ -55,7 +42,6 @@ const ensureWorkspaceSetup = async (user) => {
   }
 };
 
-// Every new account gets a starter workspace (with a default team) they own.
 const createDefaultWorkspaceForUser = (user) => {
   const first = user.name?.split(" ")[0] || "My";
   const key = (first.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 3) || "TEAM").padEnd(2, "X");
@@ -122,7 +108,6 @@ export const authenticateWithGoogle = async ({ accessToken, userAgent, ipAddress
 
   const profile = await verifyGoogleAccessToken(accessToken);
 
-  // Find by googleId, otherwise link/create by email.
   let user = await prisma.user.findFirst({
     where: { OR: [{ googleId: profile.googleId }, { email: profile.email }] },
   });

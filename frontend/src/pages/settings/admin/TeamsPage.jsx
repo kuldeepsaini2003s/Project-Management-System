@@ -11,13 +11,11 @@ import Button from "../../../components/ui/Button.jsx";
 import Modal from "../../../components/ui/Modal.jsx";
 import { Skeleton } from "../../../components/ui/Skeleton.jsx";
 
-/* ── Date helper ─────────────────────────────────────────────────────────── */
 function fmtDate(dateStr) {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-/* ── Team icon — colored square matching Linear style ────────────────────── */
 function TeamIcon({ name, color }) {
   const bg = color || "#5e6ad2";
   const initials = name?.slice(0, 2).toUpperCase() || "T";
@@ -31,7 +29,6 @@ function TeamIcon({ name, color }) {
   );
 }
 
-/* ── Create team modal ───────────────────────────────────────────────────── */
 function CreateTeamModal({ open, onClose, workspaceId }) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -79,7 +76,6 @@ function CreateTeamModal({ open, onClose, workspaceId }) {
   );
 }
 
-/* ── Rename team modal ───────────────────────────────────────────────────── */
 function RenameTeamModal({ open, onClose, team, workspaceId }) {
   const [name, setName] = useState(team?.name || "");
   const [error, setError] = useState("");
@@ -124,7 +120,6 @@ function RenameTeamModal({ open, onClose, team, workspaceId }) {
   );
 }
 
-/* ── Single team row ─────────────────────────────────────────────────────── */
 function TeamRow({ team, workspaceId }) {
   const [renaming, setRenaming] = useState(false);
   const [deleteTeam, { isLoading: deleting }] = useDeleteTeamMutation();
@@ -138,7 +133,6 @@ function TeamRow({ team, workspaceId }) {
   return (
     <>
       <tr className="border-t border-glass-border hover:bg-surface-hover/30 transition-colors">
-        {/* Name */}
         <td className="px-5 py-2.5">
           <div className="flex items-center gap-2.5">
             <TeamIcon name={team.name} color={team.color} />
@@ -147,26 +141,21 @@ function TeamRow({ team, workspaceId }) {
           </div>
         </td>
 
-        {/* Visibility */}
         <td className="px-5 py-2.5 text-sm text-fg-muted whitespace-nowrap">
           Workspace
         </td>
 
-        {/* Members */}
         <td className="px-5 py-2.5 text-sm text-fg-muted whitespace-nowrap">
           {team.memberCount ?? 0}
         </td>
 
-        {/* Issues */}
         <td className="px-5 py-2.5 text-sm text-fg-muted whitespace-nowrap">
           {team.issueCount ?? 0}
         </td>
 
-        {/* Created */}
         <td className="px-5 py-2.5 text-sm text-fg-muted whitespace-nowrap">
           <div className="flex items-center justify-between gap-4">
             <span>{fmtDate(team.createdAt)}</span>
-            {/* Row actions — appear on hover */}
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => setRenaming(true)}
@@ -198,7 +187,6 @@ function TeamRow({ team, workspaceId }) {
   );
 }
 
-/* ── Section header row ──────────────────────────────────────────────────── */
 function SectionRow({ label, count }) {
   return (
     <tr>
@@ -213,7 +201,6 @@ function SectionRow({ label, count }) {
   );
 }
 
-/* ── Page ────────────────────────────────────────────────────────────────── */
 export default function TeamsPage() {
   const { currentId } = useWorkspace();
   const { data: teams = [], isLoading } = useGetWorkspaceTeamsQuery(currentId, { skip: !currentId });
@@ -230,12 +217,9 @@ export default function TeamsPage() {
 
   return (
     <div className="flex h-full flex-col px-6 py-6">
-      {/* ── Title ── */}
       <h1 className="mb-4 text-xl font-semibold text-fg">Teams</h1>
 
-      {/* ── Toolbar ── */}
       <div className="mb-4 flex items-center gap-2">
-        {/* Search */}
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
           <input
@@ -248,7 +232,6 @@ export default function TeamsPage() {
 
 <div className="flex-1" />
 
-        {/* Create team */}
         <button
           onClick={() => setCreateOpen(true)}
           className="flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-sm font-medium text-white hover:bg-brand/90 transition-colors"
@@ -257,14 +240,13 @@ export default function TeamsPage() {
         </button>
       </div>
 
-      {/* ── Table ── */}
       {isLoading ? (
         <Skeleton name="teams-settings" loading />
       ) : (
         <div className="overflow-hidden rounded-lg border border-glass-border bg-surface/20">
           <table className="w-full">
             <colgroup>
-              <col /> {/* Name — expands */}
+              <col />
               <col style={{ width: "1px" }} />
               <col style={{ width: "1px" }} />
               <col style={{ width: "1px" }} />

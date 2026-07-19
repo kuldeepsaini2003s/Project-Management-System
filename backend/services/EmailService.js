@@ -3,7 +3,6 @@ import { env } from "../config/env.js";
 
 let transporter = null;
 
-// Build the transporter lazily so the app still boots without SMTP configured.
 const getTransporter = () => {
   if (transporter) return transporter;
   const { host, port, secure, user, pass } = env.smtp;
@@ -15,13 +14,11 @@ const getTransporter = () => {
     host,
     port,
     secure,
-    // Gmail shows app passwords in 4 space-separated groups; strip whitespace.
     auth: { user: user.trim(), pass: pass.replace(/\s+/g, "") },
   });
   return transporter;
 };
 
-// Verify SMTP auth at startup so credential problems surface immediately.
 export const verifyEmailTransport = async () => {
   const tx = getTransporter();
   if (!tx) return;
@@ -36,10 +33,6 @@ export const verifyEmailTransport = async () => {
 const escapeHtml = (s = "") =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-/**
- * Send a team invitation email. Returns true if an email was actually sent,
- * false if SMTP isn't configured (the caller can still surface the link).
- */
 export const sendTeamInviteEmail = async ({
   to,
   inviteUrl,

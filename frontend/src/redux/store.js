@@ -10,8 +10,6 @@ import notificationReducer from "./notificationSlice.js";
 
 export const store = configureStore({
   reducer: {
-    // RTK Query reducer is kept only until every page is migrated to the
-    // plain slices below, then it (and apiSlice.js) will be removed.
     [api.reducerPath]: api.reducer,
     ui: uiReducer,
     auth: authReducer,

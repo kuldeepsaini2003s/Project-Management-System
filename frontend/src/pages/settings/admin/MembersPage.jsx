@@ -10,7 +10,6 @@ import {
 import Avatar from "../../../components/ui/Avatar.jsx";
 import { Skeleton } from "../../../components/ui/Skeleton.jsx";
 
-/* ── date helpers ────────────────────────────────────────────────────────── */
 function fmtDate(dateStr) {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
@@ -30,7 +29,6 @@ function lastSeenLabel(dateStr) {
   return { text: fmtDate(dateStr), online: false };
 }
 
-/* ── CSV export ──────────────────────────────────────────────────────────── */
 function exportCSV(members) {
   const headers = ["Name", "Email", "Role", "Teams", "Joined", "Last seen"];
   const rows = members.map((m) => [
@@ -55,7 +53,6 @@ function exportCSV(members) {
   URL.revokeObjectURL(url);
 }
 
-/* ── Invite modal ────────────────────────────────────────────────────────── */
 function InviteModal({ open, onClose, workspaceId }) {
   const [emailInput, setEmailInput] = useState("");
   const [emails, setEmails] = useState([]);
@@ -88,7 +85,6 @@ function InviteModal({ open, onClose, workspaceId }) {
   };
 
   const handleSend = async () => {
-    // Flush any pending input
     const pending = emailInput.trim().toLowerCase();
     const allEmails = pending ? [...emails, pending] : emails;
     if (!allEmails.length) { setError("Add at least one email"); return; }
@@ -112,7 +108,6 @@ function InviteModal({ open, onClose, workspaceId }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       <div className="relative z-10 w-full max-w-md rounded-xl border border-glass-border bg-surface shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-glass-border px-5 py-4">
           <h2 className="text-base font-semibold text-fg">Invite members</h2>
           <button onClick={handleClose} className="rounded p-1 text-fg-muted hover:text-fg transition-colors">
@@ -135,7 +130,6 @@ function InviteModal({ open, onClose, workspaceId }) {
           </div>
         ) : (
           <div className="flex flex-col gap-4 px-5 py-4">
-            {/* Email input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-fg-muted uppercase tracking-wide">Email addresses</label>
               <div
@@ -168,7 +162,6 @@ function InviteModal({ open, onClose, workspaceId }) {
               <p className="text-xs text-fg-muted">Press Enter or comma to add multiple addresses.</p>
             </div>
 
-            {/* Team select */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-fg-muted uppercase tracking-wide">Team</label>
               <select
@@ -183,7 +176,6 @@ function InviteModal({ open, onClose, workspaceId }) {
               </select>
             </div>
 
-            {/* Role select */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-fg-muted uppercase tracking-wide">Role</label>
               <select
@@ -198,7 +190,6 @@ function InviteModal({ open, onClose, workspaceId }) {
 
             {error && <p className="text-xs text-danger">{error}</p>}
 
-            {/* Footer */}
             <div className="flex justify-end gap-2 border-t border-glass-border pt-3">
               <button
                 onClick={handleClose}
@@ -222,7 +213,6 @@ function InviteModal({ open, onClose, workspaceId }) {
   );
 }
 
-/* ── Status badge ────────────────────────────────────────────────────────── */
 function StatusBadge({ role }) {
   const label = role === "OWNER" ? "Owner" : role === "ADMIN" ? "Admin" : "Member";
   return (
@@ -235,7 +225,6 @@ function StatusBadge({ role }) {
   );
 }
 
-/* ── Member row ──────────────────────────────────────────────────────────── */
 function MemberRow({ member }) {
   const { text: lastSeen, online } = lastSeenLabel(member.lastSeenAt);
   const displayName = member.name || member.email;
@@ -280,7 +269,6 @@ function MemberRow({ member }) {
   );
 }
 
-/* ── Section header row ──────────────────────────────────────────────────── */
 function SectionRow({ label, count }) {
   return (
     <tr>
@@ -295,7 +283,6 @@ function SectionRow({ label, count }) {
   );
 }
 
-/* ── Page ────────────────────────────────────────────────────────────────── */
 export default function MembersPage() {
   const { currentId } = useWorkspace();
   const { data: members = [], isLoading } = useGetWorkspaceMembersQuery(currentId, { skip: !currentId });
@@ -324,7 +311,6 @@ export default function MembersPage() {
         <h1 className="text-xl font-semibold text-fg">Members</h1>
       </div>
 
-      {/* ── Toolbar ── */}
       <div className="mb-4 flex items-center gap-2">
         <div className="relative flex-shrink-0">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
@@ -355,7 +341,6 @@ export default function MembersPage() {
         </button>
       </div>
 
-      {/* ── Table ── */}
       {isLoading ? (
         <Skeleton name="members-settings" loading />
       ) : members.length === 0 ? (

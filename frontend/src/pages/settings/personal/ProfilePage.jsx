@@ -9,7 +9,6 @@ import Button from "../../../components/ui/Button.jsx";
 import Avatar from "../../../components/ui/Avatar.jsx";
 import Modal from "../../../components/ui/Modal.jsx";
 
-/* ── helpers ─────────────────────────────────────────────────────────────── */
 
 function SaveRow({ dirty, saving, onSave }) {
   const [saved, setSaved] = useState(false);
@@ -35,7 +34,6 @@ function SaveRow({ dirty, saving, onSave }) {
   );
 }
 
-/* ── Change email modal ───────────────────────────────────────────────────── */
 
 function ChangeEmailModal({ open, onClose, userId, currentEmail }) {
   const [email, setEmail] = useState("");
@@ -98,7 +96,6 @@ function ChangeEmailModal({ open, onClose, userId, currentEmail }) {
   );
 }
 
-/* ── Main page ────────────────────────────────────────────────────────────── */
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -153,7 +150,6 @@ export default function ProfilePage() {
       <SettingsPageHeader title="Profile" />
 
       <div className="flex flex-col gap-4">
-        {/* ── Profile picture ── */}
         <SettingsSection>
           <SettingsRow label="Profile picture">
             <div
@@ -175,7 +171,6 @@ export default function ProfilePage() {
             />
           </SettingsRow>
 
-          {/* ── Email ── */}
           <SettingsRow label="Email">
             <div className="flex items-center gap-2">
               <span className="text-sm text-fg">{user?.email || "—"}</span>
@@ -189,7 +184,6 @@ export default function ProfilePage() {
             </div>
           </SettingsRow>
 
-          {/* ── Full name ── */}
           <SettingsRow label="Full name">
             <div className="flex flex-col gap-2">
               <input
@@ -203,7 +197,6 @@ export default function ProfilePage() {
             </div>
           </SettingsRow>
 
-          {/* ── Username ── */}
           <SettingsRow label="Username" description="Unique identifier across the workspace">
             <div className="flex flex-col gap-2">
               <input

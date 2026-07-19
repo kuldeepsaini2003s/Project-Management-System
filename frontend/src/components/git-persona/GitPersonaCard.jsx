@@ -31,10 +31,6 @@ function LanguageBar({ topLanguages = [] }) {
   );
 }
 
-/**
- * The GitPersona developer identity card — used both on the personal
- * settings page and on the public shareable /dev/:login page.
- */
 export default function GitPersonaCard({ card, avatarUrl, name, readOnly = false }) {
   if (!card) return null;
   const stats = card.stats || {};
@@ -43,7 +39,6 @@ export default function GitPersonaCard({ card, avatarUrl, name, readOnly = false
 
   return (
     <div className="glass-card animate-fade-up overflow-hidden rounded-xl">
-      {/* Header */}
       <div className="flex items-start gap-4 border-b border-glass-border px-6 py-5">
         <Avatar name={name || card.githubLogin} src={avatarUrl} size="xl" />
         <div className="min-w-0 flex-1">
@@ -69,15 +64,12 @@ export default function GitPersonaCard({ card, avatarUrl, name, readOnly = false
       </div>
 
       <div className="flex flex-col gap-6 px-6 py-5">
-        {/* Languages */}
         {stats.topLanguages?.length > 0 && <LanguageBar topLanguages={stats.topLanguages} />}
 
-        {/* Style summary */}
         <div>
           <p className="text-sm leading-relaxed text-fg">{card.styleSummary}</p>
         </div>
 
-        {/* Strengths */}
         {strengths.length > 0 && (
           <div>
             <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
@@ -95,7 +87,6 @@ export default function GitPersonaCard({ card, avatarUrl, name, readOnly = false
           </div>
         )}
 
-        {/* Growth arc */}
         {card.growthArc && (
           <div>
             <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
@@ -106,7 +97,6 @@ export default function GitPersonaCard({ card, avatarUrl, name, readOnly = false
           </div>
         )}
 
-        {/* Roadmap */}
         {roadmap.length > 0 && (
           <div>
             <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
@@ -133,7 +123,6 @@ export default function GitPersonaCard({ card, avatarUrl, name, readOnly = false
         )}
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between border-t border-glass-border px-6 py-3">
         <p className="text-[11px] text-fg-subtle">
           Generated {card.generatedAt ? new Date(card.generatedAt).toLocaleDateString() : "just now"} from public

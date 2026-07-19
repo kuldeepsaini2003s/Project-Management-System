@@ -82,7 +82,6 @@ export default function InboxPage() {
       />
 
       <div className="glass flex min-h-0 flex-1 overflow-hidden rounded-lg">
-        {/* Left: notification list */}
         <div
           className={`min-h-0 w-full shrink-0 overflow-y-auto border-glass-border lg:w-80 lg:border-r-2 ${
             selected ? "hidden lg:block" : "block"
@@ -135,7 +134,6 @@ export default function InboxPage() {
           )}
         </div>
 
-        {/* Right: detail — full editable issue when the notification is about one */}
         <div
           className={`min-w-0 flex-1 ${selected ? "flex flex-col" : "hidden lg:flex lg:flex-col"}`}
         >

@@ -14,7 +14,6 @@ const notificationSlice = createSlice({
       state.unread = action.payload;
     },
     addNotification: (state, action) => {
-      // Avoid duplicates if the REST fetch and socket race.
       if (!state.items.some((n) => n.id === action.payload.id)) {
         state.items.unshift(action.payload);
         if (!action.payload.read) state.unread += 1;

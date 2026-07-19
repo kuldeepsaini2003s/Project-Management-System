@@ -19,7 +19,6 @@ export default function InvitePage() {
   const [error, setError] = useState("");
   const [tried, setTried] = useState(false);
 
-  // Auto-accept once the user is authenticated and the invite is valid.
   useEffect(() => {
     if (authLoading || isLoading) return;
     if (!isAuthenticated || tried) return;
@@ -75,7 +74,6 @@ export default function InvitePage() {
 
   const teamName = invite.team?.name || "the team";
 
-  // Authenticated: accepting in progress (auto) or showing an error/retry.
   if (isAuthenticated) {
     return (
       <AuthLayout title={`Join ${teamName}`}>
@@ -105,7 +103,6 @@ export default function InvitePage() {
     );
   }
 
-  // Not authenticated: prompt to log in / sign up, returning here afterward.
   return (
     <AuthLayout
       title={`Join ${teamName}`}

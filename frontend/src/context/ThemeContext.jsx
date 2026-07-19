@@ -7,7 +7,7 @@ const getInitialTheme = () => {
   if (typeof window === "undefined") return "light";
   const stored = window.localStorage.getItem(THEME_KEY);
   if (stored === "light" || stored === "dark") return stored;
-  return "light"; // default theme is light (warm glassmorphism)
+  return "light";
 };
 
 export function ThemeProvider({ children }) {

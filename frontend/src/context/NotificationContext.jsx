@@ -10,7 +10,6 @@ import {
   resetNotifications,
 } from "../redux/notificationSlice.js";
 
-// Loads notifications + opens the realtime socket while the user is signed in.
 export function NotificationProvider({ children }) {
   const { isAuthenticated } = useAuth();
   const dispatch = useDispatch();

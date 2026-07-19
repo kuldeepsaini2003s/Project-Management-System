@@ -2,15 +2,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 
-/**
- * The GitHub App OAuth callback (backend/services/GithubService.js) redirects
- * back into the app with `?github=connected` on success or
- * `?github=error&message=...` on failure — but that redirect can land on ANY
- * page (the integrations page on success, the app root on failure), and
- * nothing was reading these params, so failures were completely silent: the
- * user would just land back in the app with nothing connected and no
- * explanation. This surfaces that status once, then strips it from the URL.
- */
 export default function GithubStatusBanner() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [banner, setBanner] = useState(null);
@@ -28,12 +19,10 @@ export default function GithubStatusBanner() {
       });
     }
 
-    // Strip it so a refresh or later navigation doesn't re-show it.
     const next = new URLSearchParams(searchParams);
     next.delete("github");
     next.delete("message");
     setSearchParams(next, { replace: true });
-    // Only ever run this on first mount for whatever params the redirect landed with.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

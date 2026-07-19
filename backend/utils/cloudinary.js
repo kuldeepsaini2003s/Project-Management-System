@@ -1,8 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 
-// Configure lazily (at call time) so the .env values are always loaded,
-// regardless of module import order.
 const configure = () => {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
@@ -12,7 +10,6 @@ const configure = () => {
   return !!process.env.CLOUDINARY_NAME && !!process.env.CLOUDINARY_API_KEY;
 };
 
-// Upload a local temp file to Cloudinary and return its secure URL (or null).
 export const uploadToCloudinary = async (localFilePath) => {
   const cleanup = () => {
     if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);

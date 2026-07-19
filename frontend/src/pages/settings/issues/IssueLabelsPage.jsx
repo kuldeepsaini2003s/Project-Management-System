@@ -21,7 +21,7 @@ export default function IssueLabelsPage() {
 
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState(null); // label being edited
+  const [editing, setEditing] = useState(null);
 
   const filtered = labels.filter((l) =>
     l.name.toLowerCase().includes(search.toLowerCase())
@@ -46,7 +46,6 @@ export default function IssueLabelsPage() {
     <div className="mx-auto w-full max-w-3xl px-6 py-8">
       <SettingsPageHeader title="Issue labels" />
 
-      {/* Toolbar */}
       <div className="mb-4 flex items-center gap-2">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-fg-subtle pointer-events-none" />
@@ -65,7 +64,6 @@ export default function IssueLabelsPage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="rounded-xl border border-glass-border bg-surface/40 overflow-hidden">
         <table className="w-full text-sm">
           <thead>

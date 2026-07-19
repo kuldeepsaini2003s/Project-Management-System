@@ -1,10 +1,6 @@
 import prisma from "../db/index.js";
 import { ApiError } from "./ApiError.js";
 
-/**
- * Ensure the user belongs to the workspace. Returns the membership
- * (with role) or throws 403/404.
- */
 export const assertMembership = async (userId, workspaceId) => {
   const membership = await prisma.membership.findUnique({
     where: { userId_workspaceId: { userId, workspaceId } },
@@ -23,10 +19,6 @@ export const assertOwner = async (userId, workspaceId) => {
   return membership;
 };
 
-/**
- * Ensure the user is a member of the team. Returns the team membership
- * (with role) or throws 403.
- */
 export const assertTeamMembership = async (userId, teamId) => {
   const membership = await prisma.teamMembership.findUnique({
     where: { teamId_userId: { teamId, userId } },
@@ -37,7 +29,6 @@ export const assertTeamMembership = async (userId, teamId) => {
   return membership;
 };
 
-// Require team OWNER or ADMIN (for managing members / requests).
 export const assertTeamAdmin = async (userId, teamId) => {
   const membership = await assertTeamMembership(userId, teamId);
   if (membership.role !== "OWNER" && membership.role !== "ADMIN") {

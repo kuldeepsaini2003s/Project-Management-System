@@ -7,12 +7,6 @@ export const GitHubIcon = () => (
   </svg>
 );
 
-/**
- * A single "connect this app" row — used on both the Connected accounts
- * settings page and the Developer profile page. Rendering the same row
- * against the same team's connection means connecting from either page is
- * reflected on both instantly (they share the same RTK Query cache tag).
- */
 export default function IntegrationRow({ icon, name, description, teamId, useConn, useAuth, useDisconn }) {
   const { data: conn, isLoading: loadingConn, refetch } = useConn(teamId, { skip: !teamId });
   const [authorize] = useAuth();

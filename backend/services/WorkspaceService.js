@@ -77,7 +77,6 @@ export const deleteWorkspace = async (userId, id) => {
   await prisma.workspace.delete({ where: { id } });
 };
 
-// Search issues + projects across the user's teams in a workspace.
 export const searchWorkspace = async (userId, workspaceId, q) => {
   await assertMembership(userId, workspaceId);
   const query = (q || "").trim();
@@ -123,7 +122,6 @@ export const searchWorkspace = async (userId, workspaceId, q) => {
   };
 };
 
-// Workspace members (for member/lead/assignee pickers + Members page).
 export const getWorkspaceMembers = async (userId, workspaceId) => {
   await assertMembership(userId, workspaceId);
   const memberships = await prisma.membership.findMany({
@@ -134,7 +132,6 @@ export const getWorkspaceMembers = async (userId, workspaceId) => {
     orderBy: { createdAt: "asc" },
   });
 
-  // Which teams (keys) each member belongs to in this workspace.
   const userIds = memberships.map((m) => m.userId);
   const teamMems = await prisma.teamMembership.findMany({
     where: { userId: { in: userIds }, team: { workspaceId } },

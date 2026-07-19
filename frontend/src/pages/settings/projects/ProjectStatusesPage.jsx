@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import SettingsPageHeader from "../../../components/settings/SettingsPageHeader.jsx";
 
-/* ── Status icon by category ─────────────────────────────────────────────── */
 function StatusIcon({ type }) {
   const icons = {
     backlog: (
@@ -37,7 +36,6 @@ function StatusIcon({ type }) {
   return icons[type] ?? null;
 }
 
-/* ── Add form — appears at bottom of group ────────────────────────────────── */
 function AddStatusForm({ type, onSave, onCancel }) {
   const [name, setName] = useState("");
 
@@ -71,7 +69,6 @@ function AddStatusForm({ type, onSave, onCancel }) {
   );
 }
 
-/* ── Status group ────────────────────────────────────────────────────────── */
 const INITIAL_GROUPS = [
   { key: "backlog",     label: "Backlog",      icon: "backlog",     items: [{ id: "1", name: "Backlog",      projects: 0 }] },
   { key: "planned",     label: "Planned",      icon: "planned",     items: [{ id: "2", name: "Planned",      projects: 0 }] },
@@ -90,7 +87,6 @@ function StatusGroup({ group, onAdd }) {
 
   return (
     <div className="rounded-xl border border-glass-border bg-surface/40 overflow-hidden">
-      {/* Header with + button */}
       <div className="flex items-center justify-between px-5 py-3 bg-surface-hover/50">
         <span className="text-sm font-semibold text-fg">{group.label}</span>
         <button
@@ -102,7 +98,6 @@ function StatusGroup({ group, onAdd }) {
         </button>
       </div>
 
-      {/* Status items */}
       {group.items.map((item) => (
         <div
           key={item.id}
@@ -118,7 +113,6 @@ function StatusGroup({ group, onAdd }) {
         </div>
       ))}
 
-      {/* Add form at the bottom */}
       {adding && (
         <AddStatusForm
           type={group.icon}
@@ -130,7 +124,6 @@ function StatusGroup({ group, onAdd }) {
   );
 }
 
-/* ── Page ────────────────────────────────────────────────────────────────── */
 export default function ProjectStatusesPage() {
   const [groups, setGroups] = useState(INITIAL_GROUPS);
 

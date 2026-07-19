@@ -1,4 +1,3 @@
-/** iOS-style toggle switch */
 export default function SettingsToggle({ checked, onChange, label, disabled = false }) {
   return (
     <button

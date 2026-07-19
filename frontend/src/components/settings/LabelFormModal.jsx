@@ -12,7 +12,6 @@ export default function LabelFormModal({ open, onClose, onSave, initial }) {
   const [color, setColor] = useState("#6366f1");
   const [description, setDescription] = useState("");
 
-  // Reset form whenever the modal opens or switches to a different label
   useEffect(() => {
     if (open) {
       setName(initial?.name || "");
@@ -36,7 +35,6 @@ export default function LabelFormModal({ open, onClose, onSave, initial }) {
       }
     >
       <div className="flex flex-col gap-4">
-        {/* Color + Name row */}
         <div className="flex items-center gap-3">
           <div
             className="h-5 w-5 shrink-0 rounded-full border-2 border-border-strong cursor-pointer"
@@ -51,7 +49,6 @@ export default function LabelFormModal({ open, onClose, onSave, initial }) {
           />
         </div>
 
-        {/* Color swatches */}
         <div className="flex flex-wrap gap-2">
           {PRESET_COLORS.map((c) => (
             <button
@@ -64,7 +61,6 @@ export default function LabelFormModal({ open, onClose, onSave, initial }) {
           ))}
         </div>
 
-        {/* Description */}
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}

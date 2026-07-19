@@ -10,7 +10,6 @@ export default function IssueDetailPage() {
   const navigate = useNavigate();
   const { onMenu } = useOutletContext() || {};
 
-  // Light query (shared with the view's cache) for the breadcrumb + delete.
   const { data: issue } = useGetIssueQuery(issueId, { skip: !issueId });
   const [deleteIssueMut] = useDeleteIssueMutation();
   const teamId = issue?.teamId;

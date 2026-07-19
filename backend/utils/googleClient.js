@@ -4,14 +4,6 @@ import { ApiError } from "./ApiError.js";
 
 const client = new OAuth2Client(env.googleClientId);
 
-/**
- * Validate a Google OAuth access token (from the frontend implicit flow)
- * and return a normalized profile.
- *
- * 1. getTokenInfo() asks Google to validate the token and tells us which
- *    client it was issued for — we reject tokens not minted for our app.
- * 2. The userinfo endpoint gives us the display name and avatar.
- */
 export const verifyGoogleAccessToken = async (accessToken) => {
   if (!env.googleClientId) {
     throw new ApiError(500, "Google auth is not configured (GOOGLE_CLIENT_ID missing)");
@@ -38,7 +30,6 @@ export const verifyGoogleAccessToken = async (accessToken) => {
     });
     if (res.ok) profile = await res.json();
   } catch {
-    // Non-fatal: fall back to the token info we already have.
   }
 
   return {

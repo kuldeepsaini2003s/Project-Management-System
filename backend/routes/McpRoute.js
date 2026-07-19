@@ -3,10 +3,8 @@ import { mcpHandler } from "../mcp/server.js";
 
 const router = Router();
 
-// No auth middleware here — MCP server handles its own API-key auth internally
 router.post("/", mcpHandler);
 
-// GET /api/mcp — returns discovery info (useful for testing the endpoint is up)
 router.get("/", (req, res) => {
   res.json({
     name:            "Linear App MCP Server",

@@ -63,7 +63,6 @@ export const deleteProject = (id) => async (dispatch) => {
   dispatch(removeProjectFromStore(id));
 };
 
-// Optimistic board reorder (within or across columns): update now, persist, roll back on failure.
 export const reorderProjects =
   (board, status, orderedIds) => async (dispatch, getState) => {
     const snapshot = getState().project[board];
@@ -77,7 +76,6 @@ export const reorderProjects =
     }
   };
 
-// Optimistic drag: move the card now, persist in the background, roll back on failure.
 export const moveProjectStatus = (id, status) => async (dispatch, getState) => {
   const { teamProjects, workspaceProjects } = getState().project;
   const previousStatus = [...teamProjects, ...workspaceProjects].find((p) => p.id === id)?.status;

@@ -8,7 +8,6 @@ import {
   useGetTeamProjectsQuery,
 } from "../../redux/apiSlice.js";
 
-// Global "new issue" — scoped to the first team (the common case).
 export default function CreateIssueModal({ open, onClose }) {
   const { teams } = useTeams();
   const team = teams[0];

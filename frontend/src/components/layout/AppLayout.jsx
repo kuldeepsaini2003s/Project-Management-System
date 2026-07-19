@@ -25,12 +25,10 @@ export default function AppLayout() {
       <Background />
       <GithubStatusBanner />
       <div className="flex h-screen gap-2 p-2">
-        {/* Desktop sidebar */}
         <div className="hidden md:block">
           <Sidebar />
         </div>
 
-        {/* Mobile sidebar drawer */}
         {mobileOpen && (
           <div className="fixed inset-0 z-40 md:hidden">
             <div
@@ -43,7 +41,6 @@ export default function AppLayout() {
           </div>
         )}
 
-        {/* Main column */}
         <div className="flex min-w-0 flex-1 flex-col">
           <Outlet context={{ onMenu: () => setMobileOpen(true) }} />
         </div>

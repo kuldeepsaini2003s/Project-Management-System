@@ -26,7 +26,6 @@ export default function NotificationsPage() {
       <SettingsPageHeader title="Notifications" />
 
       <div className="flex flex-col gap-6">
-        {/* Notification channels */}
         <div>
           <h2 className="mb-1 text-base font-semibold text-fg">Notification channels</h2>
           <p className="mb-3 text-xs text-fg-muted">
@@ -53,7 +52,6 @@ export default function NotificationsPage() {
           </SettingsSection>
         </div>
 
-        {/* Updates from Linear */}
         <div>
           <h2 className="mb-1 text-base font-semibold text-fg">Updates from Linear</h2>
           <p className="mb-3 text-xs text-fg-muted">

@@ -2,7 +2,6 @@ import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { assertMembership } from "../utils/membership.js";
 
-// Labels are shared across all teams in a workspace.
 export const getWorkspaceLabels = async (userId, workspaceId) => {
   await assertMembership(userId, workspaceId);
   const labels = await prisma.label.findMany({

@@ -12,7 +12,6 @@ import {
   useRevokeApiKeyMutation,
 } from "../../redux/apiSlice.js";
 
-// BACKEND_URL is e.g. "http://localhost:5000/api" or "https://myapp.com/api"
 const MCP_URL = `${BACKEND_URL}/mcp`;
 
 const TOOLS_PREVIEW = [
@@ -135,8 +134,6 @@ function CodeBlock({ code, lang = "json" }) {
   );
 }
 
-// Controlled accordion — parent manages which one is open (true accordion behaviour).
-// When open the header has a persistent lighter bg; hovering a closed header lights it up.
 function Collapsible({ title, icon: Icon, children, isOpen, onToggle }) {
   return (
     <div className="rounded-xl border border-glass-border bg-surface/40 overflow-hidden">
@@ -163,11 +160,10 @@ export default function McpApiPage() {
 
   const [newKeyName, setNewKeyName] = useState("");
   const [creating, setCreating] = useState(false);
-  const [newKeyValue, setNewKeyValue] = useState(null); // shown once after creation
+  const [newKeyValue, setNewKeyValue] = useState(null);
   const [showNewKey, setShowNewKey] = useState(false);
   const [error, setError] = useState("");
 
-  // True accordion — only one section open at a time; null = all closed
   const [openSection, setOpenSection] = useState(null);
   const toggleSection = (id) => setOpenSection((cur) => (cur === id ? null : id));
 
@@ -198,7 +194,6 @@ export default function McpApiPage() {
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 py-8">
         <div className="w-full max-w-2xl flex flex-col gap-6">
 
-          {/* Header */}
           <div className="flex gap-4">
             <div className="flex h-fit w-fit shrink-0 items-center rounded-2xl bg-surface-hover p-2">
               <Zap className="h-8 w-8 text-brand" />
@@ -212,7 +207,6 @@ export default function McpApiPage() {
             </div>
           </div>
 
-          {/* Endpoint */}
           <div className="rounded-xl border border-brand/30 bg-brand/5 px-5 py-4">
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-brand/70">MCP Endpoint</p>
             <div className="flex items-center gap-2">
@@ -222,12 +216,10 @@ export default function McpApiPage() {
             <p className="mt-1 text-xs text-fg-muted">Transport: HTTP · Protocol: JSON-RPC 2.0 · Version: 2024-11-05</p>
           </div>
 
-          {/* API Keys — single card */}
           <div className="rounded-xl border border-glass-border bg-surface/40 overflow-hidden">
             <div className="px-5 pt-5 pb-4">
               <h2 className="mb-3 text-sm font-medium text-fg">API Keys</h2>
 
-              {/* New key revealed */}
               {newKeyValue && (
                 <div className="mb-3 rounded-lg border border-green-500/30 bg-green-500/5 px-4 py-3">
                   <p className="mb-2 text-xs font-medium text-green-400">
@@ -248,7 +240,6 @@ export default function McpApiPage() {
                 </div>
               )}
 
-              {/* Create row */}
               <div className="flex gap-2">
                 <input
                   value={newKeyName}
@@ -274,7 +265,6 @@ export default function McpApiPage() {
               )}
             </div>
 
-            {/* Key list — dividers, no individual cards */}
             {isLoading ? (
               <div className="flex justify-center py-6">
                 <Loader2 className="h-5 w-5 animate-spin text-fg-muted" />
@@ -292,7 +282,6 @@ export default function McpApiPage() {
             )}
           </div>
 
-          {/* Available tools */}
           <Collapsible
             title="Available tools (11)"
             icon={Zap}
@@ -311,7 +300,6 @@ export default function McpApiPage() {
             </div>
           </Collapsible>
 
-          {/* Usage examples */}
           <Collapsible
             title="JSON-RPC usage examples"
             icon={Terminal}
@@ -327,7 +315,6 @@ export default function McpApiPage() {
             </div>
           </Collapsible>
 
-          {/* Claude Desktop config */}
           <Collapsible
             title="Claude Desktop config"
             icon={Key}

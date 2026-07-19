@@ -93,14 +93,12 @@ export default function TeamMembersPanel({ team, members, isAdmin }) {
         </div>
       )}
 
-      {/* Header */}
       <div className="grid grid-cols-[minmax(0,1fr)_8rem] sm:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_12rem] gap-4 border-b border-glass-border px-2 pb-2 text-xs font-medium uppercase tracking-wide text-fg-subtle">
         <span>Name</span>
         <span className="hidden sm:block">Email</span>
         <span className="text-right">Role</span>
       </div>
 
-      {/* Rows */}
       {members.map((m) => {
         const removable = isAdmin && m.role !== "OWNER";
         return (

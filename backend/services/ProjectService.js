@@ -43,7 +43,6 @@ export const getTeamProjects = async (userId, teamId) => {
   return projects.map(shapeProject);
 };
 
-// All projects across the teams the user belongs to in a workspace.
 export const getWorkspaceProjects = async (userId, workspaceId) => {
   await assertMembership(userId, workspaceId);
   const projects = await prisma.project.findMany({
@@ -149,7 +148,6 @@ export const deleteProject = async (userId, id) => {
   await prisma.project.delete({ where: { id } });
 };
 
-// Persist a column's order (and the dropped card's status) after drag-and-drop.
 export const reorderProjects = async (userId, status, orderedIds) => {
   if (!Array.isArray(orderedIds) || orderedIds.length === 0) return { ok: true };
   if (status && !STATUSES.includes(status)) throw new ApiError(400, "Invalid status");

@@ -8,7 +8,6 @@ import HomeRedirect from "./pages/HomeRedirect.jsx";
 import TeamPage from "./pages/teams/TeamPage.jsx";
 import TeamProjectsPage from "./pages/teams/TeamProjectsPage.jsx";
 import TeamIssuesPage from "./pages/teams/TeamIssuesPage.jsx";
-import IntegrationsPage from "./pages/teams/IntegrationsPage.jsx";
 import GitHubIntegrationPage from "./pages/teams/GitHubIntegrationPage.jsx";
 import SlackIntegrationPage from "./pages/teams/SlackIntegrationPage.jsx";
 import NotionIntegrationPage from "./pages/teams/NotionIntegrationPage.jsx";
@@ -25,7 +24,6 @@ import SearchPage from "./pages/SearchPage.jsx";
 import WorkspaceMembersPage from "./pages/WorkspaceMembersPage.jsx";
 import TeamsListPage from "./pages/TeamsListPage.jsx";
 
-// Settings
 import SettingsLayout from "./components/settings/SettingsLayout.jsx";
 import SettingsRedirect from "./pages/settings/SettingsRedirect.jsx";
 import PreferencesPage from "./pages/settings/personal/PreferencesPage.jsx";
@@ -44,9 +42,7 @@ import MembersPage from "./pages/settings/admin/MembersPage.jsx";
 export default function App() {
   return (
     <Routes>
-      {/* Public: invite links work before sign-in */}
       <Route path="/invite/:token" element={<InvitePage />} />
-      {/* Public: shareable GitPersona developer identity card */}
       <Route path="/dev/:login" element={<PublicDevProfilePage />} />
 
       <Route element={<PublicOnlyRoute />}>
@@ -55,7 +51,6 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        {/* Standalone (no app shell) */}
         <Route path="/join/:teamId" element={<JoinTeamPage />} />
 
         <Route element={<AppLayout />}>
@@ -63,7 +58,6 @@ export default function App() {
           <Route path="/teams/:teamId" element={<TeamPage />} />
           <Route path="/teams/:teamId/projects" element={<TeamProjectsPage />} />
           <Route path="/teams/:teamId/issues" element={<TeamIssuesPage />} />
-          <Route path="/teams/:teamId/integrations" element={<IntegrationsPage />} />
           <Route path="/teams/:teamId/integrations/github" element={<GitHubIntegrationPage />} />
           <Route path="/teams/:teamId/integrations/slack" element={<SlackIntegrationPage />} />
           <Route path="/teams/:teamId/integrations/notion" element={<NotionIntegrationPage />} />
@@ -78,7 +72,6 @@ export default function App() {
           <Route path="/inbox" element={<InboxPage />} />
         </Route>
 
-        {/* Settings — full-page takeover, outside AppLayout (no app sidebar) */}
         <Route path="/settings" element={<SettingsLayout />}>
           <Route index element={<SettingsRedirect />} />
           <Route path="preferences" element={<PreferencesPage />} />

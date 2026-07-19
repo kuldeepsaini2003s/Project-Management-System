@@ -24,7 +24,6 @@ export const deleteTeam = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-// Team-scoped collections
 export const getTeamProjects = asyncHandler(async (req, res) => {
   res.json(await projectService.getTeamProjects(req.userId, req.params.id));
 });

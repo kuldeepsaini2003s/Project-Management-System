@@ -1,23 +1,7 @@
-/**
- * Custom skeleton loader system.
- *
- * Usage:
- *   <Skeleton name="issue-board" loading={loading && issues.length === 0}>
- *     <IssueBoard ... />
- *   </Skeleton>
- *
- * Each named skeleton mirrors the real layout at natural dimensions.
- */
-
-/* ── Base shimmer primitive ──────────────────────────────────────── */
 export function Sk({ className = "" }) {
   return <div className={`skeleton ${className}`} aria-hidden="true" />;
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Kanban board (issues)
-   5 columns × variable card counts
-────────────────────────────────────────────────────────────────── */
 const ISSUE_COL_COUNTS = [3, 4, 2, 5, 1];
 
 function IssueBoardSkeleton() {
@@ -25,13 +9,11 @@ function IssueBoardSkeleton() {
     <div className="flex h-full gap-3 overflow-x-auto px-4 pb-4 pt-2">
       {ISSUE_COL_COUNTS.map((count, ci) => (
         <div key={ci} className="flex w-72 shrink-0 flex-col gap-2">
-          {/* Column header */}
           <div className="flex items-center gap-2 px-1 py-1.5">
             <Sk className="h-3.5 w-3.5 rounded-full" />
             <Sk className="h-3 w-20 rounded" />
             <Sk className="ml-auto h-3 w-5 rounded" />
           </div>
-          {/* Cards */}
           {Array.from({ length: count }).map((_, i) => (
             <div key={i} className="space-y-2 rounded-lg border border-glass-border bg-surface/40 p-3">
               <Sk className="h-3.5 w-full rounded" />
@@ -42,7 +24,6 @@ function IssueBoardSkeleton() {
               </div>
             </div>
           ))}
-          {/* Add card */}
           <Sk className="h-8 w-full rounded-lg opacity-50" />
         </div>
       ))}
@@ -50,10 +31,6 @@ function IssueBoardSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Kanban board (projects)
-   5 columns with richer cards
-────────────────────────────────────────────────────────────────── */
 const PROJECT_COL_COUNTS = [2, 3, 1, 2, 1];
 
 function ProjectBoardSkeleton() {
@@ -61,13 +38,11 @@ function ProjectBoardSkeleton() {
     <div className="flex h-full gap-3 overflow-x-auto px-4 pb-4 pt-2">
       {PROJECT_COL_COUNTS.map((count, ci) => (
         <div key={ci} className="flex w-72 shrink-0 flex-col gap-2">
-          {/* Column header */}
           <div className="flex items-center gap-2 px-1 py-1.5">
             <Sk className="h-3.5 w-3.5 rounded-full" />
             <Sk className="h-3 w-24 rounded" />
             <Sk className="ml-auto h-3 w-5 rounded" />
           </div>
-          {/* Cards */}
           {Array.from({ length: count }).map((_, i) => (
             <div key={i} className="space-y-2 rounded-lg border border-glass-border bg-surface/40 p-3">
               <div className="flex items-center gap-2">
@@ -81,7 +56,6 @@ function ProjectBoardSkeleton() {
               </div>
             </div>
           ))}
-          {/* Add card */}
           <Sk className="h-8 w-full rounded-lg opacity-50" />
         </div>
       ))}
@@ -89,19 +63,13 @@ function ProjectBoardSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Issue detail (two-column: main content + sidebar)
-────────────────────────────────────────────────────────────────── */
 function IssueDetailSkeleton() {
   return (
     <div className="flex h-full flex-col overflow-hidden lg:flex-row">
-      {/* Main */}
       <div className="min-w-0 flex-1 overflow-y-auto px-6 py-6 lg:px-10">
         <div className="mx-auto max-w-3xl">
-          {/* Title */}
           <Sk className="h-8 w-4/5 rounded-lg" />
           <Sk className="mt-3 h-8 w-3/5 rounded-lg" />
-          {/* Description */}
           <div className="mt-8 space-y-2">
             <Sk className="h-4 w-full rounded" />
             <Sk className="h-4 w-full rounded" />
@@ -110,9 +78,7 @@ function IssueDetailSkeleton() {
             <Sk className="h-4 w-full rounded" />
             <Sk className="h-4 w-2/3 rounded" />
           </div>
-          {/* Attach image btn */}
           <Sk className="mt-5 h-8 w-32 rounded-md" />
-          {/* Sub-issues */}
           <div className="mt-10">
             <Sk className="h-4 w-20 rounded" />
             <div className="mt-2 space-y-2">
@@ -120,7 +86,6 @@ function IssueDetailSkeleton() {
               <Sk className="h-10 w-full rounded-md" />
             </div>
           </div>
-          {/* Activity */}
           <div className="mt-10">
             <Sk className="h-4 w-16 rounded" />
             <div className="mt-3 flex items-center gap-2">
@@ -131,7 +96,6 @@ function IssueDetailSkeleton() {
         </div>
       </div>
 
-      {/* Sidebar */}
       <aside className="w-full shrink-0 border-t border-glass-border p-5 lg:w-72 lg:border-l lg:border-t-0">
         {["Status", "Priority", "Assignee", "Labels", "Project", "Repository", "Pull requests"].map((label) => (
           <div key={label} className="mb-5 border-b border-glass-border pb-5 last:border-0">
@@ -144,10 +108,6 @@ function IssueDetailSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Members table (WorkspaceMembersPage)
-   Avatars + name / email / role / teams / last seen
-────────────────────────────────────────────────────────────────── */
 function MembersListSkeleton() {
   return (
     <div className="glass min-h-0 flex-1 overflow-auto rounded-lg p-4 sm:p-5">
@@ -193,10 +153,6 @@ function MembersListSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Teams list (TeamsListPage)
-   Team glyph + name + key / membership / member avatars / projects
-────────────────────────────────────────────────────────────────── */
 function TeamsListSkeleton() {
   return (
     <div className="glass min-h-0 flex-1 overflow-auto rounded-lg p-4 sm:p-5">
@@ -244,9 +200,6 @@ function TeamsListSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Settings → Admin → Teams table
-────────────────────────────────────────────────────────────────── */
 function TeamsSettingsSkeleton() {
   return (
     <div className="overflow-hidden rounded-lg border border-glass-border bg-surface/20">
@@ -282,9 +235,6 @@ function TeamsSettingsSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Settings → Admin → Members table
-────────────────────────────────────────────────────────────────── */
 function MembersSettingsSkeleton() {
   return (
     <div className="overflow-hidden rounded-lg border border-glass-border bg-surface/30">
@@ -323,10 +273,6 @@ function MembersSettingsSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Labels table (shared: IssueLabelsPage + ProjectLabelsPage)
-   Used as inline <tr> rows inside an existing <tbody>
-────────────────────────────────────────────────────────────────── */
 export function LabelSkeletonRows({ count = 6 }) {
   return (
     <>
@@ -353,13 +299,9 @@ export function LabelSkeletonRows({ count = 6 }) {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Project detail card
-────────────────────────────────────────────────────────────────── */
 function ProjectDetailSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-      {/* Header card */}
       <div className="glass rounded-xl p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-3">
@@ -376,7 +318,6 @@ function ProjectDetailSkeleton() {
           </div>
         </div>
 
-        {/* Properties */}
         <div className="mt-5 divide-y divide-glass-border">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 py-2">
@@ -387,7 +328,6 @@ function ProjectDetailSkeleton() {
         </div>
       </div>
 
-      {/* Issues section */}
       <div className="glass rounded-xl p-5">
         <Sk className="mb-4 h-4 w-24 rounded" />
         <div className="space-y-2">
@@ -405,9 +345,6 @@ function ProjectDetailSkeleton() {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   Skeleton registry + wrapper
-────────────────────────────────────────────────────────────────── */
 const SKELETONS = {
   "issue-board":         IssueBoardSkeleton,
   "project-board":       ProjectBoardSkeleton,
@@ -419,20 +356,10 @@ const SKELETONS = {
   "project-detail":      ProjectDetailSkeleton,
 };
 
-/**
- * Wrapper component. When loading=true renders the named skeleton;
- * otherwise renders children transparently.
- *
- *   <Skeleton name="issue-board" loading={loading && issues.length === 0}>
- *     <IssueBoard ... />
- *   </Skeleton>
- */
 export function Skeleton({ name, loading, children }) {
   if (!loading) return children;
   const Component = SKELETONS[name];
   return Component ? <Component /> : null;
 }
 
-// Also export individual skeletons for cases that need a direct import
-// (e.g. early-return patterns in class components or complex conditionals)
 export { IssueDetailSkeleton };

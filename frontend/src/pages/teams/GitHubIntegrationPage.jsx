@@ -28,7 +28,6 @@ const GitHubIcon = () => (
   </svg>
 );
 
-/* Language dot colors — common ones */
 const LANG_COLORS = {
   JavaScript: "#f1e05a", TypeScript: "#3178c6", Python: "#3572A5",
   Rust: "#dea584", Go: "#00ADD8", Java: "#b07219", "C#": "#178600",
@@ -58,7 +57,6 @@ function RepoCard({ repo }) {
       rel="noopener noreferrer"
       className="group block rounded-xl border border-glass-border bg-surface/40 p-4 hover:bg-surface/70 hover:border-glass-border/80 transition-all"
     >
-      {/* Top row: name + private badge */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           {repo.private ? (
@@ -79,14 +77,12 @@ function RepoCard({ repo }) {
         </span>
       </div>
 
-      {/* Description */}
       {repo.description && (
         <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-fg-muted">
           {repo.description}
         </p>
       )}
 
-      {/* Stats row */}
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-fg-subtle">
         {repo.language && (
           <span className="flex items-center gap-1">
@@ -180,7 +176,6 @@ export default function GitHubIntegrationPage() {
 
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 py-8">
         <div className="w-full max-w-2xl">
-          {/* Header */}
           <div className="mb-5 flex gap-4">
             <div className="flex h-fit w-fit shrink-0 items-center rounded-2xl bg-surface-hover p-2">
               <GitHubIcon />
@@ -199,7 +194,6 @@ export default function GitHubIntegrationPage() {
             </div>
           ) : connected ? (
             <div className="flex flex-col gap-4">
-              {/* Connection status card */}
               <div className="rounded-xl border border-glass-border bg-surface/40 overflow-hidden">
                 <div className="flex items-start gap-3 px-5 py-4">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
@@ -236,7 +230,6 @@ export default function GitHubIntegrationPage() {
 
               {error && <ErrorMsg msg={error} />}
 
-              {/* Repositories section */}
               <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-sm font-medium text-fg">

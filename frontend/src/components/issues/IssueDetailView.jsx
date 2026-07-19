@@ -36,7 +36,6 @@ const timeAgo = (date) => {
   return "just now";
 };
 
-// Full, editable issue view. Used by the issue page AND the inbox detail pane.
 export default function IssueDetailView({ issueId }) {
   const { user } = useAuth();
   const { data: issue, isLoading, error, refetch } = useGetIssueQuery(issueId, { skip: !issueId });
@@ -352,7 +351,6 @@ export default function IssueDetailView({ issueId }) {
 
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Render text with @mentions (of the given members) coloured like Linear.
 function highlightMentions(body, members = []) {
   const names = members.map((m) => m.name).filter(Boolean);
   if (!names.length) return body;
@@ -369,21 +367,19 @@ function highlightMentions(body, members = []) {
   );
 }
 
-// Comment box with @mention autocomplete + blue mention highlighting.
 function CommentComposer({ members, currentUserId, onSubmit }) {
   const [text, setText] = useState("");
-  const [mentioned, setMentioned] = useState([]); // { id, name } the user picked
-  const [menu, setMenu] = useState(null); // { query, start } | null
+  const [mentioned, setMentioned] = useState([]);
+  const [menu, setMenu] = useState(null);
   const ref = useRef(null);
 
-  // Members the user can mention — never themselves.
   const mentionable = members.filter((m) => m.id !== currentUserId);
 
   const detectMention = (value, caret) => {
     const before = value.slice(0, caret);
     const m = before.match(/(^|\s)@([\w.-]*)$/);
     if (!m) return null;
-    return { query: m[2], start: caret - m[2].length - 1 }; // index of the '@'
+    return { query: m[2], start: caret - m[2].length - 1 };
   };
 
   const onChange = (e) => {
@@ -425,7 +421,6 @@ function CommentComposer({ members, currentUserId, onSubmit }) {
         .slice(0, 6)
     : [];
 
-  // Only highlight names the user actually selected (and still present).
   const activeMentions = mentioned.filter((m) => text.includes(`@${m.name}`));
 
   return (
@@ -449,7 +444,6 @@ function CommentComposer({ members, currentUserId, onSubmit }) {
       )}
       <div className="flex items-end gap-2 rounded-lg border border-glass-border p-2">
         <div className="relative flex-1">
-          {/* Highlight overlay (mirrors the textarea, colours mentions blue) */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words text-sm leading-relaxed text-fg"

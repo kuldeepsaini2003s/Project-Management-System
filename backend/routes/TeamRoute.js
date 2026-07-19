@@ -46,34 +46,28 @@ router.post("/:id/projects", createTeamProject);
 router.get("/:id/issues", getTeamIssues);
 router.post("/:id/issues", createTeamIssue);
 
-// Members
 router.get("/:id/members", getMembers);
 router.post("/:id/members", addMember);
 router.patch("/:id/members/:userId", updateMemberRole);
 router.delete("/:id/members/:userId", removeMember);
 
-// Invite by email
 router.post("/:id/invites", createInvites);
 
-// GitHub integration (OAuth)
 router.get("/:id/github", getConnection);
 router.get("/:id/github/authorize", authorize);
 router.get("/:id/github/manage", manage);
 router.get("/:id/github/repos", listRepos);
 router.delete("/:id/github", disconnect);
 
-// Slack integration (OAuth)
 router.get("/:id/slack", getSlack);
 router.get("/:id/slack/authorize", authorizeSlack);
 router.get("/:id/slack/info", getSlackInfo);
 router.delete("/:id/slack", disconnectSlack);
 
-// Notion integration (OAuth)
 router.get("/:id/notion", getNotion);
 router.get("/:id/notion/authorize", authorizeNotion);
 router.delete("/:id/notion", disconnectNotion);
 
-// Join flow
 router.get("/:id/public", getTeamPublic);
 router.get("/:id/my-request", getMyRequest);
 router.post("/:id/join", requestToJoin);

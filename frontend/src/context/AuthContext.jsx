@@ -14,7 +14,6 @@ export function AuthProvider({ children }) {
   const dispatch = useDispatch();
   const { user, loading } = useSelector((state) => state.auth);
 
-  // Hydrate the session once on app load.
   useEffect(() => {
     dispatch(loadCurrentUser());
   }, [dispatch]);

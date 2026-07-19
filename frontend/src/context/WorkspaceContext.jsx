@@ -14,12 +14,10 @@ export function WorkspaceProvider({ children }) {
   const loading = useSelector((state) => state.workspace.loading);
   const currentId = useSelector((state) => state.ui.currentWorkspaceId);
 
-  // Load the user's workspaces once authenticated.
   useEffect(() => {
     if (isAuthenticated) dispatch(fetchWorkspaces());
   }, [isAuthenticated, dispatch]);
 
-  // Default to the first workspace when none is selected.
   useEffect(() => {
     if (!items.length) return;
     if (!currentId || !items.some((w) => w.id === currentId)) {
