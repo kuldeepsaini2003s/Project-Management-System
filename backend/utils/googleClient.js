@@ -4,6 +4,34 @@ import { ApiError } from "./ApiError.js";
 
 const client = new OAuth2Client(env.googleClientId);
 
+export const verifyGoogleIdToken = async (credential) => {
+  if (!env.googleClientId) {
+    throw new ApiError(500, "Google auth is not configured (GOOGLE_CLIENT_ID missing)");
+  }
+
+  let payload;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: env.googleClientId,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    throw new ApiError(401, "Invalid Google credential");
+  }
+
+  if (!payload?.email || payload.email_verified === false) {
+    throw new ApiError(401, "Google account email not verified");
+  }
+
+  return {
+    googleId: payload.sub,
+    email: payload.email,
+    name: payload.name || payload.email.split("@")[0],
+    avatarUrl: payload.picture || null,
+  };
+};
+
 export const verifyGoogleAccessToken = async (accessToken) => {
   if (!env.googleClientId) {
     throw new ApiError(500, "Google auth is not configured (GOOGLE_CLIENT_ID missing)");

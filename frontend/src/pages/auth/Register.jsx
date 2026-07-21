@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout.jsx";
 import Divider from "../../components/auth/Divider.jsx";
@@ -17,6 +18,8 @@ export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const oneTapInProgress = useSelector((state) => state.auth.oneTapInProgress);
+  const oneTapError = useSelector((state) => state.auth.oneTapError);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -47,9 +50,9 @@ export default function Register() {
       subtitle="Start building with your team on Up To Date."
     >
       <div className="flex flex-col gap-4">
-        <FormError message={error} />
+        <FormError message={error || oneTapError} />
 
-        <GoogleAuthButton onToken={handleGoogle} onError={setError}>
+        <GoogleAuthButton onToken={handleGoogle} onError={setError} isLoading={oneTapInProgress}>
           Sign up with Google
         </GoogleAuthButton>
 
@@ -89,7 +92,7 @@ export default function Register() {
             onChange={handleChange}
             required
           />
-          <Button type="submit" isLoading={loading}>
+          <Button type="submit" isLoading={loading || oneTapInProgress}>
             {loading ? "Creating account..." : "Create account"}
           </Button>
         </form>

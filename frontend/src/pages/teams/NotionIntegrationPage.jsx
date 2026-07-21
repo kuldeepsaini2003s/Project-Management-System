@@ -12,6 +12,7 @@ import {
   useLazyGetTeamNotionAuthorizeQuery,
   useDisconnectTeamNotionMutation,
 } from "../../redux/apiSlice.js";
+import { connectOAuthPopup } from "../../utils/oauthPopup.js";
 
 const NotionIcon = () => (
   <svg viewBox="0 0 24 24" className="h-8 w-8" fill="currentColor">
@@ -40,11 +41,17 @@ export default function NotionIntegrationPage() {
     setConnecting(true);
     setError("");
     try {
-      const result = await authorize(teamId);
-      if (result.error)
-        throw new Error(result.error?.data?.message || "Failed to connect");
-      if (result.data?.reconnected) refetch();
-      else if (result.data?.url) window.location.href = result.data.url;
+      const outcome = await connectOAuthPopup({
+        provider: "notion",
+        fetchAuthorize: async () => {
+          const result = await authorize(teamId);
+          if (result.error)
+            throw new Error(result.error?.data?.message || "Failed to connect");
+          return result.data;
+        },
+      });
+      if (outcome.status === "connected" || outcome.status === "reconnected") refetch();
+      else if (outcome.status === "error") setError(outcome.message || "Connection failed");
     } catch (err) {
       setError(err.message || "Connection failed");
     } finally {

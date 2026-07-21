@@ -21,6 +21,14 @@ export const google = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+export const googleOneTap = asyncHandler(async (req, res) => {
+  const result = await authService.authenticateWithGoogleOneTap({
+    ...req.body,
+    ...getClientInfo(req),
+  });
+  res.json(result);
+});
+
 export const me = asyncHandler(async (req, res) => {
   const user = await authService.getCurrentUserProfile(req.userId);
   res.json(user);

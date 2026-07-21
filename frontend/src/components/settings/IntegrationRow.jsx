@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ExternalLink, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { connectOAuthPopup } from "../../utils/oauthPopup.js";
 
 export const GitHubIcon = () => (
   <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
@@ -28,15 +29,18 @@ export default function IntegrationRow({ icon, name, description, teamId, useCon
     setConnecting(true);
     setError("");
     try {
-      const result = await authorize(teamId);
-      if (result.error) {
-        throw new Error(result.error?.data?.message || "Connection failed");
-      }
-      if (result.data?.reconnected) {
-        refetch();
-      } else if (result.data?.url) {
-        window.location.href = result.data.url;
-      }
+      const outcome = await connectOAuthPopup({
+        provider: (name || "").toLowerCase(), // "GitHub" | "Slack" | "Notion"
+        fetchAuthorize: async () => {
+          const result = await authorize(teamId);
+          if (result.error) {
+            throw new Error(result.error?.data?.message || "Connection failed");
+          }
+          return result.data;
+        },
+      });
+      if (outcome.status === "connected" || outcome.status === "reconnected") refetch();
+      else if (outcome.status === "error") setError(outcome.message || "Connection failed");
     } catch (err) {
       setError(err.message || "Connection failed");
     } finally {

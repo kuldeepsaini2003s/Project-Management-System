@@ -27,6 +27,7 @@ export default function GoogleAuthButton({
   onToken,
   onError,
   disabled = false,
+  isLoading = false,
 }) {
   const startLogin = useGoogleLogin({
     flow: "implicit",
@@ -36,8 +37,13 @@ export default function GoogleAuthButton({
   });
 
   return (
-    <Button variant="secondary" onClick={() => startLogin()} disabled={disabled}>
-      <GoogleIcon />
+    <Button
+      variant="secondary"
+      onClick={() => startLogin()}
+      disabled={disabled}
+      isLoading={isLoading}
+    >
+      {!isLoading && <GoogleIcon />}
       {children}
     </Button>
   );

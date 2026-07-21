@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuthLayout from "../../components/auth/AuthLayout.jsx";
 import Divider from "../../components/auth/Divider.jsx";
@@ -17,6 +18,8 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const oneTapInProgress = useSelector((state) => state.auth.oneTapInProgress);
+  const oneTapError = useSelector((state) => state.auth.oneTapError);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -44,9 +47,9 @@ export default function Login() {
   return (
     <AuthLayout title="Log in to Up To Date">
       <div className="flex flex-col gap-4">
-        <FormError message={error} />
+        <FormError message={error || oneTapError} />
 
-        <GoogleAuthButton onToken={handleGoogle} onError={setError}>
+        <GoogleAuthButton onToken={handleGoogle} onError={setError} isLoading={oneTapInProgress}>
           Continue with Google
         </GoogleAuthButton>
 
@@ -75,7 +78,7 @@ export default function Login() {
             onChange={handleChange}
             required
           />
-          <Button type="submit" isLoading={loading}>
+          <Button type="submit" isLoading={loading || oneTapInProgress}>
             {loading ? "Logging in..." : "Continue with email"}
           </Button>
         </form>

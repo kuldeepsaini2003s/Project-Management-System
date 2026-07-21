@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { signToken } from "../utils/jwt.js";
-import { verifyGoogleAccessToken } from "../utils/googleClient.js";
+import { verifyGoogleAccessToken, verifyGoogleIdToken } from "../utils/googleClient.js";
 import { createSession } from "./UserService.js";
 
 const SALT_ROUNDS = 10;
@@ -107,6 +107,40 @@ export const authenticateWithGoogle = async ({ accessToken, userAgent, ipAddress
   if (!accessToken) throw new ApiError(400, "Google accessToken is required");
 
   const profile = await verifyGoogleAccessToken(accessToken);
+
+  let user = await prisma.user.findFirst({
+    where: { OR: [{ googleId: profile.googleId }, { email: profile.email }] },
+  });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: profile.email,
+        name: profile.name,
+        avatarUrl: profile.avatarUrl,
+        googleId: profile.googleId,
+        provider: "GOOGLE",
+      },
+    });
+    await createDefaultWorkspaceForUser(user);
+  } else if (!user.googleId) {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        googleId: profile.googleId,
+        avatarUrl: user.avatarUrl || profile.avatarUrl,
+      },
+    });
+  }
+
+  await ensureWorkspaceSetup(user);
+  return buildAuthResponse(user, { userAgent, ipAddress });
+};
+
+export const authenticateWithGoogleOneTap = async ({ credential, userAgent, ipAddress }) => {
+  if (!credential) throw new ApiError(400, "Google credential is required");
+
+  const profile = await verifyGoogleIdToken(credential);
 
   let user = await prisma.user.findFirst({
     where: { OR: [{ googleId: profile.googleId }, { email: profile.email }] },

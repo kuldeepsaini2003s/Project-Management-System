@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
+import GoogleOneTap from "./components/auth/GoogleOneTap.jsx";
 import PublicOnlyRoute from "./components/auth/PublicOnlyRoute.jsx";
 import AppLayout from "./components/layout/AppLayout.jsx";
 import Login from "./pages/auth/Login.jsx";
@@ -41,7 +42,9 @@ import MembersPage from "./pages/settings/admin/MembersPage.jsx";
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <GoogleOneTap />
+      <Routes>
       <Route path="/invite/:token" element={<InvitePage />} />
       <Route path="/dev/:login" element={<PublicDevProfilePage />} />
 
@@ -91,5 +94,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

@@ -10,11 +10,16 @@ import { WorkspaceProvider } from "./context/WorkspaceContext.jsx";
 import { TeamProvider } from "./context/TeamContext.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
 import App from "./App.jsx";
+import { notifyOpenerOfOAuthResult } from "./utils/oauthPopup.js";
 import "./index.css";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+// If this window is the OAuth popup returning from a provider, notify the
+// opener and close — don't mount the whole app inside the popup.
+if (notifyOpenerOfOAuthResult()) {
+  // no-op: bridge has posted the result and is closing this window
+} else ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <Provider store={store}>
       <GoogleOAuthProvider clientId={googleClientId}>

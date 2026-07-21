@@ -38,6 +38,12 @@ export const loginWithGoogle = (accessToken) => async (dispatch) => {
   return persistSession(dispatch, data);
 };
 
+
+export const loginWithGoogleCredential = (credential) => async (dispatch) => {
+  const data = await authService.googleOneTap(credential);
+  return persistSession(dispatch, data);
+};
+
 export const logout = () => async (dispatch) => {
   await authService.logout();
   localStorage.removeItem(TOKEN_KEY);
