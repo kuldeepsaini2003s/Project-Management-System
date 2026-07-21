@@ -4,7 +4,7 @@ dotenv.config();
 
 const required = (key) => process.env[key];
 
-const clientUrls = (process.env.CLIENT_URLS || process.env.CLIENT_URL || "http://localhost:5173")
+const clientUrls = (process.env.CLIENT_URL || "http://localhost:5173")
   .split(",")
   .map((s) => s.trim().replace(/\/$/, ""))
   .filter(Boolean);

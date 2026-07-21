@@ -10,31 +10,60 @@ const resolveReturnOrigin = (origin) => {
 };
 
 const SAFE_PATH = /^\/[a-zA-Z0-9\-_/]*$/;
-const resolveReturnPath = (path) => (typeof path === "string" && path.length < 200 && SAFE_PATH.test(path) ? path : null);
+const resolveReturnPath = (path) =>
+  typeof path === "string" && path.length < 200 && SAFE_PATH.test(path)
+    ? path
+    : null;
 
 const buildState = (teamId, userId, origin, returnPath) =>
-  signToken({ sl: true, t: teamId, u: userId, c: resolveReturnOrigin(origin), p: resolveReturnPath(returnPath) });
+  signToken({
+    sl: true,
+    t: teamId,
+    u: userId,
+    c: resolveReturnOrigin(origin),
+    p: resolveReturnPath(returnPath),
+  });
 
 const slackOAuthUrl = (state) => {
   const params = new URLSearchParams({
     client_id: env.slack.clientId,
-    scope: "channels:read,users:read",
-    user_scope: "incoming-webhook",
+    scope: [
+      "channels:read",
+      "groups:read",
+      "users:read",
+      "team:read",
+      "chat:write",
+      "incoming-webhook",
+    ].join(","),
     redirect_uri: env.slack.redirectUri,
     state,
   });
   return `https://slack.com/oauth/v2/authorize?${params}`;
 };
 
-export const buildAuthorizeUrl = async (userId, teamId, { origin, returnPath } = {}) => {
+export const buildAuthorizeUrl = async (
+  userId,
+  teamId,
+  { origin, returnPath } = {},
+) => {
   await assertTeamAdmin(userId, teamId);
-  if (!env.slack.clientId) throw new ApiError(500, "Slack App is not configured on the server");
+  if (!env.slack.clientId)
+    throw new ApiError(500, "Slack App is not configured on the server");
 
-  const existing = await prisma.slackConnection.findUnique({ where: { teamId } });
+  const existing = await prisma.slackConnection.findUnique({
+    where: { teamId },
+  });
 
   if (existing?.webhookUrl) {
-    await prisma.slackConnection.update({ where: { teamId }, data: { active: true } });
-    return { reconnected: true, channel: existing.channel, slackTeamName: existing.slackTeamName };
+    await prisma.slackConnection.update({
+      where: { teamId },
+      data: { active: true },
+    });
+    return {
+      reconnected: true,
+      channel: existing.channel,
+      slackTeamName: existing.slackTeamName,
+    };
   }
 
   return { url: slackOAuthUrl(buildState(teamId, userId, origin, returnPath)) };
@@ -88,12 +117,15 @@ export const handleOAuthCallback = async (query) => {
     accessToken = data.access_token || null;
     const wh = data.incoming_webhook || data.authed_user?.incoming_webhook;
     webhookUrl = wh?.url;
-    channel    = wh?.channel || null;
-    channelId  = wh?.channel_id || null;
-    slackTeamId   = data.team?.id;
+    channel = wh?.channel || null;
+    channelId = wh?.channel_id || null;
+    slackTeamId = data.team?.id;
     slackTeamName = data.team?.name;
 
-    if (!webhookUrl) return fail("Slack did not return a webhook URL — ensure incoming-webhook scope is granted");
+    if (!webhookUrl)
+      return fail(
+        "Slack did not return a webhook URL — ensure incoming-webhook scope is granted",
+      );
   } catch (e) {
     return fail("Could not reach Slack to complete the connection");
   }
@@ -103,8 +135,25 @@ export const handleOAuthCallback = async (query) => {
 
   const after = await prisma.slackConnection.upsert({
     where: { teamId },
-    update: { webhookUrl, channel, channelId, slackTeamId, slackTeamName, accessToken, active: true },
-    create: { teamId, webhookUrl, channel, channelId, slackTeamId, slackTeamName, accessToken, active: true },
+    update: {
+      webhookUrl,
+      channel,
+      channelId,
+      slackTeamId,
+      slackTeamName,
+      accessToken,
+      active: true,
+    },
+    create: {
+      teamId,
+      webhookUrl,
+      channel,
+      channelId,
+      slackTeamId,
+      slackTeamName,
+      accessToken,
+      active: true,
+    },
   });
 
   return `${returnOrigin}${p || `/teams/${teamId}/integrations/slack`}?slack=connected`;
@@ -127,7 +176,10 @@ export const disconnectSlack = async (userId, teamId) => {
   if (!conn) {
     return { ok: true };
   }
-  await prisma.slackConnection.update({ where: { teamId }, data: { active: false } });
+  await prisma.slackConnection.update({
+    where: { teamId },
+    data: { active: false },
+  });
   return { ok: true };
 };
 
@@ -161,7 +213,10 @@ export const postToTeamSlack = async (teamId, text) => {
 
 const slackApi = async (token, path) => {
   const res = await fetch(`https://slack.com/api/${path}`, {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
   });
   return res.json();
 };
@@ -169,10 +224,18 @@ const slackApi = async (token, path) => {
 export const getSlackInfo = async (userId, teamId) => {
   await assertTeamMembership(userId, teamId);
   const conn = await prisma.slackConnection.findUnique({ where: { teamId } });
-  if (!conn?.webhookUrl || conn.active === false) throw new ApiError(400, "Slack is not connected for this team");
+  if (!conn?.webhookUrl || conn.active === false)
+    throw new ApiError(400, "Slack is not connected for this team");
 
   if (!conn.accessToken) {
-    return { channel: conn.channel, channelId: null, workspace: conn.slackTeamName, members: [], channels: [], needsReconnect: true };
+    return {
+      channel: conn.channel,
+      channelId: null,
+      workspace: conn.slackTeamName,
+      members: [],
+      channels: [],
+      needsReconnect: true,
+    };
   }
 
   const token = conn.accessToken;
@@ -181,13 +244,18 @@ export const getSlackInfo = async (userId, teamId) => {
 
   if (conn.channelId) {
     try {
-      const membersData = await slackApi(token, `conversations.members?channel=${conn.channelId}&limit=100`);
+      const membersData = await slackApi(
+        token,
+        `conversations.members?channel=${conn.channelId}&limit=100`,
+      );
       if (membersData.ok && membersData.members?.length) {
         const usersData = await slackApi(token, "users.list?limit=200");
         if (usersData.ok) {
           const memberSet = new Set(membersData.members);
           members = (usersData.members || [])
-            .filter((u) => memberSet.has(u.id) && !u.is_bot && u.id !== "USLACKBOT")
+            .filter(
+              (u) => memberSet.has(u.id) && !u.is_bot && u.id !== "USLACKBOT",
+            )
             .map((u) => ({
               id: u.id,
               name: u.profile?.display_name || u.real_name || u.name,
@@ -198,12 +266,14 @@ export const getSlackInfo = async (userId, teamId) => {
             }));
         }
       }
-    } catch (err) {
-    }
+    } catch (err) {}
   }
 
   try {
-    const chData = await slackApi(token, "conversations.list?types=public_channel&limit=100&exclude_archived=true");
+    const chData = await slackApi(
+      token,
+      "conversations.list?types=public_channel&limit=100&exclude_archived=true",
+    );
     if (chData.ok) {
       channels = (chData.channels || []).map((ch) => ({
         id: ch.id,
@@ -215,8 +285,7 @@ export const getSlackInfo = async (userId, teamId) => {
         isMember: ch.is_member || false,
       }));
     }
-  } catch (err) {
-  }
+  } catch (err) {}
 
   return {
     channel: conn.channel,
