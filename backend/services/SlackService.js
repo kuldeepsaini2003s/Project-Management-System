@@ -3,17 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { assertTeamMembership, assertTeamAdmin } from "../utils/membership.js";
 import { signToken, verifyToken } from "../utils/jwt.js";
 import { env } from "../config/env.js";
-
-const resolveReturnOrigin = (origin) => {
-  const clean = (origin || "").replace(/\/$/, "");
-  return env.clientUrls.includes(clean) ? clean : env.clientUrl;
-};
-
-const SAFE_PATH = /^\/[a-zA-Z0-9\-_/]*$/;
-const resolveReturnPath = (path) =>
-  typeof path === "string" && path.length < 200 && SAFE_PATH.test(path)
-    ? path
-    : null;
+import { resolveReturnOrigin, resolveReturnPath } from "../utils/origin.js";
 
 const buildState = (teamId, userId, origin, returnPath) =>
   signToken({

@@ -32,11 +32,7 @@ app.set("trust proxy", 1);
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://algofolks-linear-app.vercel.app",
-      "https://task-management-with-algofolks.vercel.app",
-    ],
+    origin: env.clientUrls,
     credentials: true,
   }),
 );

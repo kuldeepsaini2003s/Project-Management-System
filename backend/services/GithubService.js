@@ -6,6 +6,7 @@ import { assertTeamAdmin, assertTeamMembership } from "../utils/membership.js";
 import { getIssueOrThrow } from "../utils/access.js";
 import { signToken, verifyToken } from "../utils/jwt.js";
 import { env } from "../config/env.js";
+import { resolveReturnOrigin, resolveReturnPath } from "../utils/origin.js";
 
 const API = "https://api.github.com";
 const ghHeaders = (token) => ({
@@ -57,14 +58,6 @@ const installationExists = async (installationId) => {
   const body = await res.text().catch(() => "");
   throw new ApiError(502, "Could not verify your GitHub installation right now — try again in a moment");
 };
-
-const resolveReturnOrigin = (origin) => {
-  const clean = (origin || "").replace(/\/$/, "");
-  return env.clientUrls.includes(clean) ? clean : env.clientUrl;
-};
-
-const SAFE_PATH = /^\/[a-zA-Z0-9\-_/]*$/;
-const resolveReturnPath = (path) => (typeof path === "string" && path.length < 200 && SAFE_PATH.test(path) ? path : null);
 
 const buildState = (teamId, userId, origin, returnPath) =>
   signToken({ gh: true, t: teamId, u: userId, c: resolveReturnOrigin(origin), p: resolveReturnPath(returnPath) });

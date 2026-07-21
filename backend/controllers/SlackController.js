@@ -1,13 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import * as slackService from "../services/SlackService.js";
-
-const reqOrigin = (req) => {
-  if (req.headers.origin) return req.headers.origin;
-  if (req.headers.referer) {
-    try { return new URL(req.headers.referer).origin; } catch {}
-  }
-  return undefined;
-};
+import { reqOrigin } from "../utils/origin.js";
 
 export const getConnection = asyncHandler(async (req, res) => {
   res.json(await slackService.getConnection(req.userId, req.params.id));
