@@ -23,6 +23,7 @@ import SlackRoute from "./routes/SlackRoute.js";
 import NotionRoute from "./routes/NotionRoute.js";
 import ApiKeyRoute from "./routes/ApiKeyRoute.js";
 import McpRoute from "./routes/McpRoute.js";
+import InboxZeroRoute from "./routes/InboxZeroRoute.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyEmailTransport } from "./services/EmailService.js";
@@ -63,6 +64,7 @@ app.use("/api/slack", SlackRoute);
 app.use("/api/notion", NotionRoute);
 app.use("/api/keys", ApiKeyRoute);
 app.use("/api/mcp", McpRoute);
+app.use("/api/inbox-zero", InboxZeroRoute);
 
 app.use(notFound);
 app.use(errorHandler);

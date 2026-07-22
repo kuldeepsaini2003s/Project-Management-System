@@ -1,8 +1,7 @@
 import prisma from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
-import { env } from "../config/env.js";
 import { getInstallationToken } from "./GithubService.js";
-import Anthropic from "@anthropic-ai/sdk";
+import { getBestResponse } from "./AiService.js";
 
 const GITHUB_API = "https://api.github.com";
 const ghHeaders = (token) => ({
@@ -182,13 +181,6 @@ const fetchProfile = async (username, token) => {
   }
 };
 
-let anthropicClient = null;
-const getAnthropic = () => {
-  if (!env.anthropicApiKey) throw new ApiError(500, "AI analysis is not configured on the server");
-  if (!anthropicClient) anthropicClient = new Anthropic({ apiKey: env.anthropicApiKey });
-  return anthropicClient;
-};
-
 const BANNED_PHRASES = ["passionate developer", "team player", "hard worker", "detail-oriented", "go-getter"];
 
 const buildPrompt = (login, stats) => `You are analyzing a real developer's GitHub activity (from repositories their team has connected) to generate an evidence-based "developer identity card". Every claim you make MUST cite specific evidence from the data below (a language percentage, a repo name, a commit count, a star count). Never use generic filler phrases like: ${BANNED_PHRASES.join(", ")}.
@@ -261,14 +253,20 @@ const runGeneration = async (userId) => {
     const stats = await fetchGithubStats(connections, username);
     const profile = await fetchProfile(username, stats.anyToken);
 
-    const client = getAnthropic();
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-5",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: buildPrompt(username, stats) }],
+    // Same prompt goes to all configured AI providers (Anthropic + Groq models);
+    // the responses are compared and the best valid one is used.
+    const best = await getBestResponse({
+      prompt: buildPrompt(username, stats),
+      maxTokens: 2000,
+      validate: (text) => {
+        const a = parseAnalysis(text);
+        if (!a?.styleSummary || !Array.isArray(a.strengths) || !a.growthArc || !Array.isArray(a.roadmap)) {
+          throw new Error("missing required fields");
+        }
+        return a;
+      },
     });
-    const text = message.content?.find((b) => b.type === "text")?.text || "";
-    const analysis = parseAnalysis(text);
+    const analysis = best.parsed;
 
     const statsSnapshot = {
       reposAnalyzed: stats.reposAnalyzed,

@@ -49,6 +49,9 @@ export const api = createApi({
     "NotionConn",
     "GitPersonaCard",
     "GitPersonaGeneration",
+    "GmailConn",
+    "InboxZero",
+    "InboxRun",
   ],
   endpoints: (b) => ({
     getMe: b.query({ query: () => "/auth/me", providesTags: ["Me"] }),
@@ -362,6 +365,30 @@ export const api = createApi({
       query: (login) => `/git-persona/public/${login}`,
     }),
 
+    getGmailConnection: b.query({
+      query: () => "/inbox-zero/connection",
+      providesTags: ["GmailConn"],
+    }),
+    getGmailAuthorize: b.query({
+      query: () => `/inbox-zero/authorize?returnPath=${encodeURIComponent(window.location.pathname)}`,
+    }),
+    disconnectGmail: b.mutation({
+      query: () => ({ url: "/inbox-zero/connection", method: "DELETE" }),
+      invalidatesTags: ["GmailConn", "InboxZero", "InboxRun"],
+    }),
+    runInboxZero: b.mutation({
+      query: () => ({ url: "/inbox-zero/run", method: "POST" }),
+      invalidatesTags: ["InboxRun"],
+    }),
+    getInboxZeroStatus: b.query({
+      query: () => "/inbox-zero/run/status",
+      providesTags: ["InboxRun"],
+    }),
+    getInboxZeroOverview: b.query({
+      query: () => "/inbox-zero/overview",
+      providesTags: ["InboxZero"],
+    }),
+
     getApiKeys: b.query({
       query: () => "/keys",
       providesTags: ["ApiKey"],
@@ -444,4 +471,10 @@ export const {
   useGetGitPersonaGenerationStatusQuery,
   useSetGitPersonaVisibilityMutation,
   useGetPublicGitPersonaCardQuery,
+  useGetGmailConnectionQuery,
+  useLazyGetGmailAuthorizeQuery,
+  useDisconnectGmailMutation,
+  useRunInboxZeroMutation,
+  useGetInboxZeroStatusQuery,
+  useGetInboxZeroOverviewQuery,
 } = api;

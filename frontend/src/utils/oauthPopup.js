@@ -1,6 +1,6 @@
 const MESSAGE_SOURCE = "uptodate-oauth";
 const POPUP_NAME = "uptodate_oauth_popup";
-const PROVIDERS = ["github", "slack", "notion"];
+const PROVIDERS = ["github", "slack", "notion", "gmail"];
 const POPUP_W = 600;
 const POPUP_H = 720;
 const POLL_MS = 500;

@@ -21,6 +21,7 @@ import MyIssuesPage from "./pages/issues/MyIssuesPage.jsx";
 import InvitePage from "./pages/InvitePage.jsx";
 import PublicDevProfilePage from "./pages/PublicDevProfilePage.jsx";
 import InboxPage from "./pages/InboxPage.jsx";
+import InboxZeroPage from "./pages/InboxZeroPage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
 import WorkspaceMembersPage from "./pages/WorkspaceMembersPage.jsx";
 import TeamsListPage from "./pages/TeamsListPage.jsx";
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/issues/:issueId" element={<IssueDetailPage />} />
           <Route path="/my-issues" element={<MyIssuesPage />} />
           <Route path="/inbox" element={<InboxPage />} />
+          <Route path="/inbox-zero" element={<InboxZeroPage />} />
         </Route>
 
         <Route path="/settings" element={<SettingsLayout />}>

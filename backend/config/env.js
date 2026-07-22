@@ -20,6 +20,10 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 
   googleClientId: required("GOOGLE_CLIENT_ID"),
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+  gmailRedirectUri:
+    process.env.GMAIL_REDIRECT_URI ||
+    `${process.env.API_URL || "http://localhost:5000"}/api/inbox-zero/setup`,
 
   smtp: {
     host: process.env.SMTP_HOST,
@@ -69,4 +73,6 @@ export const env = {
   },
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+  deepgramApiKey: process.env.DEEPGRAM_API_KEY || "",
+  groqApiKey: process.env.GROQ_API_KEY || "",
 };

@@ -16,6 +16,7 @@ import {
   Slack,
   BookText,
   Zap,
+  Mail,
 } from "lucide-react";
 import WorkspaceSwitcher from "../workspace/WorkspaceSwitcher.jsx";
 import CreateWorkspaceModal from "../workspace/CreateWorkspaceModal.jsx";
@@ -104,6 +105,10 @@ export default function Sidebar({ onClose }) {
               <span className="flex-1">My Issues</span>
             </NavLink>
           )}
+          <NavLink to="/inbox-zero" className={navItemClass} onClick={onClose}>
+            <Mail className="h-4 w-4" />
+            <span className="flex-1">Brainbox</span>
+          </NavLink>
 
           <SectionLabel>Workspace</SectionLabel>
           {prefs.projects && (
